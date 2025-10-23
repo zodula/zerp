@@ -33,5 +33,28 @@ export default $doctype({
     naming_series: "JE-{{journal_date}}",
     is_submittable: 1,
     track_changes: 1,
-    search_fields: "description\nreference_doctype\nreference_id"
+    search_fields: "description\nreference_doctype\nreference_id",
+    tabs: JSON.stringify([
+        {
+            type: "Tab", 
+            label: "Main", 
+            layout: [
+                { type: "section", value: "Basic Information", align: "left" },
+                [
+                    { type: "field", value: "journal_date", align: "left" },
+                    { type: "field", value: "description", align: "left" }
+                ],
+                { type: "section", value: "Reference", align: "left" },
+                [
+                    { type: "field", value: "reference_doctype", align: "left" },
+                    { type: "field", value: "reference_id", align: "left" }
+                ],
+                { type: "section", value: "Approval", align: "left" },
+                [
+                    { type: "field", value: "created_by", align: "left" },
+                    { type: "field", value: "approved_by", align: "left" }
+                ]
+            ]
+        }
+    ])
 })

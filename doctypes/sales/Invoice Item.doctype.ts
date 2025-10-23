@@ -32,5 +32,27 @@ export default $doctype({
     }
 }, {
     label: "Invoice Item",
-    search_fields: "description\naccount"
+    search_fields: "description\naccount",
+    tabs: JSON.stringify([
+        {
+            type: "Tab", 
+            label: "Main", 
+            layout: [
+                { type: "section", value: "Item Information", align: "left" },
+                [
+                    { type: "field", value: "invoice", align: "left" },
+                    { type: "field", value: "description", align: "left" }
+                ],
+                { type: "section", value: "Quantity & Pricing", align: "left" },
+                [
+                    { type: "field", value: "quantity", align: "left" },
+                    { type: "field", value: "unit_price", align: "left" }
+                ],
+                { type: "section", value: "Accounting", align: "left" },
+                [
+                    { type: "field", value: "account", align: "left" }
+                ]
+            ]
+        }
+    ])
 })

@@ -37,5 +37,28 @@ export default $doctype({
 }, {
     label: "Account",
     naming_series: "{{account_code}}",
-    search_fields: "account_code\naccount_name"
+    search_fields: "account_code\naccount_name",
+    tabs: JSON.stringify([
+        {
+            type: "Tab", 
+            label: "Main", 
+            layout: [
+                { type: "section", value: "Account Information", align: "left" },
+                [
+                    { type: "field", value: "account_code", align: "left" },
+                    { type: "field", value: "account_name", align: "left" },
+                    { type: "field", value: "account_type", align: "left" }
+                ],
+                { type: "section", value: "Hierarchy", align: "left" },
+                [
+                    { type: "field", value: "parent_account", align: "left" },
+                    { type: "field", value: "is_group", align: "left" }
+                ],
+                { type: "section", value: "Currency", align: "left" },
+                [
+                    { type: "field", value: "currency", align: "left" }
+                ]
+            ]
+        }
+    ])
 })

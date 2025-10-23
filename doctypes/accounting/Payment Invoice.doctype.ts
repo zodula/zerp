@@ -20,5 +20,22 @@ export default $doctype({
     }
 }, {
     label: "Payment Invoice",
-    search_fields: "payment_entry\ninvoice"
+    search_fields: "payment_entry\ninvoice",
+    tabs: JSON.stringify([
+        {
+            type: "Tab", 
+            label: "Main", 
+            layout: [
+                { type: "section", value: "References", align: "left" },
+                [
+                    { type: "field", value: "payment_entry", align: "left" },
+                    { type: "field", value: "invoice", align: "left" }
+                ],
+                { type: "section", value: "Amount", align: "left" },
+                [
+                    { type: "field", value: "applied_amount", align: "left" }
+                ]
+            ]
+        }
+    ])
 })

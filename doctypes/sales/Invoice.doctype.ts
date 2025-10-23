@@ -54,12 +54,23 @@ export default $doctype({
     search_fields: "party\ninvoice_type\nstatus",
     tabs: JSON.stringify([
         {
-            type: "Tab", label: "Main", layout: [
-                { type: "section", value: "Main", align: "left" },
+            type: "Tab",
+            label: "Main",
+            layout: [
+                { type: "section", value: "Basic Information", align: "left" },
                 [
                     { type: "field", value: "party", align: "left" },
                     { type: "field", value: "invoice_type", align: "left" },
                     { type: "field", value: "invoice_date", align: "left" },
+                    { type: "field", value: "due_date", align: "left" }
+                ],
+                { type: "section", value: "Amounts", align: "left" },
+                { type: "field", value: "zerp__Invoice Item_set", align: "left" },
+                [
+                    { type: "field", value: "total_amount", align: "left" },
+                    { type: "field", value: "currency", align: "left" },
+                    { type: "field", value: "exchange_rate", align: "left" },
+                    { type: "field", value: "company_amount", align: "left" }
                 ]
             ]
         }

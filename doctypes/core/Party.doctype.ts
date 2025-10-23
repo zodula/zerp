@@ -27,5 +27,24 @@ export default $doctype({
 }, {
     label: "Party",
     naming_series: "{{party_type}}-{{name}}",
-    search_fields: "name\nemail\nphone"
+    search_fields: "name\nemail\nphone",
+    tabs: JSON.stringify([
+        {
+            type: "Tab", 
+            label: "Main", 
+            layout: [
+                { type: "section", value: "Basic Information", align: "left" },
+                [
+                    { type: "field", value: "party_type", align: "left" },
+                    { type: "field", value: "name", align: "left" }
+                ],
+                { type: "section", value: "Contact Information", align: "left" },
+                [
+                    { type: "field", value: "email", align: "left" },
+                    { type: "field", value: "phone", align: "left" },
+                    { type: "field", value: "address", align: "left" }
+                ]
+            ]
+        }
+    ])
 })

@@ -38,5 +38,29 @@ export default $doctype({
     }
 }, {
     label: "Journal Entry Item",
-    search_fields: "account\nmemo"
+    search_fields: "account\nmemo",
+    tabs: JSON.stringify([
+        {
+            type: "Tab", 
+            label: "Main", 
+            layout: [
+                { type: "section", value: "Reference", align: "left" },
+                [
+                    { type: "field", value: "journal_entry", align: "left" },
+                    { type: "field", value: "account", align: "left" }
+                ],
+                { type: "section", value: "Amounts", align: "left" },
+                [
+                    { type: "field", value: "debit_amount", align: "left" },
+                    { type: "field", value: "credit_amount", align: "left" }
+                ],
+                { type: "section", value: "Additional Information", align: "left" },
+                [
+                    { type: "field", value: "memo", align: "left" },
+                    { type: "field", value: "currency", align: "left" },
+                    { type: "field", value: "exchange_rate", align: "left" }
+                ]
+            ]
+        }
+    ])
 })

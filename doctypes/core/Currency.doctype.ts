@@ -29,5 +29,24 @@ export default $doctype({
 }, {
     label: "Currency",
     naming_series: "{{currency_code}}",
-    search_fields: "currency_code\ncurrency_name"
+    search_fields: "currency_code\ncurrency_name",
+    tabs: JSON.stringify([
+        {
+            type: "Tab", 
+            label: "Main", 
+            layout: [
+                { type: "section", value: "Currency Information", align: "left" },
+                [
+                    { type: "field", value: "currency_code", align: "left" },
+                    { type: "field", value: "currency_name", align: "left" },
+                    { type: "field", value: "symbol", align: "left" }
+                ],
+                { type: "section", value: "Settings", align: "left" },
+                [
+                    { type: "field", value: "precision", align: "left" },
+                    { type: "field", value: "is_default", align: "left" }
+                ]
+            ]
+        }
+    ])
 })

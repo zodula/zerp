@@ -52,5 +52,30 @@ export default $doctype({
     naming_series: "PE-{{payment_date}}",
     is_submittable: 1,
     track_changes: 1,
-    search_fields: "party\npayment_type\nreference_no"
+    search_fields: "party\npayment_type\nreference_no",
+    tabs: JSON.stringify([
+        {
+            type: "Tab", 
+            label: "Main", 
+            layout: [
+                { type: "section", value: "Basic Information", align: "left" },
+                [
+                    { type: "field", value: "party", align: "left" },
+                    { type: "field", value: "payment_type", align: "left" },
+                    { type: "field", value: "payment_date", align: "left" }
+                ],
+                { type: "section", value: "Amount", align: "left" },
+                [
+                    { type: "field", value: "amount", align: "left" },
+                    { type: "field", value: "currency", align: "left" },
+                    { type: "field", value: "exchange_rate", align: "left" }
+                ],
+                { type: "section", value: "Payment Details", align: "left" },
+                [
+                    { type: "field", value: "payment_method", align: "left" },
+                    { type: "field", value: "reference_no", align: "left" }
+                ]
+            ]
+        }
+    ])
 })
