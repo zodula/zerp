@@ -1,3 +1,5 @@
+import React from "react";
+
 interface ShellProps {
     children: React.ReactNode
 }
@@ -7,5 +9,5 @@ export default function Shell(props: ShellProps) {
         <>
             {props.children}
         </>
-    )
+    );
 }

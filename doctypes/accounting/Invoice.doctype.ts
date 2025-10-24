@@ -28,7 +28,8 @@ export default $doctype({
         type: "Float",
         label: "Total Amount",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        readonly: 1
     },
     currency: {
         type: "Reference",
@@ -36,19 +37,28 @@ export default $doctype({
         reference: "zerp__Currency",
         required: 1
     },
-    company_amount: {
+    currency_amount: {
         type: "Currency",
-        label: "Company Amount",
+        label: "Currency Amount",
         readonly: 1
     },
     exchange_rate: {
         type: "Float",
         label: "Exchange Rate",
         default: "1"
+    },
+    payment_status: {
+        type: "Select",
+        label: "Payment Status",
+        options: "Unpaid\nPartially Paid\nPaid",
+        default: "Unpaid",
+        required: 1,
+        in_list_view: 1,
+        readonly: 1
     }
 }, {
     label: "Invoice",
-    naming_series: "INV-{{invoice_date}}",
+    naming_series: "INV-{{invoice_date}}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     search_fields: "party\ninvoice_type\nstatus",
@@ -65,12 +75,12 @@ export default $doctype({
                     { type: "field", value: "due_date", align: "left" }
                 ],
                 { type: "section", value: "Amounts", align: "left" },
-                { type: "field", value: "zerp__Invoice Item_set", align: "left" },
+                { type: "field", value: "invoice_items", align: "left" },
                 [
                     { type: "field", value: "total_amount", align: "left" },
                     { type: "field", value: "currency", align: "left" },
                     { type: "field", value: "exchange_rate", align: "left" },
-                    { type: "field", value: "company_amount", align: "left" }
+                    { type: "field", value: "currency_amount", align: "left" }
                 ]
             ]
         }
