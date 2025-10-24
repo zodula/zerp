@@ -6,9 +6,9 @@ export default function CurrencyScripts() {
 
     // Currency Defaults
     useEffect(() => {
-        registerScript("zerp__Currency", {
+        registerScript("zodula__Currency", {
             id: "currency_defaults",
-            doctype: "zerp__Currency",
+            doctype: "zodula__Currency",
             name: "Currency Defaults",
             description: "Set default values for currencies",
             events: [

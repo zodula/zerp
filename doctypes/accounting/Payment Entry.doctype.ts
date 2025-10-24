@@ -28,7 +28,7 @@ export default $doctype({
     currency: {
         type: "Reference",
         label: "Currency",
-        reference: "zerp__Currency",
+        reference: "zodula__Currency",
         required: 1
     },
     exchange_rate: {
