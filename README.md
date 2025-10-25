@@ -1,5 +1,8 @@
 # Zerp
 
+> [!Warning]
+> This is a version 0 of Zerp, currently under active development. Features and APIs may change. Feedback is welcome!
+
 A comprehensive ERP (Enterprise Resource Planning) application built on [Zodula](https://github.com/zodula/zodula) framework.
 
 ![Zerp Admin](/public/zerp_mock.png)
