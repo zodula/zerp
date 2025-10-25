@@ -2,7 +2,7 @@
 
 A comprehensive ERP (Enterprise Resource Planning) application built on [Zodula](https://github.com/zodula/zodula) framework.
 
-![Zerp Admin](/apps/zerp/public/zerp_mock.png)
+![Zerp Admin](/public/zerp_mock.png)
 
 
 ## Quick Start
