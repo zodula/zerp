@@ -15,6 +15,11 @@ A comprehensive ERP (Enterprise Resource Planning) application built on [Zodula]
 # Install nailgun globally
 bun install --global nailgun
 
+# Create a zodula project
+nailgun create my-app --branch v0
+
+cd my-app
+
 # Install zerp app
 nailgun install-app @zodula/zerp --branch v0
 
