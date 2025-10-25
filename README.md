@@ -2,12 +2,8 @@
 
 A comprehensive ERP (Enterprise Resource Planning) application built on [Zodula](https://github.com/zodula/zodula) framework.
 
-## Features
+![Zerp Admin](/apps/zerp/public/zerp_mock.png)
 
-- **Accounting**: Journal entries, payment processing, financial reporting
-- **Sales**: Invoice management, customer tracking
-- **Purchase**: Vendor management, procurement
-- **Core**: Company setup, accounts, currencies, parties
 
 ## Quick Start
 
@@ -28,19 +24,3 @@ nailgun dev
 # or
 nailgun start
 ```
-
-## Structure
-
-- `doctypes/` - Data models (Company, Account, Invoice, etc.)
-- `actions/` - API endpoints
-- `ui/` - Frontend components
-- `migrations/` - Database schema changes
-- `fixtures/` - Sample data
-
-## Core Doctypes
-
-- **Company** - Organization setup
-- **Account** - Chart of accounts
-- **Party** - Customers and vendors
-- **Invoice** - Sales transactions
-- **Journal Entry** - Accounting entries
