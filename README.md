@@ -8,22 +8,29 @@ A comprehensive ERP (Enterprise Resource Planning) application built on [Zodula]
 ![Zerp Admin](/public/zerp_mock.png)
 
 
-## Quick Start
+## 🚀 Quick Start
+
+**Requirements:**
+
+- Bun v1.2.x+
+- [Nailgun CLI](https://github.com/zodula/nailgun)
+
+**Install:**
 
 ```bash
-# Install nailgun globally
 bun install --global nailgun
 
-# Create a zodula project
-nailgun create my-app --branch v0
+git clone https://github.com/zodula/zodula my-app
 
 cd my-app
 
-# Install zerp app
-nailgun install-app @zodula/zerp --branch v0
-
-# Start development
-nailgun dev
-# or
-nailgun start
+bun install
 ```
+
+**Start Development:**
+
+```bash
+nailgun dev
+```
+
+Server runs at `http://localhost:3000`
