@@ -2,7 +2,7 @@ export default $doctype({
     party_type: {
         type: "Select",
         label: "Party Type",
-        options: "Customer\nSupplier\nEmployee\nOther",
+        options: "CUSTOMER\nSUPPLIER\nEMPLOYEE",
         required: 1,
         in_list_view: 1
     },
@@ -26,7 +26,7 @@ export default $doctype({
     }
 }, {
     label: "Party",
-    naming_series: "{{party_type}}-{{name}}",
+    naming_series: "{{party_type}}-{YYYY}-{MM}-{########}",
     search_fields: "name\nemail\nphone",
     tabs: JSON.stringify([
         {
