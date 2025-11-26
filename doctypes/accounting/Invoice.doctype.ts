@@ -56,6 +56,7 @@ export default $doctype(
       required: 1,
       in_list_view: 1,
       readonly: 1,
+      no_print: 1,
     },
   },
   {
