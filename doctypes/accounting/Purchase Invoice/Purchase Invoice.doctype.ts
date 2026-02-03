@@ -1,17 +1,17 @@
 export default $doctype(
   {
-    party: {
+    supplier: {
       type: "Reference",
-      label: "Party",
-      reference: "zerp__Party",
+      label: "Supplier",
+      reference: "zerp__Supplier",
       required: 1,
       in_list_view: 1,
     },
-    invoice_type: {
-      type: "Select",
-      label: "Invoice Type",
-      options: "Sales\nPurchase",
-      required: 1,
+    price_project: {
+      type: "Reference",
+      label: "Price Project",
+      reference: "zerp__Price Project",
+      required: 0,
       in_list_view: 1,
     },
     invoice_date: {
@@ -26,27 +26,18 @@ export default $doctype(
       required: 1,
     },
     total_amount: {
-      type: "Float",
+      type: "Currency",
       label: "Total Amount",
       required: 0,
       in_list_view: 1,
       readonly: 1,
     },
-    currency: {
-      type: "Reference",
-      label: "Currency",
-      reference: "zodula__Currency",
-      required: 1,
-    },
-    currency_amount: {
+    payment_amount: {
       type: "Currency",
-      label: "Currency Amount",
+      label: "Payment Amount",
+      required: 0,
+      in_list_view: 1,
       readonly: 1,
-    },
-    exchange_rate: {
-      type: "Float",
-      label: "Exchange Rate",
-      default: "1",
     },
     payment_status: {
       type: "Select",
@@ -58,14 +49,20 @@ export default $doctype(
       readonly: 1,
       no_print: 1,
     },
+    purchase_invoice_items: {
+      type: "Reference Table",
+      label: "Purchase Invoice Items",
+      reference: "zerp__Purchase Invoice Item",
+      required: 0
+    },
   },
   {
-    label: "Invoice",
-    naming_series: "INV-{{invoice_date}}-{#####}",
+    label: "Purchase Invoice",
+    naming_series: "PINV-{{invoice_date}}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     comments_enabled: 1,
-    search_fields: "party\ninvoice_type\nstatus",
+    search_fields: "supplier\nstatus",
     tabs: JSON.stringify([
       {
         type: "Tab",
@@ -73,21 +70,30 @@ export default $doctype(
         layout: [
           { type: "section", value: "Basic Information", align: "left" },
           [
-            { type: "field", value: "party", align: "left" },
-            { type: "field", value: "invoice_type", align: "left" },
+            { type: "field", value: "supplier", align: "left" },
+            { type: "field", value: "price_project", align: "left" },
             { type: "field", value: "invoice_date", align: "left" },
             { type: "field", value: "due_date", align: "left" },
           ],
           { type: "section", value: "Amounts", align: "left" },
-          { type: "field", value: "invoice_items", align: "left" },
+          { type: "field", value: "purchase_invoice_items", align: "left" },
           [
             { type: "field", value: "total_amount", align: "left" },
-            { type: "field", value: "currency", align: "left" },
-            { type: "field", value: "exchange_rate", align: "left" },
-            { type: "field", value: "currency_amount", align: "left" },
+          ],
+        ],
+      },
+      {
+        type: "Tab",
+        label: "Payment",
+        layout: [
+          { type: "section", value: "Payment Information", align: "left" },
+          [
+            { type: "field", value: "payment_amount", align: "left" },
+            { type: "field", value: "payment_status", align: "left" },
           ],
         ],
       },
     ]),
   }
 );
+

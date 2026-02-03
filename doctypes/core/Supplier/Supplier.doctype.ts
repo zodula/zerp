@@ -1,11 +1,4 @@
 export default $doctype({
-    party_type: {
-        type: "Select",
-        label: "Party Type",
-        options: "CUSTOMER\nSUPPLIER\nEMPLOYEE",
-        required: 1,
-        in_list_view: 1
-    },
     name: {
         type: "Text",
         label: "Name",
@@ -14,20 +7,23 @@ export default $doctype({
     },
     email: {
         type: "Email",
-        label: "Email"
+        label: "Email",
+        in_quick_entry: 1
     },
     phone: {
         type: "Text",
-        label: "Phone"
+        label: "Phone",
+        in_quick_entry: 1
     },
     address: {
         type: "Text",
         label: "Address"
     }
 }, {
-    label: "Party",
-    naming_series: "{{party_type}}-{YYYY}-{MM}-{########}",
+    label: "Supplier",
+    naming_series: "SUPPLIER-{YYYY}-{MM}-{########}",
     search_fields: "name\nemail\nphone",
+    is_quick_entry: 1,
     tabs: JSON.stringify([
         {
             type: "Tab", 
@@ -35,7 +31,6 @@ export default $doctype({
             layout: [
                 { type: "section", value: "Basic Information", align: "left" },
                 [
-                    { type: "field", value: "party_type", align: "left" },
                     { type: "field", value: "name", align: "left" }
                 ],
                 { type: "section", value: "Contact Information", align: "left" },
@@ -48,3 +43,4 @@ export default $doctype({
         }
     ])
 })
+
