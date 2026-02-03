@@ -2,7 +2,6 @@
   {
     "id": "Default Company Letter Head",
     "name": "Default Company Letter Head",
-    "content": "<div style=\"text-align: center; margin-bottom: 20px;\">\r\n  {% set company = await zodula.doctype(\"zerp__Company\").get(\"zerp__Company\") %}\r\n  <h2>{{ company.name or '' }}</h2>\r\n  <p>{{ company.address or '' }}</p>\r\n</div>",
-    "css_contenPt": null
+    "organization": "SYS"
   }
 ]
