@@ -3,7 +3,7 @@
 "Invoice Type","ประเภทใบแจ้งหนี้"
 "Sales","ขาย"
 "Purchase","ซื้อ"
-"Invoice Date","วันที่ออกใบแจ้งหนี้"
+"Posting Date","วันที่โพสต์"
 "Due Date","วันที่ครบกำหนด"
 "Total Amount","จำนวนเงินรวม"
 "Currency","สกุลเงิน"
@@ -58,4 +58,6 @@
 "Actions", "การกระทำ"
 "Item Code", "รหัสสินค้า"
 "Item Name", "ชื่อสินค้า"
-"UOM", "หน่วย"
+"UOM", "หน่วย",
+"Pay", "จ่าย,
+"Recieve", "รับ"

@@ -19,21 +19,51 @@ export default $doctype({
         required: 1,
         in_list_view: 1
     },
-    parent_account: {
-        type: "Reference",
-        label: "Parent Account",
-        reference: "zerp__Account"
+    balance: {
+        type: "Currency",
+        label: "Balance",
+        default: "0",
+        readonly: 1
     },
-    is_group: {
+    party_type: {
+        type: "Reference",
+        label: "Party Type",
+        reference: "zodula__Doctype",
+        filters: JSON.stringify([["name", "IN", ["zerp__Customer", "zerp__Supplier"]]]),
+        in_list_view: 1
+    },
+    party: {
+        type: "Reference",
+        label: "Party",
+        reference: "{{party_type}}",
+        in_list_view: 1
+    },
+    is_bank_account: {
         type: "Check",
-        label: "Is Group",
-        default: "0"
+        label: "Is Bank Account",
+        default: "0",
+        in_list_view: 1
     },
-    currency: {
+    bank: {
         type: "Reference",
-        label: "Currency",
-        reference: "zodula__Currency"
-    }
+        label: "Bank",
+        reference: "zerp__Bank",
+        required: 0,
+        in_list_view: 1
+    },
+    bank_name: {
+        type: "Text",
+        label: "Bank Name",
+        required: 0,
+        in_list_view: 1,
+        fetch_from: "bank.name",
+    },
+    bank_account_no: {
+        type: "Text",
+        label: "Bank Account No",
+        required: 0,
+        in_list_view: 1
+    },
 }, {
     label: "Account",
     naming_series: "{{account_code}}",
@@ -49,14 +79,9 @@ export default $doctype({
                     { type: "field", value: "account_name", align: "left" },
                     { type: "field", value: "account_type", align: "left" }
                 ],
-                { type: "section", value: "Hierarchy", align: "left" },
+                { type: "section", value: "Balance", align: "left" },
                 [
-                    { type: "field", value: "parent_account", align: "left" },
-                    { type: "field", value: "is_group", align: "left" }
-                ],
-                { type: "section", value: "Currency", align: "left" },
-                [
-                    { type: "field", value: "currency", align: "left" }
+                    { type: "field", value: "balance", align: "left" }
                 ]
             ]
         }

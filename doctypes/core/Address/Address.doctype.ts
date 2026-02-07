@@ -45,6 +45,7 @@ export default $doctype({
     label: "Address",
     naming_series: "{{address_name}} - {{address_type}}",
     search_fields: "address_name\naddress_type\ncity\nprovince",
+    track_changes: 1,
     tabs: JSON.stringify([
         {
             type: "Tab",

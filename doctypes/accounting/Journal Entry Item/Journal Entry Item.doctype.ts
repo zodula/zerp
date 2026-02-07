@@ -38,6 +38,7 @@ export default $doctype({
     }
 }, {
     label: "Journal Entry Item",
+    is_child_doctype: 1,
     search_fields: "account\nmemo",
     tabs: JSON.stringify([
         {

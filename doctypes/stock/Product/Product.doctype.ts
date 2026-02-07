@@ -1,14 +1,14 @@
 export default $doctype({
-    product_code: {
-        type: "Text",
-        label: "Item Code",
-        required: 1,
-        unique: 1,
-        in_list_view: 1
-    },
     product_name: {
         type: "Text",
         label: "Item Name",
+        required: 1,
+        in_list_view: 1
+    },
+    product_category: {
+        type: "Reference",
+        label: "Product Category",
+        reference: "zerp__Product Category",
         required: 1,
         in_list_view: 1
     },
@@ -21,11 +21,36 @@ export default $doctype({
         label: "Default UOM",
         reference: "zerp__UOM",
         required: 1
+    },
+    length: {
+        type: "Float",
+        label: "Length"
+    },
+    width: {
+        type: "Float",
+        label: "Width"
+    },
+    height: {
+        type: "Float",
+        label: "Height"
+    },
+    weight: {
+        type: "Float",
+        label: "Weight"
+    },
+    barcode: {
+        type: "Text",
+        label: "Barcode"
+    },
+    product_image: {
+        type: "File",
+        label: "Product Image"
     }
 }, {
     label: "Product",
-    naming_series: "{{product_code}}",
-    search_fields: "product_code\nproduct_name",
+    naming_series: "{{product_name}} - {{product_category}}",
+    search_fields: "product_name",
+    display_field: "product_name",
     is_quick_entry: 1,
     tabs: JSON.stringify([
         {
@@ -34,8 +59,8 @@ export default $doctype({
             layout: [
                 { type: "section", value: "Basic Information", align: "left" },
                 [
-                    { type: "field", value: "product_code", align: "left" },
-                    { type: "field", value: "product_name", align: "left" }
+                    { type: "field", value: "product_name", align: "left" },
+                    { type: "field", value: "product_category", align: "left" }
                 ],
                 [
                     { type: "field", value: "item_description", align: "left" }
@@ -43,6 +68,21 @@ export default $doctype({
                 { type: "section", value: "Unit Information", align: "left" },
                 [
                     { type: "field", value: "default_uom", align: "left" }
+                ],
+                { type: "section", value: "Dimensions & Weight", align: "left" },
+                [
+                    { type: "field", value: "length", align: "left" },
+                    { type: "field", value: "width", align: "left" },
+                    { type: "field", value: "height", align: "left" },
+                    { type: "field", value: "weight", align: "left" }
+                ],
+                { type: "section", value: "Barcode", align: "left" },
+                [
+                    { type: "field", value: "barcode", align: "left" }
+                ],
+                { type: "section", value: "Product Image", align: "left" },
+                [
+                    { type: "field", value: "product_image", align: "left" }
                 ]
             ]
         }

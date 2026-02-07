@@ -7,10 +7,10 @@ export default function SalesInvoiceItemScripts() {
         // Helper function to fetch price from Price List
         const fetchPriceFromPriceList = async (frm: any, updateUom: boolean = true) => {
             const doc = frm.get_doc();
-            const productId = doc?.product_code;
+            const productId = doc?.product;
             const priceProject = doc?.price_project;
             const customer = doc?.customer;
-            const invoiceDate = doc?.invoice_date;
+            const invoiceDate = doc?.posting_date;
             const uom = doc?.uom;
             
             // Guard: Check all required fields have values before fetching
@@ -37,14 +37,14 @@ export default function SalesInvoiceItemScripts() {
                     order: "desc"
                 });
 
-                // Filter by until_date if invoice_date is available
-                // Only get price lists that are still valid (until_date is null or >= invoice_date)
+                // Filter by until_date if posting_date is available
+                // Only get price lists that are still valid (until_date is null or >= posting_date)
                 let matchingPriceList = null;
                 if (invoiceDate) {
                     matchingPriceList = priceListResponse.docs.find((pl: any) => {
                         // If until_date is null, it's always valid
                         if (!pl.until_date) return true;
-                        // If until_date exists, it must be >= invoice_date to be valid
+                        // If until_date exists, it must be >= posting_date to be valid
                         const untilDate = new Date(pl.until_date);
                         const invDate = new Date(invoiceDate);
                         return untilDate >= invDate;
@@ -76,10 +76,10 @@ export default function SalesInvoiceItemScripts() {
             }
         };
 
-        // Sales Invoice Item - Fetch product details and UOM when product_code changes
+        // Sales Invoice Item - Fetch product details and UOM when product changes
         zui.form.on("zerp__Sales Invoice Item", {
-            product_code: async function(frm) {
-                const productId = frm.get_value("product_code");
+            product: async function(frm) {
+                const productId = frm.get_value("product");
                 if (productId) {
                     try {
                         const product = await zodula.doc.get_doc("zerp__Product", productId, {});
@@ -109,12 +109,17 @@ export default function SalesInvoiceItemScripts() {
                     frm.set_value("item_description", "");
                     frm.set_value("uom", "");
                 }
+
+                const quantity = parseFloat(String(frm.get_value("quantity") || 0)) || 0;
+                const unitPrice = parseFloat(String(frm.get_value("unit_price") || 0)) || 0;
+                const totalPrice = quantity * unitPrice;
+                frm.set_value("total_price", totalPrice);
             },
             // Calculate total_price when quantity changes (don't fetch price - only calculate)
             quantity: async function(frm) {
                 // Calculate total_price only
-                const quantity = parseFloat(frm.get_value("quantity")) || 0;
-                const unitPrice = parseFloat(frm.get_value("unit_price")) || 0;
+                const quantity = parseFloat(String(frm.get_value("quantity") || 0)) || 0;
+                const unitPrice = parseFloat(String(frm.get_value("unit_price") || 0)) || 0;
                 const totalPrice = quantity * unitPrice;
                 frm.set_value("total_price", totalPrice);
                 // Don't fetch price - only calculate total
@@ -122,8 +127,8 @@ export default function SalesInvoiceItemScripts() {
             // Calculate total_price when unit_price changes (don't fetch price - user is manually setting it)
             unit_price: async function(frm) {
                 // Calculate total_price only
-                const unitPrice = parseFloat(frm.get_value("unit_price")) || 0;
-                const quantity = parseFloat(frm.get_value("quantity")) || 0;
+                const unitPrice = parseFloat(String(frm.get_value("unit_price") || 0)) || 0;
+                const quantity = parseFloat(String(frm.get_value("quantity") || 0)) || 0;
                 const totalPrice = quantity * unitPrice;
                 frm.set_value("total_price", totalPrice);
                 // Don't fetch price - user is manually setting it
@@ -131,8 +136,8 @@ export default function SalesInvoiceItemScripts() {
             // Calculate total_price when uom changes (don't fetch price - user may have manually set it)
             uom: async function(frm) {
                 // Only calculate total_price, don't fetch price
-                const quantity = parseFloat(frm.get_value("quantity")) || 0;
-                const unitPrice = parseFloat(frm.get_value("unit_price")) || 0;
+                const quantity = parseFloat(String(frm.get_value("quantity") || 0)) || 0;
+                const unitPrice = parseFloat(String(frm.get_value("unit_price") || 0)) || 0;
                 const totalPrice = quantity * unitPrice;
                 frm.set_value("total_price", totalPrice);
                 // Don't fetch price - user may have manually set it

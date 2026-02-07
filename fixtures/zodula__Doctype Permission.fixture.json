@@ -1,0 +1,24 @@
+[
+  {
+    "id": "15c738ca940d4d21",
+    "doctype": "zerp__Address",
+    "role": "Authenticated",
+    "perm_level": "0",
+    "can_get": 1,
+    "can_update": 1,
+    "can_select": 1,
+    "can_create": 1,
+    "can_delete": 0,
+    "can_submit": 0,
+    "can_cancel": 0,
+    "can_own_get": 0,
+    "can_own_select": 0,
+    "can_own_create": 0,
+    "can_own_update": 0,
+    "can_own_delete": 0,
+    "can_own_submit": 0,
+    "can_own_cancel": 0,
+    "app": "zerp",
+    "organization": "SYS"
+  }
+]

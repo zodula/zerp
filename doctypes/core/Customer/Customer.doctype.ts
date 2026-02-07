@@ -5,6 +5,11 @@ export default $doctype({
         required: 1,
         in_list_view: 1
     },
+    tax_id: {
+        type: "Text",
+        label: "Tax ID",
+        in_quick_entry: 1
+    },
     email: {
         type: "Email",
         label: "Email",
@@ -17,8 +22,8 @@ export default $doctype({
     },
     address: {
         type: "Text",
-        label: "Address"
-    }
+        label: "Address",
+    },
 }, {
     label: "Customer",
     naming_series: "CUSTOMER-{YYYY}-{MM}-{########}",

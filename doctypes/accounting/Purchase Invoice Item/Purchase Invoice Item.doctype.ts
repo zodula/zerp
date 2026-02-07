@@ -5,12 +5,13 @@ export default $doctype({
         reference: "zerp__Purchase Invoice",
         required: 1
     },
-    product_code: {
+    product: {
         type: "Reference",
-        label: "Product Code",
+        label: "Product",
         reference: "zerp__Product",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        no_print: 1
     },
     product_name: {
         type: "Text",
@@ -18,7 +19,7 @@ export default $doctype({
         required: 1,
         in_list_view: 1,
         readonly: 1,
-        fetch_from: "product_code.product_name"
+        fetch_from: "product.product_name"
     },
     item_description: {
         type: "Text",
@@ -49,9 +50,34 @@ export default $doctype({
         required: 1,
         in_list_view: 1,
         readonly: 1
+    },
+    length: {
+        type: "Float",
+        label: "Length",
+        readonly: 1,
+        fetch_from: "product.length"
+    },
+    width: {
+        type: "Float",
+        label: "Width",
+        readonly: 1,
+        fetch_from: "product.width"
+    },
+    height: {
+        type: "Float",
+        label: "Height",
+        readonly: 1,
+        fetch_from: "product.height"
+    },
+    weight: {
+        type: "Float",
+        label: "Weight",
+        readonly: 1,
+        fetch_from: "product.weight"
     }
 }, {
     label: "Purchase Invoice Item",
+    is_child_doctype: 1,
     search_fields: "product_name\nitem_description",
     tabs: JSON.stringify([
         {
@@ -61,7 +87,7 @@ export default $doctype({
                 { type: "section", value: "Item Information", align: "left" },
                 [
                     { type: "field", value: "purchase_invoice", align: "left" },
-                    { type: "field", value: "product_code", align: "left" },
+                    { type: "field", value: "product", align: "left" },
                     { type: "field", value: "product_name", align: "left" },
                     { type: "field", value: "item_description", align: "left" }
                 ],
@@ -71,6 +97,13 @@ export default $doctype({
                     { type: "field", value: "uom", align: "left" },
                     { type: "field", value: "unit_price", align: "left" },
                     { type: "field", value: "total_price", align: "left" }
+                ],
+                { type: "section", value: "Dimensions & Weight", align: "left" },
+                [
+                    { type: "field", value: "length", align: "left" },
+                    { type: "field", value: "width", align: "left" },
+                    { type: "field", value: "height", align: "left" },
+                    { type: "field", value: "weight", align: "left" }
                 ]
             ]
         }
