@@ -1,10 +1,4 @@
 export default $doctype({
-    sales_invoice: {
-        type: "Reference",
-        label: "Sales Invoice",
-        reference: "zerp__Sales Invoice",
-        required: 1
-    },
     product: {
         type: "Reference",
         label: "Product",
@@ -21,6 +15,12 @@ export default $doctype({
         readonly: 1,
         fetch_from: "product.product_name"
     },
+    product_image: {    
+        type: "Image Preview",
+        label: "Product Image",
+        readonly: 1,
+        fetch_from: "product.product_image",
+    },
     item_description: {
         type: "Text",
         label: "Item Description"
@@ -29,7 +29,7 @@ export default $doctype({
         type: "Float",
         label: "Quantity",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
     },
     uom: {
         type: "Reference",

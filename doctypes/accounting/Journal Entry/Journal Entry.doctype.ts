@@ -1,4 +1,4 @@
-export default $doctype({
+export default $doctype<"zerp__Journal Entry">({
     journal_date: {
         type: "Date",
         label: "Journal Date",
@@ -32,7 +32,6 @@ export default $doctype({
         type: "Reference Table",
         label: "Journal Entry Items",
         reference: "zerp__Journal Entry Item",
-        reference_field: "journal_entry",
         required: 0
     }
 }, {

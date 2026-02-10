@@ -101,8 +101,7 @@ async function updateAccountBalance(accountId: string) {
     // Get all General Ledger entries for this account
     const glEntries = await $zodula.doctype("zerp__General Ledger")
         .select()
-        .where("account", "=", accountId)
-        .limit(100000);
+        .where("account", "=", accountId);
     
     // Calculate total balance
     let totalDebit = 0;

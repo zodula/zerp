@@ -31,6 +31,20 @@ export default $doctype<"zerp__Payment Entry">({
         in_list_view: 1,
         default: "TODAY()"
     },
+    base_amount: {
+        type: "Currency",
+        label: "Base Amount",
+        required: 0,
+        readonly: 1,
+        in_list_view: 1
+    },
+    total_taxes_and_charges: {
+        type: "Currency",
+        label: "Total Taxes and Charges",
+        required: 0,
+        readonly: 1,
+        in_list_view: 1
+    },
     amount: {
         type: "Currency",
         label: "Amount",
@@ -73,7 +87,12 @@ export default $doctype<"zerp__Payment Entry">({
         type: "Reference Table",
         label: "References",
         reference: "zerp__Payment Entry Reference",
-        reference_field: "payment_entry",
+        required: 0
+    },
+    tax_and_charges: {
+        type: "Reference Table",
+        label: "Tax and Charges",
+        reference: "zerp__Tax and Charges",
         required: 0
     }
 }, {
@@ -96,8 +115,14 @@ export default $doctype<"zerp__Payment Entry">({
                 ],
                 { type: "section", value: "Amount", align: "left" },
                 [
+                    { type: "field", value: "base_amount", align: "left" },
+                    { type: "field", value: "total_taxes_and_charges", align: "left" },
                     { type: "field", value: "amount", align: "left" },
                     { type: "field", value: "total_allocated", align: "left" }
+                ],
+                { type: "section", value: "Taxes", align: "left" },
+                [
+                    { type: "field", value: "tax_and_charges", align: "left" }
                 ],
                 { type: "section", value: "Payment Details", align: "left" },
                 [
@@ -119,6 +144,69 @@ export default $doctype<"zerp__Payment Entry">({
     const doctypeSchema = loader.from("doctype").get("zerp__Payment Entry").schema;
     ZodulaDoctypeHelper.validateDoc(doc, doctypeSchema, false);
     
+    // Calculate base_amount from references (sum of allocated amounts)
+    let baseAmount = 0;
+    if (doc.references && Array.isArray(doc.references)) {
+        for (const ref of doc.references) {
+            const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
+            baseAmount += allocatedAmount;
+        }
+    }
+    doc.base_amount = baseAmount;
+
+    // Calculate taxes and charges
+    const taxRows = doc.tax_and_charges && Array.isArray(doc.tax_and_charges) ? doc.tax_and_charges : [];
+    
+    // Sort by idx to ensure proper order
+    const sortedTaxRows = [...taxRows].sort((a: any, b: any) => {
+        const idxA = (a as any).idx || 0;
+        const idxB = (b as any).idx || 0;
+        return idxA - idxB;
+    });
+
+    let runningTotal = baseAmount;
+    let totalTaxesAndCharges = 0;
+
+    for (let i = 0; i < sortedTaxRows.length; i++) {
+        const taxRow = sortedTaxRows[i] as any;
+        const chargeType = taxRow.charge_type || "Actual";
+        const rate = parseFloat(String(taxRow.rate || 0)) || 0;
+        let taxAmount = 0;
+
+        if (chargeType === "Actual") {
+            taxAmount = parseFloat(String(taxRow.tax_amount || 0)) || 0;
+        } else if (chargeType === "On Net Total") {
+            taxAmount = (baseAmount * rate) / 100;
+        } else if (chargeType === "On Previous Row Amount") {
+            if (i > 0) {
+                const prevRow = sortedTaxRows[i - 1] as any;
+                const prevTaxAmount = parseFloat(String(prevRow.tax_amount || 0)) || 0;
+                taxAmount = (prevTaxAmount * rate) / 100;
+            }
+        } else if (chargeType === "On Previous Row Total") {
+            if (i > 0) {
+                const prevRow = sortedTaxRows[i - 1] as any;
+                // Use tax_amount instead of total for "On Previous Row Total"
+                const prevTaxAmount = parseFloat(String(prevRow.tax_amount || 0)) || 0;
+                taxAmount = (prevTaxAmount * rate) / 100;
+            }
+        }
+
+        taxRow.tax_amount = taxAmount;
+        
+        // For excluded taxes, add to running total; for included, it's already in the base
+        if (taxRow.tax_type === "Excluded") {
+            runningTotal += taxAmount;
+            totalTaxesAndCharges += taxAmount;
+        } else {
+            // For included taxes, they're already in the base amount
+            totalTaxesAndCharges += taxAmount;
+        }
+    }
+
+    doc.total_taxes_and_charges = totalTaxesAndCharges;
+    doc.amount = runningTotal;
+    
     // Calculate total_allocated from references
     let totalAllocated = 0;
     if (doc.references && Array.isArray(doc.references)) {
@@ -131,10 +219,9 @@ export default $doctype<"zerp__Payment Entry">({
     // Update total_allocated field
     doc.total_allocated = totalAllocated;
     
-    // Validate that total_allocated equals amount
-    const amount = parseFloat(String(doc.amount || 0)) || 0;
-    if (Math.abs(totalAllocated - amount) > 0.01) { // Allow small floating point differences
-        throw new Error(`Total Allocated (${totalAllocated}) must equal Amount (${amount})`);
+    // Validate that total_allocated equals base_amount (not amount, since amount includes taxes)
+    if (Math.abs(totalAllocated - baseAmount) > 0.01) { // Allow small floating point differences
+        throw new Error(`Total Allocated (${totalAllocated}) must equal Base Amount (${baseAmount})`);
     }
 })
 .on("after_submit", async ({ doc }) => {
@@ -234,8 +321,7 @@ export default $doctype<"zerp__Payment Entry">({
     const glEntries = await $zodula.doctype("zerp__General Ledger")
         .select()
         .where("reference_doctype", "=", "zerp__Payment Entry")
-        .where("reference_id", "=", doc.id)
-        .limit(10000);
+        .where("reference_id", "=", doc.id);
     
     // Delete each GL entry (after_delete hook will automatically update account balances)
     for (const glEntry of glEntries.docs) {
@@ -296,8 +382,7 @@ async function updateInvoicePaymentAmount(
     const references = await $zodula.doctype("zerp__Payment Entry Reference")
         .select()
         .where("reference_type", "=", doctype)
-        .where("reference_id", "=", invoiceId)
-        .limit(10000);
+        .where("reference_id", "=", invoiceId);
     
     // Get all payment entries and sum their allocated amounts
     // Only count allocated amounts from submitted payment entries

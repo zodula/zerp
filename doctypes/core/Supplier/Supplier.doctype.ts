@@ -18,10 +18,15 @@ export default $doctype({
     address: {
         type: "Text",
         label: "Address"
+    },
+    credit_days: {
+        type: "Integer",
+        label: "Credit Days",
+        required: 0,
     }
 }, {
     label: "Supplier",
-    naming_series: "SUPPLIER-{YYYY}-{MM}-{########}",
+    naming_series: "{{name}} - {{organization}}",
     search_fields: "name\nemail\nphone",
     is_quick_entry: 1,
     tabs: JSON.stringify([
@@ -38,6 +43,10 @@ export default $doctype({
                     { type: "field", value: "email", align: "left" },
                     { type: "field", value: "phone", align: "left" },
                     { type: "field", value: "address", align: "left" }
+                ],
+                { type: "section", value: "Payment Terms", align: "left" },
+                [
+                    { type: "field", value: "credit_days", align: "left" }
                 ]
             ]
         }

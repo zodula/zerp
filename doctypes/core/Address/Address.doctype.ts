@@ -8,8 +8,7 @@ export default $doctype({
     address_type: {
         type: "Select",
         label: "Address Type",
-        options: "Billing\nShipping\nOffice\nHome\nOther",
-        required: 1,
+        options: "\nBilling\nShipping\nOffice\nHome\nOther",
         in_list_view: 1
     },
     address_line1: {
@@ -38,13 +37,28 @@ export default $doctype({
     },
     country: {
         type: "Text",
-        label: "Country",
-        default: "Thailand"
+        label: "Country"
+    },
+    inline_address: {
+        type: "Long Text",
+        label: "Inline Address",
+        readonly: 1,
+        in_list_view: 1
+    },
+    is_organization_address: {
+        type: "Check",
+        label: "Is Organization Address"
+    },
+    links: {
+        type: "Reference Table",
+        label: "Links",
+        reference: "zerp__Address Link Item",
+        required: 0
     }
 }, {
     label: "Address",
-    naming_series: "{{address_name}} - {{address_type}}",
-    search_fields: "address_name\naddress_type\ncity\nprovince",
+    naming_series: "{{address_name}} {{address_line1}} - {{organization}}",
+    search_fields: "address_name\naddress_type\ncity\nprovince\ninline_address",
     track_changes: 1,
     tabs: JSON.stringify([
         {
@@ -54,7 +68,8 @@ export default $doctype({
                 { type: "section", value: "Address Information", align: "left" },
                 [
                     { type: "field", value: "address_name", align: "left" },
-                    { type: "field", value: "address_type", align: "left" }
+                    { type: "field", value: "address_type", align: "left" },
+                    { type: "field", value: "is_organization_address", align: "left" }
                 ],
                 [
                     { type: "field", value: "address_line1", align: "left" },
@@ -67,6 +82,13 @@ export default $doctype({
                 ],
                 [
                     { type: "field", value: "country", align: "left" }
+                ],
+                [
+                    { type: "field", value: "inline_address", align: "left" }
+                ],
+                { type: "section", value: "Links", align: "left" },
+                [
+                    { type: "field", value: "links", align: "left" }
                 ]
             ]
         }

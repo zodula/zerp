@@ -1,10 +1,4 @@
 export default $doctype({
-    purchase_invoice: {
-        type: "Reference",
-        label: "Purchase Invoice",
-        reference: "zerp__Purchase Invoice",
-        required: 1
-    },
     product: {
         type: "Reference",
         label: "Product",
@@ -20,6 +14,12 @@ export default $doctype({
         in_list_view: 1,
         readonly: 1,
         fetch_from: "product.product_name"
+    },
+    product_image: {    
+        type: "Image Preview",
+        label: "Product Image",
+        readonly: 1,
+        fetch_from: "product.product_image"
     },
     item_description: {
         type: "Text",

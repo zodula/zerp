@@ -64,6 +64,12 @@ export default $doctype({
         required: 0,
         in_list_view: 1
     },
+    is_tax_account: {
+        type: "Check",
+        label: "Is Tax Account",
+        default: "0",
+        in_list_view: 1
+    },
 }, {
     label: "Account",
     naming_series: "{{account_code}}",
@@ -82,6 +88,22 @@ export default $doctype({
                 { type: "section", value: "Balance", align: "left" },
                 [
                     { type: "field", value: "balance", align: "left" }
+                ],
+                { type: "section", value: "Party Information", align: "left" },
+                [
+                    { type: "field", value: "party_type", align: "left" },
+                    { type: "field", value: "party", align: "left" }
+                ],
+                { type: "section", value: "Bank Information", align: "left" },
+                [
+                    { type: "field", value: "is_bank_account", align: "left" },
+                    { type: "field", value: "bank", align: "left" },
+                    { type: "field", value: "bank_name", align: "left" },
+                    { type: "field", value: "bank_account_no", align: "left" }
+                ],
+                { type: "section", value: "Tax Information", align: "left" },
+                [
+                    { type: "field", value: "is_tax_account", align: "left" }
                 ]
             ]
         }

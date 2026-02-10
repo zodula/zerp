@@ -2,6 +2,125 @@ import { useEffect } from "react";
 import { zui, type FormType } from "@/zodula/ui";
 import { zodula } from "@/zodula/client";
 
+// Calculate taxes and charges for Payment Entry
+function calculateTaxes(frm: FormType<"zerp__Payment Entry">) {
+    const baseAmount = parseFloat(String(frm.get_value("base_amount") || 0)) || 0;
+    const taxRows = frm.get_value("tax_and_charges") || [];
+    
+    if (!Array.isArray(taxRows) || taxRows.length === 0) {
+        frm.set_value("total_taxes_and_charges", 0);
+        frm.set_value("amount", baseAmount);
+        return;
+    }
+    
+    // Create a map of original array index to row for updating
+    const rowsWithOriginalIndex = taxRows.map((row: any, originalIndex: number) => ({
+        ...row,
+        _originalIndex: originalIndex
+    }));
+    
+    // Sort by idx to ensure proper order for calculation
+    const sortedTaxRows = [...rowsWithOriginalIndex].sort((a: any, b: any) => {
+        const idxA = parseFloat(String(a.idx || 0)) || 0;
+        const idxB = parseFloat(String(b.idx || 0)) || 0;
+        return idxA - idxB;
+    });
+    
+    let runningTotal = baseAmount;
+    let totalTaxesAndCharges = 0;
+    // Create a completely new array with new object references
+    const updatedRows = taxRows.map((row: any) => ({ ...row }));
+    
+    // Store calculated amounts by original index
+    const calculatedAmounts: Record<number, { tax_amount: number }> = {};
+    
+    for (let i = 0; i < sortedTaxRows.length; i++) {
+        const taxRow = sortedTaxRows[i];
+        const chargeType = taxRow.charge_type || "Actual";
+        const rate = parseFloat(String(taxRow.rate || 0)) || 0;
+        let taxAmount = 0;
+        
+        if (chargeType === "Actual") {
+            taxAmount = parseFloat(String(taxRow.tax_amount || 0)) || 0;
+        } else if (chargeType === "On Net Total") {
+            taxAmount = (baseAmount * rate) / 100;
+        } else if (chargeType === "On Previous Row Amount") {
+            if (i > 0) {
+                const prevRow = sortedTaxRows[i - 1];
+                const prevOriginalIndex = prevRow._originalIndex;
+                const prevTaxAmount = calculatedAmounts[prevOriginalIndex]?.tax_amount || parseFloat(String(prevRow.tax_amount || 0)) || 0;
+                taxAmount = (prevTaxAmount * rate) / 100;
+            }
+        } else if (chargeType === "On Previous Row Total") {
+            if (i > 0) {
+                const prevRow = sortedTaxRows[i - 1];
+                const prevOriginalIndex = prevRow._originalIndex;
+                // Use tax_amount instead of total for "On Previous Row Total"
+                const prevTaxAmount = calculatedAmounts[prevOriginalIndex]?.tax_amount || parseFloat(String(prevRow.tax_amount || 0)) || 0;
+                taxAmount = (prevTaxAmount * rate) / 100;
+            }
+        }
+        
+        // Store calculated amounts
+        const originalIndex = taxRow._originalIndex;
+        if (originalIndex !== undefined && originalIndex >= 0) {
+            calculatedAmounts[originalIndex] = {
+                tax_amount: taxAmount
+            };
+        }
+        
+        // For excluded taxes, add to running total; for included, it's already in the base
+        if (taxRow.tax_type === "Excluded") {
+            runningTotal += taxAmount;
+            totalTaxesAndCharges += taxAmount;
+        } else {
+            // For included taxes, they're already in the base amount
+            totalTaxesAndCharges += taxAmount;
+        }
+    }
+    
+    // Update all rows with calculated amounts - create completely new objects
+    for (let i = 0; i < updatedRows.length; i++) {
+        const calculated = calculatedAmounts[i];
+        if (calculated) {
+            updatedRows[i] = {
+                ...updatedRows[i],
+                tax_amount: calculated.tax_amount
+            };
+        }
+    }
+    
+    // Update the entire table at once with a new array reference to force re-render
+    // Use setTimeout to ensure React processes the update in the next tick
+    setTimeout(() => {
+        frm.set_value("tax_and_charges", updatedRows.map(row => ({ ...row })));
+        
+        // Update totals
+        frm.set_value("total_taxes_and_charges", totalTaxesAndCharges);
+        frm.set_value("amount", runningTotal);
+    }, 0);
+}
+
+// Calculate base_amount from references
+function calculateBaseAmount(frm: FormType<"zerp__Payment Entry">) {
+    const references = frm.get_value("references") || [];
+    if (!Array.isArray(references)) {
+        frm.set_value("base_amount", 0);
+        calculateTaxes(frm);
+        return;
+    }
+    
+    let baseAmount = 0;
+    for (const ref of references) {
+        const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
+        baseAmount += allocatedAmount;
+    }
+    
+    frm.set_value("base_amount", baseAmount);
+    // Recalculate taxes after base_amount changes
+    calculateTaxes(frm);
+}
+
 async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
     const rows = Array.isArray(frm.get_value("references"))
         ? [...(frm.get_value("references") as any[])]
@@ -106,6 +225,9 @@ async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
         totalAllocated += allocatedAmount;
     }
     frm.set_value("total_allocated", totalAllocated);
+    
+    // Update base_amount from references and recalculate taxes
+    calculateBaseAmount(frm);
 }
 
 export default function PaymentEntryScripts() {
@@ -363,9 +485,26 @@ export default function PaymentEntryScripts() {
                     
                     // Update form with any changes
                     frm.set_value("references", rows as any);
+                    
+                    // Update base_amount from references and recalculate taxes
+                    calculateBaseAmount(frm);
                 } finally {
                     updatingRefs = false;
                 }
+            },
+            base_amount: function(frm) {
+                // Recalculate taxes when base_amount changes
+                calculateTaxes(frm);
+            },
+            // Watch nested fields for tax calculations
+            "tax_and_charges.rate": function(frm) {
+                calculateTaxes(frm);
+            },
+            "tax_and_charges.charge_type": function(frm) {
+                calculateTaxes(frm);
+            },
+            "tax_and_charges.tax_type": function(frm) {
+                calculateTaxes(frm);
             },
             refresh: async function(frm) {
                 const paymentType = frm.get_value("payment_type");
@@ -383,6 +522,9 @@ export default function PaymentEntryScripts() {
                 } else {
                     frm.set_df_property("organization_account", "filters", JSON.stringify([]));
                 }
+                
+                // Calculate base_amount from references if they exist
+                calculateBaseAmount(frm);
                 
                 if (paymentType === "Receive") {
                     if (frm.get_value("party_type") !== "zerp__Customer") {
