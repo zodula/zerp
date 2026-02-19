@@ -2,16 +2,16 @@ import { useEffect } from "react";
 import { zui, type FormType } from "@/zodula/ui";
 import type { FormContext } from "@/zodula/ui/zui";
 import { zodula } from "@/zodula/client";
-import { CreditCard } from "lucide-react";
+import { FileText } from "lucide-react";
 
-type InvoiceDoctype = "zerp__Sales Invoice" | "zerp__Purchase Invoice";
+type DeliveryOrderDoctype = "zerp__Delivery Order";
 
 // ============================================================================
-// Helper Functions
+// Helper Functions (same logic as Sales Invoice)
 // ============================================================================
 
-const calculateNetTotal = <DN extends InvoiceDoctype>(
-    frm: FormType<DN>,
+const calculateNetTotal = (
+    frm: FormType<DeliveryOrderDoctype>,
     itemsField: string
 ) => {
     const items = frm.get_value(itemsField as any) || [];
@@ -22,49 +22,42 @@ const calculateNetTotal = <DN extends InvoiceDoctype>(
             return total + (quantity * unitPrice);
         }, 0);
         frm.set_value("net_total" as any, netTotal);
-        // Trigger tax calculation
         calculateTaxes(frm);
     }
 };
 
-const calculateTaxes = <DN extends InvoiceDoctype>(frm: FormType<DN>) => {
+const calculateTaxes = (frm: FormType<DeliveryOrderDoctype>) => {
     const netTotal = parseFloat(String(frm.get_value("net_total" as any) || 0)) || 0;
-    // Get fresh tax rows data
     const taxRows = frm.get_value("tax_and_charges" as any) || [];
-    
+
     if (!Array.isArray(taxRows) || taxRows.length === 0) {
         frm.set_value("total_taxes_and_charges" as any, 0);
         frm.set_value("total_amount" as any, netTotal);
         return;
     }
-    
-    // Create a map of original array index to row for updating
+
     const rowsWithOriginalIndex = taxRows.map((row: any, originalIndex: number) => ({
         ...row,
         _originalIndex: originalIndex
     }));
-    
-    // Sort by idx to ensure proper order for calculation
+
     const sortedTaxRows = [...rowsWithOriginalIndex].sort((a: any, b: any) => {
         const idxA = parseFloat(String(a.idx || 0)) || 0;
         const idxB = parseFloat(String(b.idx || 0)) || 0;
         return idxA - idxB;
     });
-    
+
     let runningTotal = netTotal;
     let totalTaxesAndCharges = 0;
-    // Create a completely new array with new object references
     const updatedRows = taxRows.map((row: any) => ({ ...row }));
-    
-    // Store calculated amounts by original index
     const calculatedAmounts: Record<number, { tax_amount: number }> = {};
-    
+
     for (let i = 0; i < sortedTaxRows.length; i++) {
         const taxRow = sortedTaxRows[i];
         const chargeType = taxRow.charge_type || "Actual";
         const rate = parseFloat(String(taxRow.rate || 0)) || 0;
         let taxAmount = 0;
-        
+
         if (chargeType === "Actual") {
             taxAmount = parseFloat(String(taxRow.tax_amount || 0)) || 0;
         } else if (chargeType === "On Net Total") {
@@ -80,72 +73,53 @@ const calculateTaxes = <DN extends InvoiceDoctype>(frm: FormType<DN>) => {
             if (i > 0) {
                 const prevRow = sortedTaxRows[i - 1];
                 const prevOriginalIndex = prevRow._originalIndex;
-                // Use tax_amount instead of total for "On Previous Row Total"
                 const prevTaxAmount = calculatedAmounts[prevOriginalIndex]?.tax_amount || parseFloat(String(prevRow.tax_amount || 0)) || 0;
                 taxAmount = (prevTaxAmount * rate) / 100;
             }
         }
-        
-        // Store calculated amounts
+
         const originalIndex = taxRow._originalIndex;
         if (originalIndex !== undefined && originalIndex >= 0) {
-            calculatedAmounts[originalIndex] = {
-                tax_amount: taxAmount
-            };
+            calculatedAmounts[originalIndex] = { tax_amount: taxAmount };
         }
-        
-        // For excluded taxes, add to running total; for included, it's already in the base
+
         if (taxRow.tax_type === "Excluded") {
             runningTotal += taxAmount;
             totalTaxesAndCharges += taxAmount;
         } else {
-            // For included taxes, they're already in the base amount
             totalTaxesAndCharges += taxAmount;
         }
     }
-    
-    // Update all rows with calculated amounts - create completely new objects
+
     for (let i = 0; i < updatedRows.length; i++) {
         const calculated = calculatedAmounts[i];
         if (calculated) {
-            updatedRows[i] = {
-                ...updatedRows[i],
-                tax_amount: calculated.tax_amount
-            };
+            updatedRows[i] = { ...updatedRows[i], tax_amount: calculated.tax_amount };
         }
     }
-    
-    // Update the entire table at once with a new array reference to force re-render
-    // Use setTimeout to ensure React processes the update in the next tick
+
     setTimeout(() => {
-        frm.set_value("tax_and_charges" as any, updatedRows.map(row => ({ ...row })));
-        
-        // Update totals
+        frm.set_value("tax_and_charges" as any, updatedRows.map((row: any) => ({ ...row })));
         frm.set_value("total_taxes_and_charges" as any, totalTaxesAndCharges);
         frm.set_value("total_amount" as any, runningTotal);
     }, 0);
 };
 
-const applyTaxTemplate = async <DN extends InvoiceDoctype>(
-    frm: FormType<DN>,
+const applyTaxTemplate = async (
+    frm: FormType<DeliveryOrderDoctype>,
     taxTemplateId: string | null,
     taxAndChargesField: string
 ) => {
     if (!taxTemplateId) {
-        // Clear tax and charges if template is removed
         frm.set_value(taxAndChargesField as any, []);
         calculateTaxes(frm);
         return;
     }
 
     try {
-        // Fetch tax template
         const template = await zodula.doc.get_doc("zerp__Tax Template", taxTemplateId);
-        if (!template || !template.tax_template_items) {
-            return;
-        }
+        if (!template || !template.tax_template_items) return;
 
-        // Fetch tax template items
         const templateItems = await zodula.doc.select_docs("zerp__Tax Template Item", {
             filters: [["tax_template", "=", taxTemplateId]],
             sort: "idx",
@@ -153,7 +127,6 @@ const applyTaxTemplate = async <DN extends InvoiceDoctype>(
             limit: 1000
         });
 
-        // Map template items to tax and charges
         const taxAndCharges = templateItems.docs.map((item: any, index: number) => ({
             charge_type: item.charge_type || "Actual",
             account_head: item.account_head,
@@ -166,23 +139,20 @@ const applyTaxTemplate = async <DN extends InvoiceDoctype>(
         }));
 
         frm.set_value(taxAndChargesField as any, taxAndCharges);
-        // Calculate taxes after applying template
         calculateTaxes(frm);
     } catch (error) {
         console.error("Error applying tax template:", error);
     }
 };
 
-const setDefaultValues = <DN extends InvoiceDoctype>(frm: FormType<DN>) => {
+const setDefaultValues = (frm: FormType<DeliveryOrderDoctype>) => {
     if (!frm.get_value("posting_date" as any)) {
-        const today = zodula.utils.format(new Date(), "date");
-        frm.set_value("posting_date" as any, today);
+        frm.set_value("posting_date" as any, zodula.utils.format(new Date(), "date"));
     }
     if (!frm.get_value("due_date" as any)) {
         const today = new Date();
         today.setDate(today.getDate() + 30);
-        const dueDate = zodula.utils.format(today, "date");
-        frm.set_value("due_date" as any, dueDate);
+        frm.set_value("due_date" as any, zodula.utils.format(today, "date"));
     }
     if (!frm.get_value("payment_status" as any)) {
         frm.set_value("payment_status" as any, "Unpaid");
@@ -207,85 +177,61 @@ const getPaymentStatusBadge = (doc: any) => {
         default:
             return null;
     }
-    return null;
 };
 
-const createPaymentHandler = async (
-    context: FormContext,
-    config: {
-        referenceType: "zerp__Sales Invoice" | "zerp__Purchase Invoice";
-        paymentType: "Receive" | "Pay";
-        partyType: "zerp__Customer" | "zerp__Supplier";
-    }
-) => {
-    const doc = context.doc;
+const createSalesInvoiceHandler = async (context: FormContext) => {
+    const doc = context.doc as any;
     if (!doc.id) return;
-    
+
     const org = context.org || "System Panel";
-    const totalAmount = parseFloat(String((doc as any).total_amount || 0)) || 0;
-    const party = (doc as any)[config.partyType === "zerp__Customer" ? "customer" : "supplier"];
 
-    // Try to find party account
-    let partyAccount = null;
-    if (party) {
-        try {
-            const accounts = await zodula.doc.select_docs("zerp__Account", {
-                filters: [
-                    ["party_type", "=", config.partyType],
-                    ["party", "=", party]
-                ],
-                limit: 1,
-                sort: "account_code",
-                order: "asc"
-            });
-            if (accounts.docs && accounts.docs.length > 0 && accounts.docs[0]) {
-                partyAccount = accounts.docs[0].id;
-            }
-        } catch (error) {
-            console.error("Error finding party account:", error);
-        }
-    }
+    // Map delivery order items to sales invoice items
+    const salesInvoiceItems = Array.isArray(doc.delivery_order_items)
+        ? doc.delivery_order_items.map((row: any) => ({
+            product: row.product,
+            quantity: row.quantity,
+            uom: row.uom,
+            unit_price: row.unit_price,
+            total_price: parseFloat(String(row.total_price || 0)) || 0,
+            item_description: row.item_description
+        }))
+        : [];
 
-    // Fetch tax and charges from invoice
     let taxAndCharges: any[] = [];
-    try {
-        const invoiceTaxRows = (doc as any).tax_and_charges;
-        if (Array.isArray(invoiceTaxRows) && invoiceTaxRows.length > 0) {
-            // Copy tax rows, removing invoice-specific fields
-            taxAndCharges = invoiceTaxRows.map((taxRow: any) => ({
-                charge_type: taxRow.charge_type || "Actual",
-                account_head: taxRow.account_head,
-                description: taxRow.description || "",
-                tax_type: taxRow.tax_type || "Excluded",
-                rate: taxRow.rate || 0,
-                tax_amount: taxRow.tax_amount || 0,
-                row_id: taxRow.row_id || "",
-                included_in_print_rate: taxRow.included_in_print_rate || false,
-                idx: taxRow.idx !== undefined ? taxRow.idx : 0
-            }));
-        }
-    } catch (error) {
-        console.error("Error fetching tax and charges from invoice:", error);
+    if (Array.isArray(doc.tax_and_charges) && doc.tax_and_charges.length > 0) {
+        taxAndCharges = doc.tax_and_charges.map((taxRow: any) => ({
+            charge_type: taxRow.charge_type || "Actual",
+            account_head: taxRow.account_head,
+            description: taxRow.description || "",
+            tax_type: taxRow.tax_type || "Excluded",
+            rate: taxRow.rate || 0,
+            tax_amount: taxRow.tax_amount || 0,
+            row_id: taxRow.row_id || "",
+            included_in_print_rate: taxRow.included_in_print_rate || false,
+            idx: taxRow.idx !== undefined ? taxRow.idx : 0
+        }));
     }
 
-    // Prefill payment entry - child doctype scripts will calculate remaining_amount and allocated_amount
     const prefill: any = {
-        posting_date: zodula.utils.format(new Date(), "date"),
-        payment_type: config.paymentType,
-        party_type: config.partyType,
-        party: party,
-        payment_method: "Bank", // Default to Bank, user can change
-        party_account: partyAccount, // Set if found, otherwise user will need to select
-        base_amount: parseFloat(String((doc as any).net_total || 0)) || 0, // Prefill base amount from invoice net_total
-        references: [{
-            reference_type: config.referenceType,
-            reference_id: doc.id
-            // remaining_amount and allocated_amount will be calculated by child doctype scripts
-        }],
-        tax_and_charges: taxAndCharges // Prefill tax and charges from invoice
+        delivery_order: doc.id,
+        customer: doc.customer,
+        customer_name: doc.customer_name,
+        posting_date: doc.posting_date || zodula.utils.format(new Date(), "date"),
+        due_date: doc.due_date,
+        price_project: doc.price_project,
+        billing_address: doc.billing_address,
+        shipping_address: doc.shipping_address,
+        billing_contact: doc.billing_contact,
+        shipping_contact: doc.shipping_contact,
+        apply_tax_template: doc.apply_tax_template,
+        sales_invoice_items: salesInvoiceItems,
+        tax_and_charges: taxAndCharges,
+        net_total: doc.net_total,
+        total_taxes_and_charges: doc.total_taxes_and_charges,
+        total_amount: doc.total_amount
     };
 
-    context.navigate(`/desk/${org}/doctypes/zerp__Payment Entry/form`, {
+    context.navigate(`/desk/${org}/doctypes/zerp__Sales Invoice/form`, {
         state: { prefill }
     });
 };
@@ -294,12 +240,11 @@ const createPaymentHandler = async (
 // Component
 // ============================================================================
 
-export default function SalesInvoiceScripts() {
+export default function DeliveryOrderScripts() {
     useEffect(() => {
-        const doctype = "zerp__Sales Invoice" as const;
-        const itemsField = "sales_invoice_items" as const;
+        const doctype = "zerp__Delivery Order" as const;
+        const itemsField = "delivery_order_items" as const;
 
-        // Update address filters based on customer
         const updateAddressFilters = (frm: FormType<typeof doctype>) => {
             const customer = frm.get_value("customer" as any);
             if (customer) {
@@ -316,18 +261,14 @@ export default function SalesInvoiceScripts() {
                 frm.set_df_property("billing_address", "filters", billingFilters);
                 frm.set_df_property("shipping_address", "filters", shippingFilters);
             } else {
-                // Clear filters if customer is not set
                 frm.set_df_property("billing_address", "filters", JSON.stringify([]));
                 frm.set_df_property("shipping_address", "filters", JSON.stringify([]));
             }
         };
 
-        // Update contact filters for billing and shipping contacts
         const updateContactFilters = (frm: FormType<typeof doctype>) => {
             const customer = frm.get_value("customer" as any);
-            
             if (customer) {
-                // Show all contacts linked to the customer for all contact fields
                 const filters = JSON.stringify([
                     ["links.link_doctype", "=", "zerp__Customer"],
                     ["links.link_id", "=", customer]
@@ -335,49 +276,43 @@ export default function SalesInvoiceScripts() {
                 frm.set_df_property("billing_contact", "filters", filters);
                 frm.set_df_property("shipping_contact", "filters", filters);
             } else {
-                // Clear filters if customer is not set
                 frm.set_df_property("billing_contact", "filters", JSON.stringify([]));
                 frm.set_df_property("shipping_contact", "filters", JSON.stringify([]));
             }
         };
 
-        // Filter product in items table by customer (products linked via Product Customer) when filter_product_by_customer is checked
         const updateProductFilterByCustomer = (frm: FormType<typeof doctype>) => {
             const filterByCustomer = frm.get_value("filter_product_by_customer" as any);
             const customer = frm.get_value("customer" as any);
             if (filterByCustomer && customer) {
                 const filters = JSON.stringify([["product_customer.customer", "=", customer]]);
-                frm.set_df_child_table_property("sales_invoice_items", null, "product", "filters", filters);
+                frm.set_df_child_table_property("delivery_order_items", null, "product", "filters", filters);
             } else {
-                frm.set_df_child_table_property("sales_invoice_items", null, "product", "filters", JSON.stringify([]));
+                frm.set_df_child_table_property("delivery_order_items", null, "product", "filters", JSON.stringify([]));
             }
         };
 
-        // Update due date based on customer credit_days
         const updateDueDate = async (frm: FormType<typeof doctype>) => {
             const customer = frm.get_value("customer" as any);
             const postingDate = frm.get_value("posting_date" as any);
-            
             if (customer && postingDate) {
                 try {
                     const customerDoc = await zodula.doc.get_doc("zerp__Customer", customer);
-                    if (customerDoc && customerDoc.credit_days) {
+                    if (customerDoc?.credit_days) {
                         const creditDays = parseFloat(String(customerDoc.credit_days || 0)) || 0;
                         if (creditDays > 0) {
                             const postingDateObj = new Date(postingDate);
                             const dueDateObj = new Date(postingDateObj);
                             dueDateObj.setDate(dueDateObj.getDate() + creditDays);
-                            const dueDate = zodula.utils.format(dueDateObj, "date");
-                            frm.set_value("due_date" as any, dueDate);
+                            frm.set_value("due_date" as any, zodula.utils.format(dueDateObj, "date"));
                         }
                     }
                 } catch (error) {
-                    console.error("Error fetching customer for due date calculation:", error);
+                    console.error("Error fetching customer for due date:", error);
                 }
             }
         };
 
-        // Form handlers
         zui.form.on(doctype, {
             [itemsField]: (frm: FormType<typeof doctype>) => {
                 calculateNetTotal(frm, itemsField);
@@ -402,16 +337,9 @@ export default function SalesInvoiceScripts() {
                 await applyTaxTemplate(frm, templateId, "tax_and_charges");
                 calculateTaxes(frm);
             },
-            // Watch nested fields for tax calculations
-            "tax_and_charges.rate": (frm: FormType<typeof doctype>) => {
-                calculateTaxes(frm);
-            },
-            "tax_and_charges.charge_type": (frm: FormType<typeof doctype>) => {
-                calculateTaxes(frm);
-            },
-            "tax_and_charges.tax_type": (frm: FormType<typeof doctype>) => {
-                calculateTaxes(frm);
-            },
+            "tax_and_charges.rate": (frm: FormType<typeof doctype>) => calculateTaxes(frm),
+            "tax_and_charges.charge_type": (frm: FormType<typeof doctype>) => calculateTaxes(frm),
+            "tax_and_charges.tax_type": (frm: FormType<typeof doctype>) => calculateTaxes(frm),
             refresh: (frm: FormType<typeof doctype>) => {
                 if (frm.is_new()) {
                     setDefaultValues(frm);
@@ -422,7 +350,6 @@ export default function SalesInvoiceScripts() {
             }
         });
 
-        // List badge
         zui.list.on(doctype, {
             on_format: (context) => {
                 context.addBadge("doc_status", {
@@ -433,7 +360,6 @@ export default function SalesInvoiceScripts() {
             }
         });
 
-        // Form badge and actions
         zui.form.on(doctype, {
             on_render: (context: FormContext) => {
                 context.addBadge("doc_status", {
@@ -446,14 +372,9 @@ export default function SalesInvoiceScripts() {
                     context.addSecondaryButton(zui.t("Action"), () => {}, {
                         variant: "outline",
                         items: [{
-                            label: zui.t("Create Payment"),
-                            icon: CreditCard,
-                            onClick: () => createPaymentHandler(context, {
-                                referenceType: "zerp__Sales Invoice",
-                                paymentType: "Receive",
-                                partyType: "zerp__Customer"
-                            }),
-                            disabled: (context.doc as any).payment_status === "Paid"
+                            label: zui.t("Create Sales Invoice"),
+                            icon: FileText,
+                            onClick: () => createSalesInvoiceHandler(context)
                         }]
                     });
                 }
@@ -463,4 +384,3 @@ export default function SalesInvoiceScripts() {
 
     return null;
 }
-

@@ -1,47 +1,52 @@
-export default $doctype<"zerp__Purchase Invoice">(
+export default $doctype<"zerp__Delivery Order">(
   {
-    supplier: {
+    customer: {
       type: "Reference",
-      label: "Supplier",
-      reference: "zerp__Supplier",
+      label: "Customer",
+      reference: "zerp__Customer",
       required: 1,
       no_print: 1,
     },
-    supplier_name: {
+    customer_name: {
       type: "Text",
-      label: "Supplier Name",
+      label: "Customer Name",
       required: 0,
       readonly: 1,
       in_list_view: 1,
-      fetch_from: "supplier.name",
-      no_print: 1,
+      fetch_from: "customer.name",
     },
-    supplier_tax_id: {
+    customer_tax_id: {
       type: "Text",
-      label: "Supplier Tax ID",
+      label: "Customer Tax ID",
       required: 0,
       readonly: 1,
-      fetch_from: "supplier.tax_id",
+      fetch_from: "customer.tax_id",
     },
-    supplier_phone: {
+    customer_phone: {
       type: "Text",
-      label: "Supplier Phone",
+      label: "Customer Phone",
       required: 0,
       readonly: 1,
-      fetch_from: "supplier.phone",
+      fetch_from: "customer.phone",
     },
-    supplier_address: {
+    customer_address: {
       type: "Text",
-      label: "Supplier Address",
+      label: "Customer Address",
       required: 0,
       readonly: 1,
-      fetch_from: "supplier.address",
+      fetch_from: "customer.address",
     },
     price_project: {
       type: "Reference",
       label: "Price Project",
       reference: "zerp__Price Project",
       required: 0,
+      no_print: 1,
+    },
+    filter_product_by_customer: {
+      type: "Check",
+      label: "Filter Product by Customer",
+      default: "0",
       no_print: 1,
     },
     posting_date: {
@@ -94,10 +99,10 @@ export default $doctype<"zerp__Purchase Invoice">(
       required: 0,
       no_print: 1
     },
-    purchase_invoice_items: {
+    delivery_order_items: {
       type: "Reference Table",
-      label: "Purchase Invoice Items",
-      reference: "zerp__Purchase Invoice Item",
+      label: "Delivery Order Items",
+      reference: "zerp__Delivery Order Item",
       required: 0
     },
     tax_and_charges: {
@@ -111,7 +116,7 @@ export default $doctype<"zerp__Purchase Invoice">(
       label: "Billing Address",
       reference: "zerp__Address",
       required: 0,
-      no_print: 1
+      no_print: 1,
     },
     billing_inline_address: {
       type: "Text",
@@ -124,7 +129,7 @@ export default $doctype<"zerp__Purchase Invoice">(
       type: "Reference",
       label: "Shipping Address",
       reference: "zerp__Address",
-      required: 0,
+      required: 1,
       no_print: 1
     },
     shipping_inline_address: {
@@ -162,18 +167,46 @@ export default $doctype<"zerp__Purchase Invoice">(
       readonly: 1,
       fetch_from: "shipping_contact.inline_contact",
     },
+    sender_address: {
+      type: "Reference",
+      label: "Sender Address",
+      reference: "zerp__Address",
+      required: 0,
+      no_print: 0,
+    },
+    sender_inline_address: {
+      type: "Text",
+      label: "Sender Inline Address",
+      required: 0,
+      readonly: 1,
+      fetch_from: "sender_address.inline_address",
+    },
+    sender_contact: {
+      type: "Reference",
+      label: "Sender Contact",
+      reference: "zerp__Contact",
+      required: 0,
+      no_print: 0,
+    },
+    sender_contact_inline: {
+      type: "Text",
+      label: "Sender Contact Inline",
+      required: 0,
+      readonly: 1,
+      fetch_from: "sender_contact.inline_contact",
+    },
   },
   {
-    label: "Purchase Invoice",
-    naming_series: "PINV{{organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
+    label: "Delivery Order",
+    naming_series: "DO{{organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     comments_enabled: 1,
-    search_fields: "supplier\nsupplier_name",
+    search_fields: "customer\ncustomer_name",
     additional_connections: JSON.stringify([{
-      doctype: "zerp__Payment Entry",
-      filters: [["references.reference_type", "=", "zerp__Purchase Invoice"],["references.reference_id", "=", "{{id}}"]],
-      field: "references.reference_id"
+      doctype: "zerp__Sales Invoice",
+      filters: [["delivery_order", "=", "{{id}}"]],
+      field: "delivery_order"
     }]),
     tabs: JSON.stringify([
       {
@@ -182,21 +215,22 @@ export default $doctype<"zerp__Purchase Invoice">(
         layout: [
           { type: "section", value: "Basic Information", align: "left" },
           [
-            { type: "field", value: "supplier", align: "left" },
-            { type: "field", value: "supplier_name", align: "left" },
+            { type: "field", value: "customer", align: "left" },
+            { type: "field", value: "customer_name", align: "left" },
             { type: "field", value: "posting_date", align: "left" },
             { type: "field", value: "due_date", align: "left" },
             { type: "field", value: "price_project", align: "left" },
+            { type: "field", value: "filter_product_by_customer", align: "left" },
           ],
-          { type: "section", value: "Supplier Information", align: "left" },
+          { type: "section", value: "Customer Information", align: "left" },
           [
-            { type: "field", value: "supplier_tax_id", align: "left" },
-            { type: "field", value: "supplier_phone", align: "left" },
-            { type: "field", value: "supplier_address", align: "left" },
+            { type: "field", value: "customer_tax_id", align: "left" },
+            { type: "field", value: "customer_phone", align: "left" },
+            { type: "field", value: "customer_address", align: "left" },
           ],
           { type: "section", value: "Items", align: "left" },
           [
-            { type: "field", value: "purchase_invoice_items", align: "left" },
+            { type: "field", value: "delivery_order_items", align: "left" },
           ],
           { type: "section", value: "Tax Configuration", align: "left" },
           [
@@ -236,6 +270,15 @@ export default $doctype<"zerp__Purchase Invoice">(
             { type: "field", value: "shipping_inline_address", align: "left" },
             { type: "field", value: "shipping_contact_inline", align: "left" },
           ],
+          { type: "section", value: "Sender (for print template)", align: "left" },
+          [
+            { type: "field", value: "sender_address", align: "left" },
+            { type: "field", value: "sender_contact", align: "left" },
+          ],
+          [
+            { type: "field", value: "sender_inline_address", align: "left" },
+            { type: "field", value: "sender_contact_inline", align: "left" },
+          ],
         ],
       },
     ]),
@@ -244,8 +287,8 @@ export default $doctype<"zerp__Purchase Invoice">(
 .on("before_change", async ({ doc }) => {
     // Calculate net_total from items
     let netTotal = 0;
-    if (doc.purchase_invoice_items && Array.isArray(doc.purchase_invoice_items)) {
-        for (const item of doc.purchase_invoice_items) {
+    if (doc.delivery_order_items && Array.isArray(doc.delivery_order_items)) {
+        for (const item of doc.delivery_order_items) {
             const totalPrice = parseFloat(String((item as any).total_price || 0)) || 0;
             netTotal += totalPrice;
         }
@@ -254,8 +297,7 @@ export default $doctype<"zerp__Purchase Invoice">(
 
     // Calculate taxes and charges
     const taxRows = doc.tax_and_charges && Array.isArray(doc.tax_and_charges) ? doc.tax_and_charges : [];
-    
-    // Sort by idx to ensure proper order
+
     const sortedTaxRows = [...taxRows].sort((a: any, b: any) => {
         const idxA = (a as any).idx || 0;
         const idxB = (b as any).idx || 0;
@@ -284,20 +326,17 @@ export default $doctype<"zerp__Purchase Invoice">(
         } else if (chargeType === "On Previous Row Total") {
             if (i > 0) {
                 const prevRow = sortedTaxRows[i - 1] as any;
-                // Use tax_amount instead of total for "On Previous Row Total"
                 const prevTaxAmount = parseFloat(String(prevRow.tax_amount || 0)) || 0;
                 taxAmount = (prevTaxAmount * rate) / 100;
             }
         }
 
         taxRow.tax_amount = taxAmount;
-        
-        // For excluded taxes, add to running total; for included, it's already in the base
+
         if (taxRow.tax_type === "Excluded") {
             runningTotal += taxAmount;
             totalTaxesAndCharges += taxAmount;
         } else {
-            // For included taxes, they're already in the base amount
             totalTaxesAndCharges += taxAmount;
         }
     }
@@ -305,4 +344,3 @@ export default $doctype<"zerp__Purchase Invoice">(
     doc.total_taxes_and_charges = totalTaxesAndCharges;
     doc.total_amount = runningTotal;
 });
-

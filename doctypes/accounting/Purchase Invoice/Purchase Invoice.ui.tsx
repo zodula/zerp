@@ -322,15 +322,7 @@ export default function PurchaseInvoiceScripts() {
             }
         };
 
-        // Update company address filter (organization addresses)
-        const updateCompanyAddressFilter = (frm: FormType<typeof doctype>) => {
-            const filters = JSON.stringify([
-                ["is_organization_address", "=", 1]
-            ]);
-            frm.set_df_property("company_address", "filters", filters);
-        };
-
-        // Update contact filters for billing, shipping, and company contacts
+        // Update contact filters for billing and shipping contacts
         const updateContactFilters = (frm: FormType<typeof doctype>) => {
             const supplier = frm.get_value("supplier" as any);
             
@@ -342,12 +334,10 @@ export default function PurchaseInvoiceScripts() {
                 ]);
                 frm.set_df_property("billing_contact", "filters", filters);
                 frm.set_df_property("shipping_contact", "filters", filters);
-                frm.set_df_property("company_contact", "filters", filters);
             } else {
                 // Clear filters if supplier is not set
                 frm.set_df_property("billing_contact", "filters", JSON.stringify([]));
                 frm.set_df_property("shipping_contact", "filters", JSON.stringify([]));
-                frm.set_df_property("company_contact", "filters", JSON.stringify([]));
             }
         };
 
@@ -411,7 +401,6 @@ export default function PurchaseInvoiceScripts() {
                     setDefaultValues(frm);
                 }
                 updateAddressFilters(frm);
-                updateCompanyAddressFilter(frm);
                 updateContactFilters(frm);
             }
         });

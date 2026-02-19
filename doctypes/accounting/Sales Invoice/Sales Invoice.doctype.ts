@@ -36,11 +36,24 @@ export default $doctype<"zerp__Sales Invoice">(
       readonly: 1,
       fetch_from: "customer.address",
     },
+    delivery_order: {
+      type: "Reference",
+      label: "Delivery Order",
+      reference: "zerp__Delivery Order",
+      required: 0,
+      no_print: 1,
+    },
     price_project: {
       type: "Reference",
       label: "Price Project",
       reference: "zerp__Price Project",
       required: 0,
+      no_print: 1,
+    },
+    filter_product_by_customer: {
+      type: "Check",
+      label: "Filter Product by Customer",
+      default: "0",
       no_print: 1,
     },
     posting_date: {
@@ -133,20 +146,6 @@ export default $doctype<"zerp__Sales Invoice">(
       readonly: 1,
       fetch_from: "shipping_address.inline_address",
     },
-    company_address: {
-      type: "Reference",
-      label: "Company Address",
-      reference: "zerp__Address",
-      required: 0,
-      no_print: 1
-    },
-    company_inline_address: {
-      type: "Text",
-      label: "Company Inline Address",
-      required: 0,
-      readonly: 1,
-      fetch_from: "company_address.inline_address",
-    },
     billing_contact: {
       type: "Reference",
       label: "Billing Contact",
@@ -175,20 +174,6 @@ export default $doctype<"zerp__Sales Invoice">(
       readonly: 1,
       fetch_from: "shipping_contact.inline_contact",
     },
-    company_contact: {
-      type: "Reference",
-      label: "Company Contact",
-      reference: "zerp__Contact",
-      required: 0,
-      no_print: 1
-    },
-    company_contact_inline: {
-      type: "Text",
-      label: "Company Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "company_contact.inline_contact",
-    },
   },
   {
     label: "Sales Invoice",
@@ -214,6 +199,7 @@ export default $doctype<"zerp__Sales Invoice">(
             { type: "field", value: "posting_date", align: "left" },
             { type: "field", value: "due_date", align: "left" },
             { type: "field", value: "price_project", align: "left" },
+            { type: "field", value: "delivery_order", align: "left" },
           ],
           { type: "section", value: "Customer Information", align: "left" },
           [
@@ -222,6 +208,10 @@ export default $doctype<"zerp__Sales Invoice">(
             { type: "field", value: "customer_address", align: "left" },
           ],
           { type: "section", value: "Items", align: "left" },
+          [
+            ,
+            { type: "field", value: "filter_product_by_customer", align: "left" }
+          ],
           [
             { type: "field", value: "sales_invoice_items", align: "left" },
           ],
@@ -262,15 +252,6 @@ export default $doctype<"zerp__Sales Invoice">(
           [
             { type: "field", value: "shipping_inline_address", align: "left" },
             { type: "field", value: "shipping_contact_inline", align: "left" },
-          ],
-          { type: "section", value: "Company Address", align: "left" },
-          [
-            { type: "field", value: "company_address", align: "left" },
-            { type: "field", value: "company_contact", align: "left" },
-          ],
-          [
-            { type: "field", value: "company_inline_address", align: "left" },
-            { type: "field", value: "company_contact_inline", align: "left" },
           ],
         ],
       },
@@ -340,4 +321,18 @@ export default $doctype<"zerp__Sales Invoice">(
 
     doc.total_taxes_and_charges = totalTaxesAndCharges;
     doc.total_amount = runningTotal;
+})
+.on("after_change", async ({ doc }) => {
+    // Sync payment_status to linked Delivery Order when this Sales Invoice is saved
+    const deliveryOrderId = (doc as any).delivery_order;
+    const paymentStatus = (doc as any).payment_status;
+    if (deliveryOrderId && paymentStatus) {
+        try {
+            await $zodula.doctype("zerp__Delivery Order").update(deliveryOrderId, {
+                payment_status: paymentStatus
+            } as any);
+        } catch (error) {
+            console.error("Error syncing Delivery Order payment_status:", error);
+        }
+    }
 });

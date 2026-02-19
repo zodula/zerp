@@ -45,6 +45,12 @@ export default $doctype({
     product_image: {
         type: "File",
         label: "Product Image"
+    },
+    product_customer: {
+        type: "Reference Table",
+        label: "Product Customer",
+        reference: "zerp__Product Customer",
+        required: 0
     }
 }, {
     label: "Product",
@@ -83,6 +89,10 @@ export default $doctype({
                 { type: "section", value: "Product Image", align: "left" },
                 [
                     { type: "field", value: "product_image", align: "left" }
+                ],
+                { type: "section", value: "Customers", align: "left" },
+                [
+                    { type: "field", value: "product_customer", align: "left" }
                 ]
             ]
         }
