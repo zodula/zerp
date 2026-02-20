@@ -7,6 +7,13 @@ export default $doctype<"zerp__Purchase Invoice">(
       required: 1,
       no_print: 1,
     },
+    delivery_manifest: {
+      type: "Reference",
+      label: "Delivery Manifest",
+      reference: "zerp__Delivery Manifest",
+      required: 0,
+      no_print: 1,
+    },
     supplier_name: {
       type: "Text",
       label: "Supplier Name",
@@ -120,6 +127,13 @@ export default $doctype<"zerp__Purchase Invoice">(
       readonly: 1,
       fetch_from: "billing_address.inline_address",
     },
+    billing_address_name: {
+      type: "Text",
+      label: "Billing Address Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.address_name",
+    },
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
@@ -134,12 +148,26 @@ export default $doctype<"zerp__Purchase Invoice">(
       readonly: 1,
       fetch_from: "shipping_address.inline_address",
     },
+    shipping_address_name: {
+      type: "Text",
+      label: "Shipping Address Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "shipping_address.address_name",
+    },
     billing_contact: {
       type: "Reference",
       label: "Billing Contact",
       reference: "zerp__Contact",
       required: 0,
       no_print: 1
+    },
+    billing_contact_name: {
+      type: "Text",
+      label: "Billing Contact Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_contact.name",
     },
     billing_contact_inline: {
       type: "Text",
@@ -154,6 +182,13 @@ export default $doctype<"zerp__Purchase Invoice">(
       reference: "zerp__Contact",
       required: 0,
       no_print: 1
+    },
+    shipping_contact_name: {
+      type: "Text",
+      label: "Shipping Contact Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "shipping_contact.name",
     },
     shipping_contact_inline: {
       type: "Text",
@@ -184,6 +219,7 @@ export default $doctype<"zerp__Purchase Invoice">(
           [
             { type: "field", value: "supplier", align: "left" },
             { type: "field", value: "supplier_name", align: "left" },
+            { type: "field", value: "delivery_manifest", align: "left" },
             { type: "field", value: "posting_date", align: "left" },
             { type: "field", value: "due_date", align: "left" },
             { type: "field", value: "price_project", align: "left" },
@@ -224,6 +260,10 @@ export default $doctype<"zerp__Purchase Invoice">(
             { type: "field", value: "billing_contact", align: "left" },
           ],
           [
+            { type: "field", value: "billing_address_name", align: "left" },
+            { type: "field", value: "billing_contact_name", align: "left" },
+          ],
+          [
             { type: "field", value: "billing_inline_address", align: "left" },
             { type: "field", value: "billing_contact_inline", align: "left" },
           ],
@@ -231,6 +271,10 @@ export default $doctype<"zerp__Purchase Invoice">(
           [
             { type: "field", value: "shipping_address", align: "left" },
             { type: "field", value: "shipping_contact", align: "left" },
+          ],
+          [
+            { type: "field", value: "shipping_address_name", align: "left" },
+            { type: "field", value: "shipping_contact_name", align: "left" },
           ],
           [
             { type: "field", value: "shipping_inline_address", align: "left" },

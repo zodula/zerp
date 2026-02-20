@@ -26,7 +26,7 @@ export default $doctype({
     }
 }, {
     label: "Supplier",
-    naming_series: "{{name}} - {{organization}}",
+    naming_series: "{{name}} - {{organization_abbr}}",
     search_fields: "name\nemail\nphone",
     is_quick_entry: 1,
     tabs: JSON.stringify([

@@ -9,4 +9,5 @@ export default $doctype({
     naming_series: "{{name}}",
     search_fields: "name",
     label: "UOM",
+    is_global: 1,
 })

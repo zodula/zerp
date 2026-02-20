@@ -54,7 +54,7 @@ export default $doctype({
     }
 }, {
     label: "Product",
-    naming_series: "{{product_name}} - {{product_category}}",
+    naming_series: "ITM-{{organization_abbr}}-{YYYY}{MM}{DD}{#####}",
     search_fields: "product_name",
     display_field: "product_name",
     is_quick_entry: 1,

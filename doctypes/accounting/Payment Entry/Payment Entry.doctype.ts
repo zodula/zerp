@@ -97,7 +97,7 @@ export default $doctype<"zerp__Payment Entry">({
     }
 }, {
     label: "Payment Entry",
-    naming_series: "PE{{organization}}{YYYY}{MM}{DD}{#####}",
+    naming_series: "PE-{{organization_abbr}}-{YYYY}{MM}{DD}{#####}",
     is_submittable: 1,
     track_changes: 1,
     search_fields: "party\npayment_type\nreference_no",

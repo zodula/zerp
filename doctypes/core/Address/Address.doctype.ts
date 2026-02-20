@@ -57,7 +57,7 @@ export default $doctype({
     }
 }, {
     label: "Address",
-    naming_series: "{{address_name}} {{address_line1}} - {{organization}}",
+    naming_series: "ADS-{{organization_abbr}}-{YYYY}{MM}{DD}{#####}",
     search_fields: "address_name\naddress_type\ncity\nprovince\ninline_address",
     track_changes: 1,
     tabs: JSON.stringify([

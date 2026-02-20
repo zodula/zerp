@@ -17,17 +17,6 @@ export default $doctype<"zerp__Journal Entry">({
         type: "Text",
         label: "Reference ID"
     },
-    created_by: {
-        type: "Reference",
-        label: "Created By",
-        reference: "zodula__User",
-        required: 1
-    },
-    approved_by: {
-        type: "Reference",
-        label: "Approved By",
-        reference: "zodula__User"
-    },
     journal_entry_items: {
         type: "Reference Table",
         label: "Journal Entry Items",
@@ -98,16 +87,17 @@ export default $doctype<"zerp__Journal Entry">({
     }
 })
 .on("after_submit", async ({ doc }) => {
-    // Create General Ledger entries for each journal entry item
+    // Create General Ledger entries for each journal entry item (aligned with General Ledger doctype)
     if (doc.journal_entry_items && Array.isArray(doc.journal_entry_items)) {
+        const description = doc.description ? `Journal Entry ${doc.id} - ${doc.description}` : `Journal Entry ${doc.id}`;
         for (const item of doc.journal_entry_items) {
             const itemData = item as any;
             const account = itemData.account;
             const debitAmount = parseFloat(String(itemData.debit_amount || 0)) || 0;
             const creditAmount = parseFloat(String(itemData.credit_amount || 0)) || 0;
-            
+
             if (!account) continue;
-            
+
             await $zodula.doctype("zerp__General Ledger").insert({
                 posting_date: doc.journal_date,
                 account: account,
@@ -115,32 +105,22 @@ export default $doctype<"zerp__Journal Entry">({
                 credit_amount: creditAmount,
                 reference_doctype: "zerp__Journal Entry",
                 reference_id: doc.id,
-                description: itemData.memo || doc.description || `Journal Entry ${doc.id}`
+                description: itemData.memo || description,
+                party_type: itemData.party_type ?? undefined,
+                party: itemData.party ?? undefined
             } as any);
         }
     }
 })
 .on("after_cancel", async ({ doc }) => {
-    // Reverse General Ledger entries by creating opposite entries
-    if (doc.journal_entry_items && Array.isArray(doc.journal_entry_items)) {
-        for (const item of doc.journal_entry_items) {
-            const itemData = item as any;
-            const account = itemData.account;
-            const debitAmount = parseFloat(String(itemData.debit_amount || 0)) || 0;
-            const creditAmount = parseFloat(String(itemData.credit_amount || 0)) || 0;
-            
-            if (!account) continue;
-            
-            // Reverse: swap debit and credit
-            await $zodula.doctype("zerp__General Ledger").insert({
-                posting_date: doc.journal_date,
-                account: account,
-                debit_amount: creditAmount, // Reversed
-                credit_amount: debitAmount, // Reversed
-                reference_doctype: "zerp__Journal Entry",
-                reference_id: doc.id,
-                description: `Reversal of ${itemData.memo || doc.description || `Journal Entry ${doc.id}`}`
-            } as any);
-        }
+    // Delete General Ledger entries for this Journal Entry (same pattern as Payment Entry)
+    // after_delete on General Ledger will update account balances
+    const glEntries = await $zodula.doctype("zerp__General Ledger")
+        .select()
+        .where("reference_doctype", "=", "zerp__Journal Entry")
+        .where("reference_id", "=", doc.id);
+
+    for (const glEntry of glEntries.docs) {
+        await $zodula.doctype("zerp__General Ledger").delete(glEntry.id);
     }
 })
