@@ -3,7 +3,7 @@ import { zui, type FormType } from "@/zodula/ui";
 
 export default function ContactScripts() {
     useEffect(() => {
-        const doctype = "zerp__Contact" as const;
+        const doctype = "Contact" as const;
 
         // Auto-update inline_contact when contact fields change
         const updateInlineContact = (frm: FormType<typeof doctype>) => {

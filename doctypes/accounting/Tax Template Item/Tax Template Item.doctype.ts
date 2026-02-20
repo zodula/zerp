@@ -2,7 +2,7 @@ export default $doctype({
     tax_template: {
         type: "Reference",
         label: "Tax Template",
-        reference: "zerp__Tax Template",
+        reference: "Tax Template",
         required: 1
     },
     charge_type: {
@@ -16,7 +16,7 @@ export default $doctype({
     account_head: {
         type: "Reference",
         label: "Account Head",
-        reference: "zerp__Account",
+        reference: "Account",
         filters: JSON.stringify([["is_tax_account", "=", 1]]),
         required: 1,
         in_list_view: 1

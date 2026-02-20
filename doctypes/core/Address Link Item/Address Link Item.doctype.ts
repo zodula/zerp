@@ -2,7 +2,7 @@ export default $doctype({
     link_doctype: {
         type: "Reference",
         label: "Link Doctype",
-        reference: "zodula__Doctype",
+        reference: "Doctype",
         required: 1,
         in_list_view: 1
     },

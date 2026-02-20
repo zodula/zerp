@@ -4,12 +4,12 @@ import { zodula } from "@/zodula/client";
 
 export default function SalesInvoiceItemScripts() {
     useEffect(() => {
-        zui.form.on("zerp__Sales Invoice Item", {
+        zui.form.on("Sales Invoice Item", {
             product: async function (frm) {
                 const productId = frm.get_value("product");
                 if (productId) {
                     try {
-                        const product = await zodula.doc.get_doc("zerp__Product", productId, {});
+                        const product = await zodula.doc.get_doc("Product", productId, {});
                         if (product) {
                             if (product.product_name) {
                                 frm.set_value("product_name", product.product_name);
@@ -37,7 +37,7 @@ export default function SalesInvoiceItemScripts() {
                 const priceListId = frm.get_value("price_list");
                 if (!priceListId) return;
                 try {
-                    const pl = await zodula.doc.get_doc("zerp__Price List", priceListId, { fields: ["price", "uom"] });
+                    const pl = await zodula.doc.get_doc("Price List", priceListId, { fields: ["price", "uom"] });
                     if (pl?.price != null) {
                         frm.set_value("unit_price", pl.price);
                     }

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { zui } from "@/zodula/ui";
 
-const doctype = "zerp__Delivery Manifest Expense Item" as const;
+const doctype = "Delivery Manifest Expense Item" as const;
 
 function updateAmount(frm: any) {
   const quantity = parseFloat(String(frm.get_value?.("quantity") ?? 0)) || 0;

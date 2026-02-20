@@ -4,7 +4,7 @@ import type { FormContext } from "@/zodula/ui/zui";
 import { zodula } from "@/zodula/client";
 import { ListPlus, FileText } from "lucide-react";
 
-const doctype = "zerp__Delivery Manifest" as const;
+const doctype = "Delivery Manifest" as const;
 
 function calculateTotalExpenseAmount(frm: FormType<typeof doctype>) {
   const items = (frm.get_value?.("delivery_manifest_expense_items" as any) ?? []) as any[];
@@ -36,8 +36,8 @@ const createPurchaseInvoiceHandler = async (context: FormContext<typeof doctype>
     if (needsDefault && zodula?.doc?.select_docs) {
       try {
         const [productRes, uomRes] = await Promise.all([
-          zodula.doc.select_docs("zerp__Product" as Zodula.DoctypeName, { limit: 1, sort: "product_name", order: "asc" }),
-          zodula.doc.select_docs("zerp__UOM" as Zodula.DoctypeName, { limit: 1, sort: "name", order: "asc" }),
+          zodula.doc.select_docs("Product" as Zodula.DoctypeName, { limit: 1, sort: "product_name", order: "asc" }),
+          zodula.doc.select_docs("UOM" as Zodula.DoctypeName, { limit: 1, sort: "name", order: "asc" }),
         ]);
         defaultProduct = productRes?.docs?.[0]?.id ?? null;
         defaultUom = uomRes?.docs?.[0]?.id ?? null;
@@ -66,7 +66,7 @@ const createPurchaseInvoiceHandler = async (context: FormContext<typeof doctype>
       purchase_invoice_items: purchaseInvoiceItems,
     };
 
-    context.navigate(`/desk/${org}/doctypes/zerp__Purchase Invoice/form`, {
+    context.navigate(`/desk/${org}/doctypes/Purchase Invoice/form`, {
       state: { prefill },
     });
   } catch (err) {
@@ -111,7 +111,7 @@ export default function DeliveryOrderTransferUIScript() {
               defaultFilters.push(["source_warehouse", "=", sourceWarehouse]);
             }
 
-            const selected = await open_multi_select_dialog("zerp__Delivery Order" as Zodula.DoctypeName, {
+            const selected = await open_multi_select_dialog("Delivery Order" as Zodula.DoctypeName, {
               title: zui.t("Select Delivery Orders"),
               defaultFilters,
               limit: 500,

@@ -17,7 +17,7 @@ export default $doctype({
     transporter: {
         type: "Reference",
         label: "Transporter (Supplier)",
-        reference: "zerp__Supplier",
+        reference: "Supplier",
         required: 0,
         in_list_view: 1,
     },

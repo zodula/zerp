@@ -3,7 +3,7 @@ import { zui, type FormType } from "@/zodula/ui";
 import { zodula } from "@/zodula/client";
 
 // Calculate taxes and charges for Payment Entry
-function calculateTaxes(frm: FormType<"zerp__Payment Entry">) {
+function calculateTaxes(frm: FormType<"Payment Entry">) {
     const baseAmount = parseFloat(String(frm.get_value("base_amount") || 0)) || 0;
     const taxRows = frm.get_value("tax_and_charges") || [];
     
@@ -102,7 +102,7 @@ function calculateTaxes(frm: FormType<"zerp__Payment Entry">) {
 }
 
 // Calculate base_amount from references
-function calculateBaseAmount(frm: FormType<"zerp__Payment Entry">) {
+function calculateBaseAmount(frm: FormType<"Payment Entry">) {
     const references = frm.get_value("references") || [];
     if (!Array.isArray(references)) {
         frm.set_value("base_amount", 0);
@@ -121,7 +121,7 @@ function calculateBaseAmount(frm: FormType<"zerp__Payment Entry">) {
     calculateTaxes(frm);
 }
 
-async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
+async function calculateReferenceRows(frm: FormType<"Payment Entry">) {
     const referenceType = frm.get_value("reference_type");
     const rows = Array.isArray(frm.get_value("references"))
         ? [...(frm.get_value("references") as any[])]
@@ -159,7 +159,7 @@ async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
 
             const totalAmount = parseFloat(String((invoice as any).total_amount || 0)) || 0;
 
-            const referencesResponse = await zodula.doc.select_docs("zerp__Payment Entry Reference", {
+            const referencesResponse = await zodula.doc.select_docs("Payment Entry Reference", {
                 filters: [
                     ["reference_id", "=", referenceId]
                 ],
@@ -179,7 +179,7 @@ async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
 
                 const paymentEntryId = (ref as any).payment_entry;
                 if (paymentEntryId) {
-                    const paymentEntry = await zodula.doc.get_doc("zerp__Payment Entry", paymentEntryId);
+                    const paymentEntry = await zodula.doc.get_doc("Payment Entry", paymentEntryId);
                     if (paymentEntry && (paymentEntry as any).reference_type === referenceType && (paymentEntry as any).doc_status === 1) {
                         const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
                         totalAllocated += allocatedAmount;
@@ -235,15 +235,15 @@ export default function PaymentEntryScripts() {
         // Track last reference_id for each row to detect changes
         const lastReferenceIds = new Map<number, string>();
 
-        const updatePartyReference = (frm: FormType<"zerp__Payment Entry">) => {
+        const updatePartyReference = (frm: FormType<"Payment Entry">) => {
             const partyType = frm.get_value("party_type");
             const paymentType = frm.get_value("payment_type");
             
             // Only clear party if party_type is being changed and doesn't match payment_type
             // Don't clear if we're in refresh and party_type matches the expected type for payment_type
-            if (partyType && (partyType === "zerp__Customer" || partyType === "zerp__Supplier")) {
-                const expectedPartyType = paymentType === "Receive" ? "zerp__Customer" : 
-                                         paymentType === "Pay" ? "zerp__Supplier" : null;
+            if (partyType && (partyType === "Customer" || partyType === "Supplier")) {
+                const expectedPartyType = paymentType === "Receive" ? "Customer" : 
+                                         paymentType === "Pay" ? "Supplier" : null;
                 
                 // Only clear if party_type doesn't match what's expected for the payment_type
                 // This prevents clearing party when it's being set correctly from prefill
@@ -256,7 +256,7 @@ export default function PaymentEntryScripts() {
             }
         };
 
-        const updatePartyAccountFilter = (frm: FormType<"zerp__Payment Entry">) => {
+        const updatePartyAccountFilter = (frm: FormType<"Payment Entry">) => {
             const partyType = frm.get_value("party_type");
             const party = frm.get_value("party");
             
@@ -274,13 +274,13 @@ export default function PaymentEntryScripts() {
         };
 
         // Helper function to set reference_id filters for all rows based on parent reference_type and party
-        const setReferenceIdFilters = (frm: FormType<"zerp__Payment Entry">) => {
+        const setReferenceIdFilters = (frm: FormType<"Payment Entry">) => {
             const referenceType = frm.get_value("reference_type");
             const party = frm.get_value("party");
             if (!referenceType || !party) {
                 return;
             }
-            const partyField = referenceType === "zerp__Sales Invoice" || referenceType === "zerp__Delivery Order" ? "customer" : "supplier";
+            const partyField = referenceType === "Sales Invoice" || referenceType === "Delivery Order" ? "customer" : "supplier";
             const filters = JSON.stringify([[partyField, "=", party]]);
             const references = frm.get_value("references");
             if (Array.isArray(references)) {
@@ -290,16 +290,16 @@ export default function PaymentEntryScripts() {
             }
         };
 
-        zui.form.on("zerp__Payment Entry", {
+        zui.form.on("Payment Entry", {
             payment_type: async function(frm) {
                 const paymentType = frm.get_value("payment_type");
                 if (paymentType === "Receive") {
                     // Set party_type to Customer for Receive payments
-                    if (frm.get_value("party_type") !== "zerp__Customer") {
-                        frm.set_value("party_type", "zerp__Customer");
+                    if (frm.get_value("party_type") !== "Customer") {
+                        frm.set_value("party_type", "Customer");
                     }
                     // Set reference_type to Sales Invoice for Receive payments (parent field)
-                    frm.set_value("reference_type", "zerp__Sales Invoice");
+                    frm.set_value("reference_type", "Sales Invoice");
                     setReferenceIdFilters(frm);
                     updatePartyAccountFilter(frm);
                     if (!updatingRefs) {
@@ -312,11 +312,11 @@ export default function PaymentEntryScripts() {
                     }
                 } else if (paymentType === "Pay") {
                     // Set party_type to Supplier for Pay payments
-                    if (frm.get_value("party_type") !== "zerp__Supplier") {
-                        frm.set_value("party_type", "zerp__Supplier");
+                    if (frm.get_value("party_type") !== "Supplier") {
+                        frm.set_value("party_type", "Supplier");
                     }
                     // Set reference_type to Purchase Invoice for Pay payments (parent field)
-                    frm.set_value("reference_type", "zerp__Purchase Invoice");
+                    frm.set_value("reference_type", "Purchase Invoice");
                     setReferenceIdFilters(frm);
                     updatePartyAccountFilter(frm);
                     if (!updatingRefs) {
@@ -405,7 +405,7 @@ export default function PaymentEntryScripts() {
                                     if (invoice) {
                                         const totalAmount = parseFloat(String((invoice as any).total_amount || 0)) || 0;
                                         
-                                        const referencesResponse = await zodula.doc.select_docs("zerp__Payment Entry Reference", {
+                                        const referencesResponse = await zodula.doc.select_docs("Payment Entry Reference", {
                                             filters: [
                                                 ["reference_id", "=", referenceId]
                                             ],
@@ -425,7 +425,7 @@ export default function PaymentEntryScripts() {
                                             
                                             const paymentEntryId = (ref as any).payment_entry;
                                             if (paymentEntryId) {
-                                                const paymentEntry = await zodula.doc.get_doc("zerp__Payment Entry", paymentEntryId);
+                                                const paymentEntry = await zodula.doc.get_doc("Payment Entry", paymentEntryId);
                                                 if (paymentEntry && (paymentEntry as any).reference_type === referenceType && (paymentEntry as any).doc_status === 1) {
                                                     const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
                                                     totalAllocated += allocatedAmount;
@@ -513,8 +513,8 @@ export default function PaymentEntryScripts() {
                 calculateBaseAmount(frm);
                 
                 if (paymentType === "Receive") {
-                    if (frm.get_value("party_type") !== "zerp__Customer") {
-                        frm.set_value("party_type", "zerp__Customer");
+                    if (frm.get_value("party_type") !== "Customer") {
+                        frm.set_value("party_type", "Customer");
                     }
                     // Restore party value after party_type is set (if it was set from prefill)
                     if (existingParty && !frm.get_value("party")) {
@@ -522,7 +522,7 @@ export default function PaymentEntryScripts() {
                     }
                     // Set reference_type only if not already set (e.g. preserve prefill from Delivery Order)
                     if (!frm.get_value("reference_type")) {
-                        frm.set_value("reference_type", "zerp__Sales Invoice");
+                        frm.set_value("reference_type", "Sales Invoice");
                     }
                     setReferenceIdFilters(frm);
                     updatePartyAccountFilter(frm);
@@ -535,15 +535,15 @@ export default function PaymentEntryScripts() {
                         }
                     }
                 } else if (paymentType === "Pay") {
-                    if (frm.get_value("party_type") !== "zerp__Supplier") {
-                        frm.set_value("party_type", "zerp__Supplier");
+                    if (frm.get_value("party_type") !== "Supplier") {
+                        frm.set_value("party_type", "Supplier");
                     }
                     // Restore party value after party_type is set (if it was set from prefill)
                     if (existingParty && !frm.get_value("party")) {
                         frm.set_value("party", existingParty);
                     }
                     if (!frm.get_value("reference_type")) {
-                        frm.set_value("reference_type", "zerp__Purchase Invoice");
+                        frm.set_value("reference_type", "Purchase Invoice");
                     }
                     setReferenceIdFilters(frm);
                     updatePartyAccountFilter(frm);

@@ -2,7 +2,7 @@ export default $doctype({
     payment_entry: {
         type: "Reference",
         label: "Payment Entry",
-        reference: "zerp__Payment Entry",
+        reference: "Payment Entry",
         required: 0
     },
     charge_type: {
@@ -16,7 +16,7 @@ export default $doctype({
     account_head: {
         type: "Reference",
         label: "Account Head",
-        reference: "zerp__Account",
+        reference: "Account",
         filters: JSON.stringify([["is_tax_account", "=", 1]]),
         required: 1,
         in_list_view: 1

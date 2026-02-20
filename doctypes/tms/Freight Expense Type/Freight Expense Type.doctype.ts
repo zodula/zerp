@@ -8,14 +8,14 @@ export default $doctype({
     product: {
         type: "Reference",
         label: "Product",
-        reference: "zerp__Product",
+        reference: "Product",
         required: 1,
         in_list_view: 1,
     },
     uom: {
         type: "Reference",
         label: "UOM",
-        reference: "zerp__UOM",
+        reference: "UOM",
         required: 1,
         in_list_view: 1,
     },

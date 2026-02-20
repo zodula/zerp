@@ -4,7 +4,7 @@ import { zodula } from "@/zodula/client";
 
 export default function PriceListScripts() {
     useEffect(() => {
-        zui.form.on("zerp__Price List", {
+        zui.form.on("Price List", {
             party_type: function(frm) {
                 const partyType = frm.get_value("party_type");
                 if (partyType === "Customer") {

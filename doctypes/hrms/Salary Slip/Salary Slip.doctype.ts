@@ -1,8 +1,8 @@
-export default $doctype<"zerp__Salary Slip">({
+export default $doctype<"Salary Slip">({
     employee: {
         type: "Reference",
         label: "Employee",
-        reference: "zerp__Employee",
+        reference: "Employee",
         required: 1,
         in_list_view: 1,
     },
@@ -48,7 +48,7 @@ export default $doctype<"zerp__Salary Slip">({
     salary_slip_items: {
         type: "Reference Table",
         label: "Salary Slip Items",
-        reference: "zerp__Salary Slip Item",
+        reference: "Salary Slip Item",
         required: 0,
     },
 }, {

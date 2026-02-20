@@ -4,7 +4,7 @@ import type { FormContext } from "@/zodula/ui/zui";
 import { zodula } from "@/zodula/client";
 import { CreditCard } from "lucide-react";
 
-type DeliveryOrderDoctype = "zerp__Delivery Order";
+type DeliveryOrderDoctype = "Delivery Order";
 
 // ============================================================================
 // Helper Functions (same logic as Sales Invoice)
@@ -117,10 +117,10 @@ const applyTaxTemplate = async (
     }
 
     try {
-        const template = await zodula.doc.get_doc("zerp__Tax Template", taxTemplateId);
+        const template = await zodula.doc.get_doc("Tax Template", taxTemplateId);
         if (!template || !template.tax_template_items) return;
 
-        const templateItems = await zodula.doc.select_docs("zerp__Tax Template Item", {
+        const templateItems = await zodula.doc.select_docs("Tax Template Item", {
             filters: [["tax_template", "=", taxTemplateId]],
             sort: "idx",
             order: "asc",
@@ -190,9 +190,9 @@ const createPaymentHandler = async (context: FormContext) => {
     let partyAccount: string | null = null;
     if (party) {
         try {
-            const accounts = await zodula.doc.select_docs("zerp__Account", {
+            const accounts = await zodula.doc.select_docs("Account", {
                 filters: [
-                    ["party_type", "=", "zerp__Customer"],
+                    ["party_type", "=", "Customer"],
                     ["party", "=", party]
                 ],
                 limit: 1,
@@ -225,9 +225,9 @@ const createPaymentHandler = async (context: FormContext) => {
     const prefill: any = {
         posting_date: zodula.utils.format(new Date(), "date"),
         payment_type: "Receive",
-        party_type: "zerp__Customer",
+        party_type: "Customer",
         party,
-        reference_type: "zerp__Delivery Order",
+        reference_type: "Delivery Order",
         payment_method: "Bank",
         party_account: partyAccount,
         base_amount: parseFloat(String(doc.net_total || 0)) || 0,
@@ -237,7 +237,7 @@ const createPaymentHandler = async (context: FormContext) => {
         tax_and_charges: taxAndCharges
     };
 
-    context.navigate(`/desk/${org}/doctypes/zerp__Payment Entry/form`, {
+    context.navigate(`/desk/${org}/doctypes/Payment Entry/form`, {
         state: { prefill }
     });
 };
@@ -248,19 +248,19 @@ const createPaymentHandler = async (context: FormContext) => {
 
 export default function DeliveryOrderScripts() {
     useEffect(() => {
-        const doctype = "zerp__Delivery Order" as const;
+        const doctype = "Delivery Order" as const;
         const itemsField = "delivery_order_items" as const;
 
         const updateAddressFilters = (frm: FormType<typeof doctype>) => {
             const customer = frm.get_value("customer" as any);
             if (customer) {
                 const billingFilters = JSON.stringify([
-                    ["links.link_doctype", "=", "zerp__Customer"],
+                    ["links.link_doctype", "=", "Customer"],
                     ["links.link_id", "=", customer],
                     ["address_type", "=", "Billing"]
                 ]);
                 const shippingFilters = JSON.stringify([
-                    ["links.link_doctype", "=", "zerp__Customer"],
+                    ["links.link_doctype", "=", "Customer"],
                     ["links.link_id", "=", customer],
                     ["address_type", "=", "Shipping"]
                 ]);
@@ -276,7 +276,7 @@ export default function DeliveryOrderScripts() {
             const customer = frm.get_value("customer" as any);
             if (customer) {
                 const filters = JSON.stringify([
-                    ["links.link_doctype", "=", "zerp__Customer"],
+                    ["links.link_doctype", "=", "Customer"],
                     ["links.link_id", "=", customer]
                 ]);
                 frm.set_df_property("billing_contact", "filters", filters);
@@ -333,7 +333,7 @@ export default function DeliveryOrderScripts() {
             const postingDate = frm.get_value("posting_date" as any);
             if (customer && postingDate) {
                 try {
-                    const customerDoc = await zodula.doc.get_doc("zerp__Customer", customer);
+                    const customerDoc = await zodula.doc.get_doc("Customer", customer);
                     if (customerDoc?.credit_days) {
                         const creditDays = parseFloat(String(customerDoc.credit_days || 0)) || 0;
                         if (creditDays > 0) {

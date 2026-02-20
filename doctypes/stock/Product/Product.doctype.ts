@@ -8,7 +8,7 @@ export default $doctype({
     product_category: {
         type: "Reference",
         label: "Product Category",
-        reference: "zerp__Product Category",
+        reference: "Product Category",
         required: 1,
         in_list_view: 1
     },
@@ -19,7 +19,7 @@ export default $doctype({
     default_uom: {
         type: "Reference",
         label: "Default UOM",
-        reference: "zerp__UOM",
+        reference: "UOM",
         required: 1
     },
     length: {
@@ -49,7 +49,7 @@ export default $doctype({
     product_customer: {
         type: "Reference Table",
         label: "Product Customer",
-        reference: "zerp__Product Customer",
+        reference: "Product Customer",
         required: 0
     }
 }, {

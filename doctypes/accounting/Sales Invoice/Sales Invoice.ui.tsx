@@ -4,7 +4,7 @@ import type { FormContext } from "@/zodula/ui/zui";
 import { zodula } from "@/zodula/client";
 import { CreditCard } from "lucide-react";
 
-type InvoiceDoctype = "zerp__Sales Invoice" | "zerp__Purchase Invoice";
+type InvoiceDoctype = "Sales Invoice" | "Purchase Invoice";
 
 // ============================================================================
 // Helper Functions
@@ -140,13 +140,13 @@ const applyTaxTemplate = async <DN extends InvoiceDoctype>(
 
     try {
         // Fetch tax template
-        const template = await zodula.doc.get_doc("zerp__Tax Template", taxTemplateId);
+        const template = await zodula.doc.get_doc("Tax Template", taxTemplateId);
         if (!template || !template.tax_template_items) {
             return;
         }
 
         // Fetch tax template items
-        const templateItems = await zodula.doc.select_docs("zerp__Tax Template Item", {
+        const templateItems = await zodula.doc.select_docs("Tax Template Item", {
             filters: [["tax_template", "=", taxTemplateId]],
             sort: "idx",
             order: "asc",
@@ -213,9 +213,9 @@ const getPaymentStatusBadge = (doc: any) => {
 const createPaymentHandler = async (
     context: FormContext,
     config: {
-        referenceType: "zerp__Sales Invoice" | "zerp__Purchase Invoice";
+        referenceType: "Sales Invoice" | "Purchase Invoice";
         paymentType: "Receive" | "Pay";
-        partyType: "zerp__Customer" | "zerp__Supplier";
+        partyType: "Customer" | "Supplier";
     }
 ) => {
     const doc = context.doc;
@@ -223,13 +223,13 @@ const createPaymentHandler = async (
     
     const org = context.org || "System Panel";
     const totalAmount = parseFloat(String((doc as any).total_amount || 0)) || 0;
-    const party = (doc as any)[config.partyType === "zerp__Customer" ? "customer" : "supplier"];
+    const party = (doc as any)[config.partyType === "Customer" ? "customer" : "supplier"];
 
     // Try to find party account
     let partyAccount = null;
     if (party) {
         try {
-            const accounts = await zodula.doc.select_docs("zerp__Account", {
+            const accounts = await zodula.doc.select_docs("Account", {
                 filters: [
                     ["party_type", "=", config.partyType],
                     ["party", "=", party]
@@ -284,7 +284,7 @@ const createPaymentHandler = async (
         tax_and_charges: taxAndCharges
     };
 
-    context.navigate(`/desk/${org}/doctypes/zerp__Payment Entry/form`, {
+    context.navigate(`/desk/${org}/doctypes/Payment Entry/form`, {
         state: { prefill }
     });
 };
@@ -295,7 +295,7 @@ const createPaymentHandler = async (
 
 export default function SalesInvoiceScripts() {
     useEffect(() => {
-        const doctype = "zerp__Sales Invoice" as const;
+        const doctype = "Sales Invoice" as const;
         const itemsField = "sales_invoice_items" as const;
 
         // Update address filters based on customer
@@ -303,12 +303,12 @@ export default function SalesInvoiceScripts() {
             const customer = frm.get_value("customer" as any);
             if (customer) {
                 const billingFilters = JSON.stringify([
-                    ["links.link_doctype", "=", "zerp__Customer"],
+                    ["links.link_doctype", "=", "Customer"],
                     ["links.link_id", "=", customer],
                     ["address_type", "=", "Billing"]
                 ]);
                 const shippingFilters = JSON.stringify([
-                    ["links.link_doctype", "=", "zerp__Customer"],
+                    ["links.link_doctype", "=", "Customer"],
                     ["links.link_id", "=", customer],
                     ["address_type", "=", "Shipping"]
                 ]);
@@ -328,7 +328,7 @@ export default function SalesInvoiceScripts() {
             if (customer) {
                 // Show all contacts linked to the customer for all contact fields
                 const filters = JSON.stringify([
-                    ["links.link_doctype", "=", "zerp__Customer"],
+                    ["links.link_doctype", "=", "Customer"],
                     ["links.link_id", "=", customer]
                 ]);
                 frm.set_df_property("billing_contact", "filters", filters);
@@ -388,7 +388,7 @@ export default function SalesInvoiceScripts() {
             
             if (customer && postingDate) {
                 try {
-                    const customerDoc = await zodula.doc.get_doc("zerp__Customer", customer);
+                    const customerDoc = await zodula.doc.get_doc("Customer", customer);
                     if (customerDoc && customerDoc.credit_days) {
                         const creditDays = parseFloat(String(customerDoc.credit_days || 0)) || 0;
                         if (creditDays > 0) {
@@ -485,9 +485,9 @@ export default function SalesInvoiceScripts() {
                             label: zui.t("Create Payment"),
                             icon: CreditCard,
                             onClick: () => createPaymentHandler(context, {
-                                referenceType: "zerp__Sales Invoice",
+                                referenceType: "Sales Invoice",
                                 paymentType: "Receive",
-                                partyType: "zerp__Customer"
+                                partyType: "Customer"
                             }),
                             disabled: (context.doc as any).payment_status === "Paid"
                         }]

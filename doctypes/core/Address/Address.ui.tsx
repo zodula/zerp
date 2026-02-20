@@ -3,7 +3,7 @@ import { zui, type FormType } from "@/zodula/ui";
 
 export default function AddressScripts() {
     useEffect(() => {
-        const doctype = "zerp__Address" as const;
+        const doctype = "Address" as const;
 
         // Auto-update inline_address when address fields change
         const updateInlineAddress = (frm: FormType<typeof doctype>) => {

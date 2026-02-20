@@ -2,14 +2,14 @@ export default $doctype({
     salary_slip: {
         type: "Reference",
         label: "Salary Slip",
-        reference: "zerp__Salary Slip",
+        reference: "Salary Slip",
         required: 1,
         in_list_view: 1,
     },
     salary_component: {
         type: "Reference",
         label: "Salary Component",
-        reference: "zerp__Salary Component",
+        reference: "Salary Component",
         required: 1,
         in_list_view: 1,
     },

@@ -28,8 +28,8 @@ export default $doctype({
     party_type: {
         type: "Reference",
         label: "Party Type",
-        reference: "zodula__Doctype",
-        filters: JSON.stringify([["name", "IN", ["zerp__Customer", "zerp__Supplier"]]]),
+        reference: "Doctype",
+        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]]),
         in_list_view: 1
     },
     party: {
@@ -47,7 +47,7 @@ export default $doctype({
     bank: {
         type: "Reference",
         label: "Bank",
-        reference: "zerp__Bank",
+        reference: "Bank",
         required: 0,
         in_list_view: 1
     },

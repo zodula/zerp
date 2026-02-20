@@ -2,14 +2,14 @@ export default $doctype({
     product: {
         type: "Reference",
         label: "Product",
-        reference: "zerp__Product",
+        reference: "Product",
         required: 1,
         in_list_view: 1
     },
     customer: {
         type: "Reference",
         label: "Customer",
-        reference: "zerp__Customer",
+        reference: "Customer",
         required: 1,
         in_list_view: 1
     }

@@ -2,7 +2,7 @@ export default $doctype({
     expense_type: {
         type: "Reference",
         label: "Expense Type",
-        reference: "zerp__Freight Expense Type",
+        reference: "Freight Expense Type",
         required: 0,
         in_list_view: 1,
     },
@@ -21,7 +21,7 @@ export default $doctype({
     uom: {
         type: "Reference",
         label: "UOM",
-        reference: "zerp__UOM",
+        reference: "UOM",
         required: 1,
         readonly: 1,
         fetch_from: "expense_type.uom",
@@ -44,7 +44,7 @@ export default $doctype({
     product: {
         type: "Reference",
         label: "Product",
-        reference: "zerp__Product",
+        reference: "Product",
         required: 0,
         readonly: 1,
         fetch_from: "expense_type.product",

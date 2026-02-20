@@ -2,7 +2,7 @@ export default $doctype({
     base_earning_component: {
         type: "Reference",
         label: "Base Earning Component",
-        reference: "zerp__Salary Component",
+        reference: "Salary Component",
         required: 0,
         in_list_view: 1,
         description: "Default base salary component used for earnings (e.g. Basic).",
@@ -10,7 +10,7 @@ export default $doctype({
     base_deducts_component: {
         type: "Reference",
         label: "Base Deduction Component",
-        reference: "zerp__Salary Component",
+        reference: "Salary Component",
         required: 0,
         in_list_view: 1,
         description: "Default base component used for deductions.",

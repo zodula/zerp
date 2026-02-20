@@ -2,7 +2,7 @@ export default $doctype({
     employee: {
         type: "Reference",
         label: "Employee",
-        reference: "zerp__Employee",
+        reference: "Employee",
         required: 1,
         in_list_view: 1,
     },
@@ -16,14 +16,14 @@ export default $doctype({
     leave_type: {
         type: "Reference",
         label: "Leave Type",
-        reference: "zerp__Leave Type",
+        reference: "Leave Type",
         required: 1,
         in_list_view: 1,
     },
     leave_period: {
         type: "Reference",
         label: "Leave Period",
-        reference: "zerp__Leave Period",
+        reference: "Leave Period",
         required: 1,
         in_list_view: 1,
     },

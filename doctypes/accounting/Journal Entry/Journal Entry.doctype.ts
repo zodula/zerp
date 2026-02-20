@@ -1,4 +1,4 @@
-export default $doctype<"zerp__Journal Entry">({
+export default $doctype<"Journal Entry">({
     journal_date: {
         type: "Date",
         label: "Journal Date",
@@ -20,7 +20,7 @@ export default $doctype<"zerp__Journal Entry">({
     journal_entry_items: {
         type: "Reference Table",
         label: "Journal Entry Items",
-        reference: "zerp__Journal Entry Item",
+        reference: "Journal Entry Item",
         required: 0
     }
 }, {
@@ -98,12 +98,12 @@ export default $doctype<"zerp__Journal Entry">({
 
             if (!account) continue;
 
-            await $zodula.doctype("zerp__General Ledger").insert({
+            await $zodula.doctype("General Ledger").insert({
                 posting_date: doc.journal_date,
                 account: account,
                 debit_amount: debitAmount,
                 credit_amount: creditAmount,
-                reference_doctype: "zerp__Journal Entry",
+                reference_doctype: "Journal Entry",
                 reference_id: doc.id,
                 description: itemData.memo || description,
                 party_type: itemData.party_type ?? undefined,
@@ -115,12 +115,12 @@ export default $doctype<"zerp__Journal Entry">({
 .on("after_cancel", async ({ doc }) => {
     // Delete General Ledger entries for this Journal Entry (same pattern as Payment Entry)
     // after_delete on General Ledger will update account balances
-    const glEntries = await $zodula.doctype("zerp__General Ledger")
+    const glEntries = await $zodula.doctype("General Ledger")
         .select()
-        .where("reference_doctype", "=", "zerp__Journal Entry")
+        .where("reference_doctype", "=", "Journal Entry")
         .where("reference_id", "=", doc.id);
 
     for (const glEntry of glEntries.docs) {
-        await $zodula.doctype("zerp__General Ledger").delete(glEntry.id);
+        await $zodula.doctype("General Ledger").delete(glEntry.id);
     }
 })

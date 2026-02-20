@@ -1,8 +1,8 @@
-export default $doctype<"zerp__Attendance">({
+export default $doctype<"Attendance">({
     employee: {
         type: "Reference",
         label: "Employee",
-        reference: "zerp__Employee",
+        reference: "Employee",
         required: 1,
         in_list_view: 1,
         only_once: 1,
@@ -33,7 +33,7 @@ export default $doctype<"zerp__Attendance">({
     leave_type: {
         type: "Reference",
         label: "Leave Type",
-        reference: "zerp__Leave Type",
+        reference: "Leave Type",
         required: 0,
         depends_on: "doc.status === 'On Leave'",
         only_once: 1,
@@ -57,7 +57,7 @@ export default $doctype<"zerp__Attendance">({
     leave_application: {
         type: "Reference",
         label: "Leave Application",
-        reference: "zerp__Leave Application",
+        reference: "Leave Application",
         required: 0,
         depends_on: "doc.status === 'On Leave'",
         only_once: 1,
@@ -131,7 +131,7 @@ async function getLeaveTypeFromAttendance(att: Record<string, unknown>): Promise
     if (!leaveTypeId) {
         const leaveAppId = att.leave_application as string | undefined | null;
         if (leaveAppId) {
-            const leaveApp = await $zodula.doctype("zerp__Leave Application").get(leaveAppId);
+            const leaveApp = await $zodula.doctype("Leave Application").get(leaveAppId);
             if (leaveApp?.leave_type) leaveTypeId = leaveApp.leave_type as string;
         }
     }
@@ -143,7 +143,7 @@ async function findLeavePeriodContainingDate(attendanceDateRaw: string): Promise
     const attendanceDate = normalizeDateString(attendanceDateRaw);
     if (!attendanceDate) return null;
 
-    const { docs: periods } = await $zodula.doctype("zerp__Leave Period").select();
+    const { docs: periods } = await $zodula.doctype("Leave Period").select();
     if (!periods?.length) return null;
 
     for (const p of periods) {
@@ -164,7 +164,7 @@ async function calculateLeavesTakenInPeriod(
     toDate: string,
     excludeAttendanceId?: string
 ): Promise<number> {
-    const { docs: attendances } = await $zodula.doctype("zerp__Attendance")
+    const { docs: attendances } = await $zodula.doctype("Attendance")
         .select()
         .where("employee", "=", employeeId)
         .where("attendance_date", ">=", fromDate)
@@ -199,7 +199,7 @@ async function recalculateLeaveAllocationFromAttendance(attendanceDoc: Record<st
     const period = await findLeavePeriodContainingDate(attendanceDate);
     if (!period) return;
 
-    const { docs: allocations } = await $zodula.doctype("zerp__Leave Allocation")
+    const { docs: allocations } = await $zodula.doctype("Leave Allocation")
         .select()
         .where("employee", "=", employeeId)
         .where("leave_type", "=", leaveTypeId)
@@ -214,7 +214,7 @@ async function recalculateLeaveAllocationFromAttendance(attendanceDoc: Record<st
         period.to_date
     );
 
-    await $zodula.doctype("zerp__Leave Allocation").update((allocations[0] as { id: string }).id, {
+    await $zodula.doctype("Leave Allocation").update((allocations[0] as { id: string }).id, {
         leaves_taken: leavesTaken,
     } as any);
 }
@@ -244,7 +244,7 @@ async function validateLeaveBalance(
         );
     }
 
-    const { docs: allocations } = await $zodula.doctype("zerp__Leave Allocation")
+    const { docs: allocations } = await $zodula.doctype("Leave Allocation")
         .select()
         .where("employee", "=", employeeId)
         .where("leave_type", "=", leaveTypeId)

@@ -1,16 +1,16 @@
-export default $doctype<"zerp__Purchase Invoice">(
+export default $doctype<"Purchase Invoice">(
   {
     supplier: {
       type: "Reference",
       label: "Supplier",
-      reference: "zerp__Supplier",
+      reference: "Supplier",
       required: 1,
       no_print: 1,
     },
     delivery_manifest: {
       type: "Reference",
       label: "Delivery Manifest",
-      reference: "zerp__Delivery Manifest",
+      reference: "Delivery Manifest",
       required: 0,
       no_print: 1,
     },
@@ -47,7 +47,7 @@ export default $doctype<"zerp__Purchase Invoice">(
     price_project: {
       type: "Reference",
       label: "Price Project",
-      reference: "zerp__Price Project",
+      reference: "Price Project",
       required: 0,
       no_print: 1,
     },
@@ -97,26 +97,26 @@ export default $doctype<"zerp__Purchase Invoice">(
     apply_tax_template: {
       type: "Reference",
       label: "Apply Tax Template",
-      reference: "zerp__Tax Template",
+      reference: "Tax Template",
       required: 0,
       no_print: 1
     },
     purchase_invoice_items: {
       type: "Reference Table",
       label: "Purchase Invoice Items",
-      reference: "zerp__Purchase Invoice Item",
+      reference: "Purchase Invoice Item",
       required: 0
     },
     tax_and_charges: {
       type: "Reference Table",
       label: "Tax and Charges",
-      reference: "zerp__Tax and Charges",
+      reference: "Tax and Charges",
       required: 0
     },
     billing_address: {
       type: "Reference",
       label: "Billing Address",
-      reference: "zerp__Address",
+      reference: "Address",
       required: 0,
       no_print: 1
     },
@@ -137,7 +137,7 @@ export default $doctype<"zerp__Purchase Invoice">(
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
-      reference: "zerp__Address",
+      reference: "Address",
       required: 0,
       no_print: 1
     },
@@ -158,7 +158,7 @@ export default $doctype<"zerp__Purchase Invoice">(
     billing_contact: {
       type: "Reference",
       label: "Billing Contact",
-      reference: "zerp__Contact",
+      reference: "Contact",
       required: 0,
       no_print: 1
     },
@@ -179,7 +179,7 @@ export default $doctype<"zerp__Purchase Invoice">(
     shipping_contact: {
       type: "Reference",
       label: "Shipping Contact",
-      reference: "zerp__Contact",
+      reference: "Contact",
       required: 0,
       no_print: 1
     },
@@ -206,8 +206,8 @@ export default $doctype<"zerp__Purchase Invoice">(
     comments_enabled: 1,
     search_fields: "supplier\nsupplier_name",
     additional_connections: JSON.stringify([{
-      doctype: "zerp__Payment Entry",
-      filters: [["reference_type", "=", "zerp__Purchase Invoice"], ["references.reference_id", "=", "{{id}}"]],
+      doctype: "Payment Entry",
+      filters: [["reference_type", "=", "Purchase Invoice"], ["references.reference_id", "=", "{{id}}"]],
       field: "references.reference_id"
     }]),
     tabs: JSON.stringify([

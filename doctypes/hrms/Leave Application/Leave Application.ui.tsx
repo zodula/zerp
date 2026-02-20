@@ -3,7 +3,7 @@ import { zui, type FormType } from "@/zodula/ui";
 import type { FormContext } from "@/zodula/ui/zui";
 import { zodula } from "@/zodula/client";
 
-const doctype = "zerp__Leave Application" as const;
+const doctype = "Leave Application" as const;
 
 function calculateTotalLeaveDays(frm: FormType<typeof doctype>) {
     const fromDateVal = frm.get_value("from_date");

@@ -2,7 +2,7 @@ export default $doctype({
     price_project: {
         type: "Reference",
         label: "Price Project",
-        reference: "zerp__Price Project",
+        reference: "Price Project",
         required: 1,
         in_list_view: 1
     },
@@ -16,7 +16,7 @@ export default $doctype({
     customer: {
         type: "Reference",
         label: "Customer",
-        reference: "zerp__Customer",
+        reference: "Customer",
         in_list_view: 1
     },
     customer_name: {
@@ -29,7 +29,7 @@ export default $doctype({
     supplier: {
         type: "Reference",
         label: "Supplier",
-        reference: "zerp__Supplier",
+        reference: "Supplier",
         in_list_view: 1
     },
     supplier_name: {
@@ -42,7 +42,7 @@ export default $doctype({
     product: {
         type: "Reference",
         label: "Product",
-        reference: "zerp__Product",
+        reference: "Product",
         required: 1,
         in_list_view: 1
     },
@@ -62,7 +62,7 @@ export default $doctype({
     uom: {
         type: "Reference",
         label: "UOM",
-        reference: "zerp__UOM",
+        reference: "UOM",
         required: 1,
         in_list_view: 1
     },

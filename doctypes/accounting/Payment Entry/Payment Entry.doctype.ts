@@ -1,12 +1,12 @@
 import { ZodulaDoctypeHelper } from "@/zodula/server/zodula/doc/helper";
 import { loader } from "@/zodula/server/loader";
 
-export default $doctype<"zerp__Payment Entry">({
+export default $doctype<"Payment Entry">({
     party_type: {
         type: "Reference",
         label: "Party Type",
-        reference: "zodula__Doctype",
-        filters: JSON.stringify([["name", "IN", ["zerp__Customer", "zerp__Supplier"]]]),
+        reference: "Doctype",
+        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]]),
         required: 1,
         in_list_view: 1
     },
@@ -68,14 +68,14 @@ export default $doctype<"zerp__Payment Entry">({
     organization_account: {
         type: "Reference",
         label: "Organization Account",
-        reference: "zerp__Account",
+        reference: "Account",
         required: 1,
         in_list_view: 1
     },
     party_account: {
         type: "Reference",
         label: "Party Account",
-        reference: "zerp__Account",
+        reference: "Account",
         required: 1,
         in_list_view: 1
     },
@@ -86,21 +86,21 @@ export default $doctype<"zerp__Payment Entry">({
     reference_type: {
         type: "Reference",
         label: "Reference Type",
-        reference: "zodula__Doctype",
-        filters: JSON.stringify([["name", "IN", ["zerp__Sales Invoice", "zerp__Purchase Invoice", "zerp__Delivery Order"]]]),
+        reference: "Doctype",
+        filters: JSON.stringify([["name", "IN", ["Sales Invoice", "Purchase Invoice", "Delivery Order"]]]),
         required: 0,
         in_list_view: 0
     },
     references: {
         type: "Reference Table",
         label: "References",
-        reference: "zerp__Payment Entry Reference",
+        reference: "Payment Entry Reference",
         required: 0
     },
     tax_and_charges: {
         type: "Reference Table",
         label: "Tax and Charges",
-        reference: "zerp__Tax and Charges",
+        reference: "Tax and Charges",
         required: 0
     }
 }, {
@@ -150,7 +150,7 @@ export default $doctype<"zerp__Payment Entry">({
 })
 .on("before_change", async ({ doc }) => {
     // Validate document using validateDoc function
-    const doctypeSchema = loader.from("doctype").get("zerp__Payment Entry").schema;
+    const doctypeSchema = loader.from("doctype").get("Payment Entry").schema;
     ZodulaDoctypeHelper.validateDoc(doc, doctypeSchema, false);
     
     // Calculate base_amount from references (sum of allocated amounts)
@@ -244,12 +244,12 @@ export default $doctype<"zerp__Payment Entry">({
     if (paymentType === "Receive") {
         // Receive payment: Debit organization account (cash/bank), Credit party account (customer)
         if (organizationAccount) {
-            await $zodula.doctype("zerp__General Ledger").insert({
+            await $zodula.doctype("General Ledger").insert({
                 posting_date: doc.posting_date,
                 account: organizationAccount,
                 debit_amount: amount,
                 credit_amount: 0,
-                reference_doctype: "zerp__Payment Entry",
+                reference_doctype: "Payment Entry",
                 reference_id: doc.id,
                 description: description,
                 party_type: doc.party_type,
@@ -257,12 +257,12 @@ export default $doctype<"zerp__Payment Entry">({
             } as any);
         }
         if (partyAccount) {
-            await $zodula.doctype("zerp__General Ledger").insert({
+            await $zodula.doctype("General Ledger").insert({
                 posting_date: doc.posting_date,
                 account: partyAccount,
                 debit_amount: 0,
                 credit_amount: amount,
-                reference_doctype: "zerp__Payment Entry",
+                reference_doctype: "Payment Entry",
                 reference_id: doc.id,
                 description: description,
                 party_type: doc.party_type,
@@ -272,12 +272,12 @@ export default $doctype<"zerp__Payment Entry">({
     } else if (paymentType === "Pay") {
         // Pay payment: Debit party account (supplier), Credit organization account (cash/bank)
         if (partyAccount) {
-            await $zodula.doctype("zerp__General Ledger").insert({
+            await $zodula.doctype("General Ledger").insert({
                 posting_date: doc.posting_date,
                 account: partyAccount,
                 debit_amount: amount,
                 credit_amount: 0,
-                reference_doctype: "zerp__Payment Entry",
+                reference_doctype: "Payment Entry",
                 reference_id: doc.id,
                 description: description,
                 party_type: doc.party_type,
@@ -285,12 +285,12 @@ export default $doctype<"zerp__Payment Entry">({
             } as any);
         }
         if (organizationAccount) {
-            await $zodula.doctype("zerp__General Ledger").insert({
+            await $zodula.doctype("General Ledger").insert({
                 posting_date: doc.posting_date,
                 account: organizationAccount,
                 debit_amount: 0,
                 credit_amount: amount,
-                reference_doctype: "zerp__Payment Entry",
+                reference_doctype: "Payment Entry",
                 reference_id: doc.id,
                 description: description,
                 party_type: doc.party_type,
@@ -304,7 +304,7 @@ export default $doctype<"zerp__Payment Entry">({
     if (refType && doc.references && Array.isArray(doc.references)) {
         const doctype = refType;
         const invoiceMap = new Map<string, Set<string>>();
-        if (doctype === "zerp__Sales Invoice" || doctype === "zerp__Purchase Invoice" || doctype === "zerp__Delivery Order") {
+        if (doctype === "Sales Invoice" || doctype === "Purchase Invoice" || doctype === "Delivery Order") {
             invoiceMap.set(doctype, new Set());
             for (const ref of doc.references) {
                 const invoiceId = (ref as any).reference_id;
@@ -316,7 +316,7 @@ export default $doctype<"zerp__Payment Entry">({
         // Update payment status for each referenced document
         for (const [dt, docIds] of invoiceMap.entries()) {
             for (const docId of docIds) {
-                await updatePaymentStatusForReference(dt as "zerp__Sales Invoice" | "zerp__Purchase Invoice" | "zerp__Delivery Order", docId);
+                await updatePaymentStatusForReference(dt as "Sales Invoice" | "Purchase Invoice" | "Delivery Order", docId);
             }
         }
     }
@@ -324,25 +324,25 @@ export default $doctype<"zerp__Payment Entry">({
 .on("after_cancel", async ({ doc }) => {
     // Delete General Ledger entries for Payment Entry instead of creating reversed entries
     // Find all GL entries that reference this Payment Entry
-    const glEntries = await $zodula.doctype("zerp__General Ledger")
+    const glEntries = await $zodula.doctype("General Ledger")
         .select()
-        .where("reference_doctype", "=", "zerp__Payment Entry")
+        .where("reference_doctype", "=", "Payment Entry")
         .where("reference_id", "=", doc.id);
     
     // Delete each GL entry (after_delete hook will automatically update account balances)
     for (const glEntry of glEntries.docs) {
-        await $zodula.doctype("zerp__General Ledger").delete(glEntry.id);
+        await $zodula.doctype("General Ledger").delete(glEntry.id);
     }
     
     // Manage payment status for each referenced invoice document (recalculate after cancellation)
     const refTypeCancel = doc.reference_type as string | undefined;
     if (refTypeCancel && doc.references && Array.isArray(doc.references)) {
         const doctype = refTypeCancel;
-        if (doctype === "zerp__Sales Invoice" || doctype === "zerp__Purchase Invoice" || doctype === "zerp__Delivery Order") {
+        if (doctype === "Sales Invoice" || doctype === "Purchase Invoice" || doctype === "Delivery Order") {
             for (const ref of doc.references) {
                 const docId = (ref as any).reference_id;
                 if (docId) {
-                    await updatePaymentStatusForReference(doctype as "zerp__Sales Invoice" | "zerp__Purchase Invoice" | "zerp__Delivery Order", docId);
+                    await updatePaymentStatusForReference(doctype as "Sales Invoice" | "Purchase Invoice" | "Delivery Order", docId);
                 }
             }
         }
@@ -354,7 +354,7 @@ export default $doctype<"zerp__Payment Entry">({
  * based on all submitted payment entries that reference it.
  */
 async function updatePaymentStatusForReference(
-    doctype: "zerp__Sales Invoice" | "zerp__Purchase Invoice" | "zerp__Delivery Order",
+    doctype: "Sales Invoice" | "Purchase Invoice" | "Delivery Order",
     docId: string
 ) {
     const doc = await $zodula.doctype(doctype).get(docId);
@@ -370,7 +370,7 @@ async function updatePaymentStatusForReference(
         return;
     }
 
-    const references = await $zodula.doctype("zerp__Payment Entry Reference")
+    const references = await $zodula.doctype("Payment Entry Reference")
         .select()
         .where("reference_id", "=", docId);
 
@@ -378,7 +378,7 @@ async function updatePaymentStatusForReference(
     for (const ref of references.docs) {
         const paymentEntryId = ref.payment_entry;
         if (paymentEntryId) {
-            const paymentEntry = await $zodula.doctype("zerp__Payment Entry").get(paymentEntryId);
+            const paymentEntry = await $zodula.doctype("Payment Entry").get(paymentEntryId);
             if (paymentEntry && (paymentEntry as any).reference_type === doctype && paymentEntry.doc_status === 1) {
                 const allocatedAmount = parseFloat(String(ref.allocated_amount || 0)) || 0;
                 totalAllocated += allocatedAmount;

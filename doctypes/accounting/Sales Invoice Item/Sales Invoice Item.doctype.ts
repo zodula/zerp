@@ -1,8 +1,8 @@
-export default $doctype<"zerp__Sales Invoice Item">({
+export default $doctype<"Sales Invoice Item">({
     product: {
         type: "Reference",
         label: "Product",
-        reference: "zerp__Product",
+        reference: "Product",
         required: 1,
         in_list_view: 1,
         no_print: 1
@@ -18,7 +18,7 @@ export default $doctype<"zerp__Sales Invoice Item">({
     price_list: {
         type: "Reference",
         label: "Price List",
-        reference: "zerp__Price List",
+        reference: "Price List",
         required: 0,
         no_print: 1,
         in_list_view: 1,
@@ -43,7 +43,7 @@ export default $doctype<"zerp__Sales Invoice Item">({
     uom: {
         type: "Reference",
         label: "UOM",
-        reference: "zerp__UOM",
+        reference: "UOM",
         required: 1,
         in_list_view: 1
     },

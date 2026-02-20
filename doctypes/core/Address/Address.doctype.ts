@@ -52,7 +52,7 @@ export default $doctype({
     links: {
         type: "Reference Table",
         label: "Links",
-        reference: "zerp__Address Link Item",
+        reference: "Address Link Item",
         required: 0
     }
 }, {

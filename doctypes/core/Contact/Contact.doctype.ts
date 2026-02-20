@@ -33,7 +33,7 @@ export default $doctype({
     links: {
         type: "Reference Table",
         label: "Links",
-        reference: "zerp__Contact Link Item",
+        reference: "Contact Link Item",
         required: 0
     }
 }, {

@@ -1,4 +1,4 @@
-export default $doctype<"zerp__General Ledger">({
+export default $doctype<"General Ledger">({
     posting_date: {
         type: "Date",
         label: "Posting Date",
@@ -8,7 +8,7 @@ export default $doctype<"zerp__General Ledger">({
     account: {
         type: "Reference",
         label: "Account",
-        reference: "zerp__Account",
+        reference: "Account",
         required: 1,
         in_list_view: 1
     },
@@ -45,8 +45,8 @@ export default $doctype<"zerp__General Ledger">({
     party_type: {
         type: "Reference",
         label: "Party Type",
-        reference: "zodula__Doctype",
-        filters: JSON.stringify([["name", "IN", ["zerp__Customer", "zerp__Supplier"]]])
+        reference: "Doctype",
+        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]])
     },
     party: {
         type: "Reference",
@@ -99,7 +99,7 @@ async function updateAccountBalance(accountId: string) {
     if (!accountId) return;
     
     // Get all General Ledger entries for this account
-    const glEntries = await $zodula.doctype("zerp__General Ledger")
+    const glEntries = await $zodula.doctype("General Ledger")
         .select()
         .where("account", "=", accountId);
     
@@ -115,7 +115,7 @@ async function updateAccountBalance(accountId: string) {
     }
     
     // Get account to determine account type
-    const account = await $zodula.doctype("zerp__Account").get(accountId);
+    const account = await $zodula.doctype("Account").get(accountId);
     if (!account) return;
     
     // Calculate balance based on account type
@@ -131,7 +131,7 @@ async function updateAccountBalance(accountId: string) {
     }
     
     // Update account balance
-    await $zodula.doctype("zerp__Account").update(accountId, {
+    await $zodula.doctype("Account").update(accountId, {
         balance: balance
     } as any);
 }

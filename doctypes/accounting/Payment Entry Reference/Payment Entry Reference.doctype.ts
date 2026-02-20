@@ -2,7 +2,7 @@ export default $doctype({
     payment_entry: {
         type: "Reference",
         label: "Payment Entry",
-        reference: "zerp__Payment Entry",
+        reference: "Payment Entry",
         required: 1
     },
     reference_id: {

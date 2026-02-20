@@ -1,9 +1,9 @@
-export default $doctype<"zerp__Sales Invoice">(
+export default $doctype<"Sales Invoice">(
   {
     customer: {
       type: "Reference",
       label: "Customer",
-      reference: "zerp__Customer",
+      reference: "Customer",
       required: 1,
       no_print: 1,
     },
@@ -39,14 +39,14 @@ export default $doctype<"zerp__Sales Invoice">(
     delivery_order: {
       type: "Reference",
       label: "Delivery Order",
-      reference: "zerp__Delivery Order",
+      reference: "Delivery Order",
       required: 0,
       no_print: 1,
     },
     price_project: {
       type: "Reference",
       label: "Price Project",
-      reference: "zerp__Price Project",
+      reference: "Price Project",
       required: 0,
       no_print: 1,
     },
@@ -110,26 +110,26 @@ export default $doctype<"zerp__Sales Invoice">(
     apply_tax_template: {
       type: "Reference",
       label: "Apply Tax Template",
-      reference: "zerp__Tax Template",
+      reference: "Tax Template",
       required: 0,
       no_print: 1
     },
     sales_invoice_items: {
       type: "Reference Table",
       label: "Sales Invoice Items",
-      reference: "zerp__Sales Invoice Item",
+      reference: "Sales Invoice Item",
       required: 0
     },
     tax_and_charges: {
       type: "Reference Table",
       label: "Tax and Charges",
-      reference: "zerp__Tax and Charges",
+      reference: "Tax and Charges",
       required: 0
     },
     billing_address: {
       type: "Reference",
       label: "Billing Address",
-      reference: "zerp__Address",
+      reference: "Address",
       required: 0,
       no_print: 1,
     },
@@ -150,7 +150,7 @@ export default $doctype<"zerp__Sales Invoice">(
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
-      reference: "zerp__Address",
+      reference: "Address",
       required: 0,
       no_print: 1
     },
@@ -171,7 +171,7 @@ export default $doctype<"zerp__Sales Invoice">(
     billing_contact: {
       type: "Reference",
       label: "Billing Contact",
-      reference: "zerp__Contact",
+      reference: "Contact",
       required: 0,
       no_print: 1
     },
@@ -192,7 +192,7 @@ export default $doctype<"zerp__Sales Invoice">(
     shipping_contact: {
       type: "Reference",
       label: "Shipping Contact",
-      reference: "zerp__Contact",
+      reference: "Contact",
       required: 0,
       no_print: 1
     },
@@ -219,8 +219,8 @@ export default $doctype<"zerp__Sales Invoice">(
     comments_enabled: 1,
     search_fields: "customer\ncustomer_name",
     additional_connections: JSON.stringify([{
-      doctype: "zerp__Payment Entry",
-      filters: [["reference_type", "=", "zerp__Sales Invoice"], ["references.reference_id", "=", "{{id}}"]],
+      doctype: "Payment Entry",
+      filters: [["reference_type", "=", "Sales Invoice"], ["references.reference_id", "=", "{{id}}"]],
       field: "references.reference_id"
     }]),
     tabs: JSON.stringify([
@@ -386,13 +386,13 @@ export default $doctype<"zerp__Sales Invoice">(
                     try {
                         if (priceListId) {
                             // Item has a price list: update that doc instead of fetching one
-                            await $zodula.doctype("zerp__Price List").update(priceListId, {
+                            await $zodula.doctype("Price List").update(priceListId, {
                                 price: unitPrice,
                                 uom,
                                 until_date: untilDate,
                             } as any);
                         } else {
-                            const { docs } = await $zodula.doctype("zerp__Price List")
+                            const { docs } = await $zodula.doctype("Price List")
                                 .select()
                                 .where("price_project", "=", priceProject)
                                 .where("customer", "=", customer)
@@ -401,12 +401,12 @@ export default $doctype<"zerp__Sales Invoice">(
                                 .where("uom", "=", uom)
                                 .limit(1);
                             if (docs.length > 0) {
-                                await $zodula.doctype("zerp__Price List").update((docs[0] as any).id, {
+                                await $zodula.doctype("Price List").update((docs[0] as any).id, {
                                     price: unitPrice,
                                     until_date: untilDate,
                                 } as any);
                             } else {
-                                await $zodula.doctype("zerp__Price List").insert({
+                                await $zodula.doctype("Price List").insert({
                                     price_project: priceProject,
                                     party_type: "Customer",
                                     customer,
@@ -431,7 +431,7 @@ export default $doctype<"zerp__Sales Invoice">(
     const paymentStatus = (doc as any).payment_status;
     if (deliveryOrderId && paymentStatus) {
         try {
-            await $zodula.doctype("zerp__Delivery Order").update(deliveryOrderId, {
+            await $zodula.doctype("Delivery Order").update(deliveryOrderId, {
                 payment_status: paymentStatus
             } as any);
         } catch (error) {

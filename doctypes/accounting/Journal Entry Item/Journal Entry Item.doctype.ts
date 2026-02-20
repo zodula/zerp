@@ -2,14 +2,14 @@ export default $doctype({
     journal_entry: {
         type: "Reference",
         label: "Journal Entry",
-        reference: "zerp__Journal Entry",
+        reference: "Journal Entry",
         required: 1,
         in_list_view: 1
     },
     account: {
         type: "Reference",
         label: "Account",
-        reference: "zerp__Account",
+        reference: "Account",
         required: 1,
         in_list_view: 1
     },
@@ -21,8 +21,8 @@ export default $doctype({
     party_type: {
         type: "Reference",
         label: "Party Type",
-        reference: "zodula__Doctype",
-        filters: JSON.stringify([["name", "IN", ["zerp__Customer", "zerp__Supplier"]]]),
+        reference: "Doctype",
+        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]]),
         in_list_view: 1
     },
     party: {

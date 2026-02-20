@@ -1,4 +1,4 @@
-export default $doctype<"zerp__Delivery Manifest">({
+export default $doctype<"Delivery Manifest">({
     posting_date: {
         type: "Date",
         label: "Posting Date",
@@ -14,21 +14,21 @@ export default $doctype<"zerp__Delivery Manifest">({
     source_warehouse: {
         type: "Reference",
         label: "Source Warehouse",
-        reference: "zerp__Warehouse",
+        reference: "Warehouse",
         required: 1,
         in_list_view: 1,
     },
     target_warehouse: {
         type: "Reference",
         label: "Target Warehouse",
-        reference: "zerp__Warehouse",
+        reference: "Warehouse",
         required: 1,
         in_list_view: 1,
     },
     driver: {
         type: "Reference",
         label: "Driver",
-        reference: "zerp__Driver",
+        reference: "Driver",
         required: 0,
         in_list_view: 1,
     },
@@ -43,7 +43,7 @@ export default $doctype<"zerp__Delivery Manifest">({
     vehicle: {
         type: "Reference",
         label: "Vehicle",
-        reference: "zerp__Vehicle",
+        reference: "Vehicle",
         required: 0,
         in_list_view: 1,
     },
@@ -58,7 +58,7 @@ export default $doctype<"zerp__Delivery Manifest">({
     transporter: {
         type: "Reference",
         label: "Transporter (Driver's Supplier)",
-        reference: "zerp__Supplier",
+        reference: "Supplier",
         required: 0,
         in_list_view: 1,
         readonly: 1,
@@ -75,13 +75,13 @@ export default $doctype<"zerp__Delivery Manifest">({
     delivery_manifest_items: {
         type: "Reference Table",
         label: "Delivery Manifest Items",
-        reference: "zerp__Delivery Manifest Item",
+        reference: "Delivery Manifest Item",
         required: 0,
     },
     delivery_manifest_expense_items: {
         type: "Reference Table",
         label: "Delivery Manifest Expense Items",
-        reference: "zerp__Delivery Manifest Expense Item",
+        reference: "Delivery Manifest Expense Item",
         required: 0,
     },
     total_expense_amount: {

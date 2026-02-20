@@ -1,8 +1,8 @@
-export default $doctype<"zerp__Leave Application">({
+export default $doctype<"Leave Application">({
     employee: {
         type: "Reference",
         label: "Employee",
-        reference: "zerp__Employee",
+        reference: "Employee",
         required: 1,
         in_list_view: 1,
     },
@@ -16,7 +16,7 @@ export default $doctype<"zerp__Leave Application">({
     leave_type: {
         type: "Reference",
         label: "Leave Type",
-        reference: "zerp__Leave Type",
+        reference: "Leave Type",
         required: 1,
         in_list_view: 1,
     },
@@ -96,8 +96,8 @@ export default $doctype<"zerp__Leave Application">({
     }
 })
 .on("after_submit", async ({ doc }) => {
-    await $zodula.doctype("zerp__Leave Application").update(doc.id, { status: "Approved" } as any);
+    await $zodula.doctype("Leave Application").update(doc.id, { status: "Approved" } as any);
 })
 .on("after_cancel", async ({ doc }) => {
-    await $zodula.doctype("zerp__Leave Application").update(doc.id, { status: "Cancelled" } as any);
+    await $zodula.doctype("Leave Application").update(doc.id, { status: "Cancelled" } as any);
 });

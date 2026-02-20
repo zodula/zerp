@@ -2,7 +2,7 @@ export default $doctype({
     delivery_order: {
         type: "Reference",
         label: "Delivery Order",
-        reference: "zerp__Delivery Order",
+        reference: "Delivery Order",
         required: 1,
         in_list_view: 1,
     },
@@ -25,7 +25,7 @@ export default $doctype({
     shipping_address: {
         type: "Reference",
         label: "Shipping Address",
-        reference: "zerp__Address",
+        reference: "Address",
         required: 0,
         readonly: 1,
         fetch_from: "delivery_order.shipping_address",

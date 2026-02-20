@@ -8,7 +8,7 @@ export default $doctype({
     tax_template_items: {
         type: "Reference Table",
         label: "Tax Template Items",
-        reference: "zerp__Tax Template Item",
+        reference: "Tax Template Item",
         required: 0
     }
 }, {

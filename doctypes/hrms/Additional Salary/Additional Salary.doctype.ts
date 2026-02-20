@@ -2,14 +2,14 @@ export default $doctype({
     employee: {
         type: "Reference",
         label: "Employee",
-        reference: "zerp__Employee",
+        reference: "Employee",
         required: 1,
         in_list_view: 1,
     },
     salary_component: {
         type: "Reference",
         label: "Salary Component",
-        reference: "zerp__Salary Component",
+        reference: "Salary Component",
         required: 1,
         in_list_view: 1,
     },

@@ -1,7 +1,7 @@
 [
   {
     "id": "15c738ca940d4d21",
-    "doctype": "zerp__Address",
+    "doctype": "Address",
     "role": "Authenticated",
     "perm_level": "0",
     "can_get": 1,
