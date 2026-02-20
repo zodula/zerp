@@ -103,6 +103,7 @@ export default $doctype({
 }, {
     label: "Employee",
     naming_series: "EMP-{{organization_abbr}}-{#####}",
+    display_field: "name",
     search_fields: "name\nemployee_number\nemail\nphone\ndesignation\ndepartment",
     track_changes: 1,
     tabs: JSON.stringify([

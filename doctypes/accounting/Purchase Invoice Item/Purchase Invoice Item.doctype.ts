@@ -1,4 +1,4 @@
-export default $doctype({
+export default $doctype<"zerp__Purchase Invoice Item">({
     product: {
         type: "Reference",
         label: "Product",
@@ -14,6 +14,14 @@ export default $doctype({
         in_list_view: 1,
         readonly: 1,
         fetch_from: "product.product_name"
+    },
+    price_list: {
+        type: "Reference",
+        label: "Price List",
+        reference: "zerp__Price List",
+        required: 0,
+        no_print: 1,
+        in_list_view: 1,
     },
     product_image: {    
         type: "Image Preview",
@@ -89,6 +97,7 @@ export default $doctype({
                     { type: "field", value: "purchase_invoice", align: "left" },
                     { type: "field", value: "product", align: "left" },
                     { type: "field", value: "product_name", align: "left" },
+                    { type: "field", value: "price_list", align: "left" },
                     { type: "field", value: "item_description", align: "left" }
                 ],
                 { type: "section", value: "Quantity & Pricing", align: "left" },
@@ -108,5 +117,8 @@ export default $doctype({
             ]
         }
     ])
+})
+.on("before_save", (ctx) => {
+    ctx.doc.price_list = null;
 })
 

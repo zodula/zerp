@@ -17,15 +17,27 @@ export default $doctype({
         type: "Reference",
         label: "Customer",
         reference: "zerp__Customer",
-        required: 0,
         in_list_view: 1
+    },
+    customer_name: {
+        type: "Text",
+        label: "Customer Name",
+        in_list_view: 1,
+        readonly: 1,
+        fetch_from: "customer.name"
     },
     supplier: {
         type: "Reference",
         label: "Supplier",
         reference: "zerp__Supplier",
-        required: 0,
         in_list_view: 1
+    },
+    supplier_name: {
+        type: "Text",
+        label: "Supplier Name",
+        in_list_view: 1,
+        readonly: 1,
+        fetch_from: "supplier.name"
     },
     product: {
         type: "Reference",
@@ -33,6 +45,13 @@ export default $doctype({
         reference: "zerp__Product",
         required: 1,
         in_list_view: 1
+    },
+    product_name: {
+        type: "Text",
+        label: "Product Name",
+        in_list_view: 1,
+        readonly: 1,
+        fetch_from: "product.product_name"
     },
     price: {
         type: "Float",
@@ -51,11 +70,15 @@ export default $doctype({
         type: "Date",
         label: "Until Date",
         required: 0
+    },
+    remarks: {
+        type: "Text",
+        label: "Remarks"
     }
 }, {
     label: "Price List",
     naming_series: "PL-{YYYY}-{MM}-{########}",
-    search_fields: "price_project\nparty_type\ncustomer\nsupplier\nproduct",
+    search_fields: "uom\nprice\nuntil_date\nremarks",
     tabs: JSON.stringify([
         {
             type: "Tab",

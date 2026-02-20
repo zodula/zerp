@@ -281,8 +281,10 @@ export default function DeliveryOrderScripts() {
             }
         };
 
+        // Only apply product filter when filter_product_by_customer is explicitly checked (1 or "1"); 0/null/undefined → clear filters
         const updateProductFilterByCustomer = (frm: FormType<typeof doctype>) => {
-            const filterByCustomer = frm.get_value("filter_product_by_customer" as any);
+            const raw = frm.get_value("filter_product_by_customer" as any);
+            const filterByCustomer = raw === 1 || raw === "1" || raw === true;
             const customer = frm.get_value("customer" as any);
             if (filterByCustomer && customer) {
                 const filters = JSON.stringify([["product_customer.customer", "=", customer]]);
@@ -290,6 +292,34 @@ export default function DeliveryOrderScripts() {
             } else {
                 frm.set_df_child_table_property("delivery_order_items", null, "product", "filters", JSON.stringify([]));
             }
+        };
+
+        // Set price_list filters and readonly per row (parent price_project, customer, row product, until_date)
+        const updatePriceListFiltersForItems = (frm: FormType<typeof doctype>) => {
+            const items = (frm.get_value(itemsField as any) || []) as any[];
+            const priceProject = frm.get_value("price_project" as any);
+            const customer = frm.get_value("customer" as any);
+            const postingDate = frm.get_value("posting_date" as any);
+            items.forEach((row: any, idx: number) => {
+                const product = row?.product;
+                const criteriaMet = !!(priceProject && customer && product);
+                if (!criteriaMet) {
+                    frm.set_df_child_table_property(itemsField, idx, "price_list", "filters", []);
+                    frm.set_df_child_table_property(itemsField, idx, "price_list", "readonly", 1);
+                    return;
+                }
+                frm.set_df_child_table_property(itemsField, idx, "price_list", "readonly", 0);
+                const filters: [string, string, any][] = [
+                    ["price_project", "=", priceProject],
+                    ["party_type", "=", "Customer"],
+                    ["customer", "=", customer],
+                    ["product", "=", product],
+                ];
+                if (postingDate) {
+                    filters.push(["until_date", ">=", postingDate]);
+                }
+                frm.set_df_child_table_property(itemsField, idx, "price_list", "filters", filters);
+            });
         };
 
         const updateDueDate = async (frm: FormType<typeof doctype>) => {
@@ -316,6 +346,8 @@ export default function DeliveryOrderScripts() {
         zui.form.on(doctype, {
             [itemsField]: (frm: FormType<typeof doctype>) => {
                 calculateNetTotal(frm, itemsField);
+                updateProductFilterByCustomer(frm);
+                updatePriceListFiltersForItems(frm);
             },
             net_total: (frm: FormType<typeof doctype>) => {
                 calculateNetTotal(frm, itemsField);
@@ -324,12 +356,17 @@ export default function DeliveryOrderScripts() {
                 updateAddressFilters(frm);
                 updateContactFilters(frm);
                 updateProductFilterByCustomer(frm);
+                updatePriceListFiltersForItems(frm);
                 await updateDueDate(frm);
+            },
+            price_project: (frm: FormType<typeof doctype>) => {
+                updatePriceListFiltersForItems(frm);
             },
             filter_product_by_customer: (frm: FormType<typeof doctype>) => {
                 updateProductFilterByCustomer(frm);
             },
             posting_date: async (frm: FormType<typeof doctype>) => {
+                updatePriceListFiltersForItems(frm);
                 await updateDueDate(frm);
             },
             apply_tax_template: async (frm: FormType<typeof doctype>) => {
@@ -347,6 +384,7 @@ export default function DeliveryOrderScripts() {
                 updateAddressFilters(frm);
                 updateContactFilters(frm);
                 updateProductFilterByCustomer(frm);
+                updatePriceListFiltersForItems(frm);
             }
         });
 

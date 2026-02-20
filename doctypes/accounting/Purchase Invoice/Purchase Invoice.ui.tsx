@@ -341,6 +341,31 @@ export default function PurchaseInvoiceScripts() {
             }
         };
 
+        // Set price_list filters per row (parent price_project, supplier, row product, until_date)
+        const updatePriceListFiltersForItems = (frm: FormType<typeof doctype>) => {
+            const items = (frm.get_value(itemsField as any) || []) as any[];
+            const priceProject = frm.get_value("price_project" as any);
+            const supplier = frm.get_value("supplier" as any);
+            const postingDate = frm.get_value("posting_date" as any);
+            items.forEach((row: any, idx: number) => {
+                const product = row?.product;
+                if (!priceProject || !supplier || !product) {
+                    frm.set_df_child_table_property(itemsField, idx, "price_list", "filters", []);
+                    return;
+                }
+                const filters: [string, string, any][] = [
+                    ["price_project", "=", priceProject],
+                    ["party_type", "=", "Supplier"],
+                    ["supplier", "=", supplier],
+                    ["product", "=", product],
+                ];
+                if (postingDate) {
+                    filters.push(["until_date", ">=", postingDate]);
+                }
+                frm.set_df_child_table_property(itemsField, idx, "price_list", "filters", filters);
+            });
+        };
+
         // Update due date based on supplier credit_days
         const updateDueDate = async (frm: FormType<typeof doctype>) => {
             const supplier = frm.get_value("supplier" as any);
@@ -369,6 +394,7 @@ export default function PurchaseInvoiceScripts() {
         zui.form.on(doctype, {
             [itemsField]: (frm: FormType<typeof doctype>) => {
                 calculateNetTotal(frm, itemsField);
+                updatePriceListFiltersForItems(frm);
             },
             net_total: (frm: FormType<typeof doctype>) => {
                 calculateNetTotal(frm, itemsField);
@@ -376,9 +402,14 @@ export default function PurchaseInvoiceScripts() {
             supplier: async (frm: FormType<typeof doctype>) => {
                 updateAddressFilters(frm);
                 updateContactFilters(frm);
+                updatePriceListFiltersForItems(frm);
                 await updateDueDate(frm);
             },
+            price_project: (frm: FormType<typeof doctype>) => {
+                updatePriceListFiltersForItems(frm);
+            },
             posting_date: async (frm: FormType<typeof doctype>) => {
+                updatePriceListFiltersForItems(frm);
                 await updateDueDate(frm);
             },
             apply_tax_template: async (frm: FormType<typeof doctype>) => {
@@ -402,6 +433,7 @@ export default function PurchaseInvoiceScripts() {
                 }
                 updateAddressFilters(frm);
                 updateContactFilters(frm);
+                updatePriceListFiltersForItems(frm);
             }
         });
 

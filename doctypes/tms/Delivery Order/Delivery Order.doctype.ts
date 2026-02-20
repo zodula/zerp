@@ -49,6 +49,13 @@ export default $doctype<"zerp__Delivery Order">(
       default: "0",
       no_print: 1,
     },
+    save_price_for: {
+      type: "Select",
+      label: "Save Price For",
+      options: "30 Days\n60 Days\n1 Year",
+      required: 0,
+      no_print: 1,
+    },
     posting_date: {
       type: "Date",
       label: "Posting Date",
@@ -285,6 +292,7 @@ export default $doctype<"zerp__Delivery Order">(
           { type: "section", value: "Items", align: "left" },
           [
             { type: "field", value: "filter_product_by_customer", align: "left" },
+            { type: "field", value: "save_price_for", align: "left" },
             { type: "field", value: "source_warehouse", align: "left" },
             { type: "field", value: "physical_bill_no", align: "left" },
           ],
@@ -414,4 +422,54 @@ export default $doctype<"zerp__Delivery Order">(
 
     doc.total_taxes_and_charges = totalTaxesAndCharges;
     doc.total_amount = runningTotal;
+
+    // Save prices to Price List when save_price_for, price_project and customer are set
+    const savePriceFor = (doc as any).save_price_for as string | undefined;
+    const priceProject = (doc as any).price_project as string | undefined;
+    const customer = (doc as any).customer as string | undefined;
+    if (savePriceFor && priceProject && customer) {
+        const daysMap: Record<string, number> = { "30 Days": 30, "60 Days": 60, "1 Year": 365 };
+        const days = daysMap[savePriceFor];
+        if (days != null) {
+            const baseDate = (doc as any).posting_date ? String((doc as any).posting_date) : $zodula.utils.format(new Date(), "date");
+            const untilDate = $zodula.utils.format($zodula.utils.addDays(baseDate, days), "date");
+            const items = (doc as any).delivery_order_items as any[] | undefined;
+            if (Array.isArray(items)) {
+                for (const item of items) {
+                    const product = item?.product;
+                    const uom = item?.uom;
+                    const unitPrice = item?.unit_price != null ? parseFloat(String(item.unit_price)) : NaN;
+                    if (!product || !uom || Number.isNaN(unitPrice)) continue;
+                    try {
+                        const { docs } = await $zodula.doctype("zerp__Price List")
+                            .select()
+                            .where("price_project", "=", priceProject)
+                            .where("customer", "=", customer)
+                            .where("party_type", "=", "Customer")
+                            .where("product", "=", product)
+                            .where("uom", "=", uom)
+                            .limit(1);
+                        if (docs.length > 0) {
+                            await $zodula.doctype("zerp__Price List").update((docs[0] as any).id, {
+                                price: unitPrice,
+                                until_date: untilDate,
+                            } as any);
+                        } else {
+                            await $zodula.doctype("zerp__Price List").insert({
+                                price_project: priceProject,
+                                party_type: "Customer",
+                                customer,
+                                product,
+                                price: unitPrice,
+                                uom,
+                                until_date: untilDate,
+                            } as any);
+                        }
+                    } catch (err) {
+                        console.error("Error syncing Price List for product/uom:", product, uom, err);
+                    }
+                }
+            }
+        }
+    }
 });
