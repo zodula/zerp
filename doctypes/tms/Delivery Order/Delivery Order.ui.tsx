@@ -2,7 +2,7 @@ import { useEffect } from "react";
 import { zui, type FormType } from "@/zodula/ui";
 import type { FormContext } from "@/zodula/ui/zui";
 import { zodula } from "@/zodula/client";
-import { FileText } from "lucide-react";
+import { CreditCard } from "lucide-react";
 
 type DeliveryOrderDoctype = "zerp__Delivery Order";
 
@@ -179,23 +179,33 @@ const getPaymentStatusBadge = (doc: any) => {
     }
 };
 
-const createSalesInvoiceHandler = async (context: FormContext) => {
+const createPaymentHandler = async (context: FormContext) => {
     const doc = context.doc as any;
     if (!doc.id) return;
 
     const org = context.org || "System Panel";
+    const totalAmount = parseFloat(String(doc.total_amount || 0)) || 0;
+    const party = doc.customer;
 
-    // Map delivery order items to sales invoice items
-    const salesInvoiceItems = Array.isArray(doc.delivery_order_items)
-        ? doc.delivery_order_items.map((row: any) => ({
-            product: row.product,
-            quantity: row.quantity,
-            uom: row.uom,
-            unit_price: row.unit_price,
-            total_price: parseFloat(String(row.total_price || 0)) || 0,
-            item_description: row.item_description
-        }))
-        : [];
+    let partyAccount: string | null = null;
+    if (party) {
+        try {
+            const accounts = await zodula.doc.select_docs("zerp__Account", {
+                filters: [
+                    ["party_type", "=", "zerp__Customer"],
+                    ["party", "=", party]
+                ],
+                limit: 1,
+                sort: "account_code",
+                order: "asc"
+            });
+            if (accounts.docs?.length > 0 && accounts.docs[0]) {
+                partyAccount = accounts.docs[0].id;
+            }
+        } catch (error) {
+            console.error("Error finding party account:", error);
+        }
+    }
 
     let taxAndCharges: any[] = [];
     if (Array.isArray(doc.tax_and_charges) && doc.tax_and_charges.length > 0) {
@@ -213,25 +223,21 @@ const createSalesInvoiceHandler = async (context: FormContext) => {
     }
 
     const prefill: any = {
-        delivery_order: doc.id,
-        customer: doc.customer,
-        customer_name: doc.customer_name,
-        posting_date: doc.posting_date || zodula.utils.format(new Date(), "date"),
-        due_date: doc.due_date,
-        price_project: doc.price_project,
-        billing_address: doc.billing_address,
-        shipping_address: doc.shipping_address,
-        billing_contact: doc.billing_contact,
-        shipping_contact: doc.shipping_contact,
-        apply_tax_template: doc.apply_tax_template,
-        sales_invoice_items: salesInvoiceItems,
-        tax_and_charges: taxAndCharges,
-        net_total: doc.net_total,
-        total_taxes_and_charges: doc.total_taxes_and_charges,
-        total_amount: doc.total_amount
+        posting_date: zodula.utils.format(new Date(), "date"),
+        payment_type: "Receive",
+        party_type: "zerp__Customer",
+        party,
+        reference_type: "zerp__Delivery Order",
+        payment_method: "Bank",
+        party_account: partyAccount,
+        base_amount: parseFloat(String(doc.net_total || 0)) || 0,
+        references: [{
+            reference_id: doc.id
+        }],
+        tax_and_charges: taxAndCharges
     };
 
-    context.navigate(`/desk/${org}/doctypes/zerp__Sales Invoice/form`, {
+    context.navigate(`/desk/${org}/doctypes/zerp__Payment Entry/form`, {
         state: { prefill }
     });
 };
@@ -410,9 +416,10 @@ export default function DeliveryOrderScripts() {
                     context.addSecondaryButton(zui.t("Action"), () => {}, {
                         variant: "outline",
                         items: [{
-                            label: zui.t("Create Sales Invoice"),
-                            icon: FileText,
-                            onClick: () => createSalesInvoiceHandler(context)
+                            label: zui.t("Create Payment"),
+                            icon: CreditCard,
+                            onClick: () => createPaymentHandler(context),
+                            disabled: (context.doc as any).payment_status === "Paid"
                         }]
                     });
                 }

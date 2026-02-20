@@ -5,17 +5,11 @@ export default $doctype({
         reference: "zerp__Payment Entry",
         required: 1
     },
-    reference_type: {
-        type: "Reference",
-        label: "Reference Type",
-        reference: "zodula__Doctype",
-        filters: JSON.stringify([["name", "IN", ["zerp__Sales Invoice", "zerp__Purchase Invoice"]]]),
-        required: 1
-    },
     reference_id: {
         type: "Reference",
         label: "Reference ID",
         reference: "{{reference_type}}",
+        filters: JSON.stringify([["doc_status", "=", "1"]]),
         required: 1
     },
     remaining_amount: {

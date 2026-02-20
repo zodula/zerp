@@ -119,7 +119,4 @@ export default $doctype<"zerp__Sales Invoice Item">({
         }
     ])
 })
-.on("before_submit", (ctx) => {
-    ctx.doc.price_list = null;
-})
 

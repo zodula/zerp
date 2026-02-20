@@ -122,6 +122,7 @@ function calculateBaseAmount(frm: FormType<"zerp__Payment Entry">) {
 }
 
 async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
+    const referenceType = frm.get_value("reference_type");
     const rows = Array.isArray(frm.get_value("references"))
         ? [...(frm.get_value("references") as any[])]
         : [];
@@ -130,7 +131,6 @@ async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
 
     for (let idx = 0; idx < rows.length; idx++) {
         const row = { ...rows[idx] };
-        const referenceType = (row as any).reference_type;
         const referenceId = (row as any).reference_id;
 
         if (!referenceType || !referenceId) {
@@ -161,7 +161,6 @@ async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
 
             const referencesResponse = await zodula.doc.select_docs("zerp__Payment Entry Reference", {
                 filters: [
-                    ["reference_type", "=", referenceType],
                     ["reference_id", "=", referenceId]
                 ],
                 limit: 10000,
@@ -181,7 +180,7 @@ async function calculateReferenceRows(frm: FormType<"zerp__Payment Entry">) {
                 const paymentEntryId = (ref as any).payment_entry;
                 if (paymentEntryId) {
                     const paymentEntry = await zodula.doc.get_doc("zerp__Payment Entry", paymentEntryId);
-                    if (paymentEntry && (paymentEntry as any).doc_status === 1) {
+                    if (paymentEntry && (paymentEntry as any).reference_type === referenceType && (paymentEntry as any).doc_status === 1) {
                         const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
                         totalAllocated += allocatedAmount;
                     }
@@ -236,10 +235,6 @@ export default function PaymentEntryScripts() {
         // Track last reference_id for each row to detect changes
         const lastReferenceIds = new Map<number, string>();
 
-        const getPartyField = (partyType: string): string => {
-            return partyType === "zerp__Customer" ? "customer" : "supplier";
-        };
-
         const updatePartyReference = (frm: FormType<"zerp__Payment Entry">) => {
             const partyType = frm.get_value("party_type");
             const paymentType = frm.get_value("payment_type");
@@ -278,13 +273,19 @@ export default function PaymentEntryScripts() {
             }
         };
 
-        // Helper function to set properties for all rows in the references table
-        const setReferencesTableProperty = (frm: FormType<"zerp__Payment Entry">, fieldName: string, property: string, value: any) => {
+        // Helper function to set reference_id filters for all rows based on parent reference_type and party
+        const setReferenceIdFilters = (frm: FormType<"zerp__Payment Entry">) => {
+            const referenceType = frm.get_value("reference_type");
+            const party = frm.get_value("party");
+            if (!referenceType || !party) {
+                return;
+            }
+            const partyField = referenceType === "zerp__Sales Invoice" || referenceType === "zerp__Delivery Order" ? "customer" : "supplier";
+            const filters = JSON.stringify([[partyField, "=", party]]);
             const references = frm.get_value("references");
             if (Array.isArray(references)) {
-                // Set property for each row individually
                 references.forEach((_, idx) => {
-                    frm.set_df_child_table_property("references", idx, fieldName, property, value);
+                    frm.set_df_child_table_property("references", idx, "reference_id", "filters", filters);
                 });
             }
         };
@@ -297,15 +298,9 @@ export default function PaymentEntryScripts() {
                     if (frm.get_value("party_type") !== "zerp__Customer") {
                         frm.set_value("party_type", "zerp__Customer");
                     }
-                    // Set reference_type to Sales Invoice for Receive payments
-                    // Set property for each row individually
-                    setReferencesTableProperty(frm, "reference_type", "default", "zerp__Sales Invoice");
-                    const party = frm.get_value("party");
-                    if (party) {
-                        const filters = JSON.stringify([["customer", "=", party]]);
-                        setReferencesTableProperty(frm, "reference_id", "filters", filters);
-                    }
-                    // Update party_account filter
+                    // Set reference_type to Sales Invoice for Receive payments (parent field)
+                    frm.set_value("reference_type", "zerp__Sales Invoice");
+                    setReferenceIdFilters(frm);
                     updatePartyAccountFilter(frm);
                     if (!updatingRefs) {
                         updatingRefs = true;
@@ -320,15 +315,9 @@ export default function PaymentEntryScripts() {
                     if (frm.get_value("party_type") !== "zerp__Supplier") {
                         frm.set_value("party_type", "zerp__Supplier");
                     }
-                    // Set reference_type to Purchase Invoice for Pay payments
-                    // Set property for each row individually
-                    setReferencesTableProperty(frm, "reference_type", "default", "zerp__Purchase Invoice");
-                    const party = frm.get_value("party");
-                    if (party) {
-                        const filters = JSON.stringify([["supplier", "=", party]]);
-                        setReferencesTableProperty(frm, "reference_id", "filters", filters);
-                    }
-                    // Update party_account filter
+                    // Set reference_type to Purchase Invoice for Pay payments (parent field)
+                    frm.set_value("reference_type", "zerp__Purchase Invoice");
+                    setReferenceIdFilters(frm);
                     updatePartyAccountFilter(frm);
                     if (!updatingRefs) {
                         updatingRefs = true;
@@ -340,19 +329,23 @@ export default function PaymentEntryScripts() {
                     }
                 }
             },
+            reference_type: async function(frm) {
+                setReferenceIdFilters(frm);
+                if (!updatingRefs) {
+                    updatingRefs = true;
+                    try {
+                        await calculateReferenceRows(frm);
+                    } finally {
+                        updatingRefs = false;
+                    }
+                }
+            },
             party_type: async function(frm) {
                 updatePartyReference(frm);
-                const paymentType = frm.get_value("payment_type");
-                const partyType = frm.get_value("party_type");
                 const party = frm.get_value("party");
-                
-                // Update party_account filter
                 updatePartyAccountFilter(frm);
-                
-                if (party && paymentType && partyType) {
-                    const partyField = getPartyField(partyType);
-                    const filters = JSON.stringify([[partyField, "=", party]]);
-                    setReferencesTableProperty(frm, "reference_id", "filters", filters);
+                if (party) {
+                    setReferenceIdFilters(frm);
                     if (!updatingRefs) {
                         updatingRefs = true;
                         try {
@@ -364,16 +357,10 @@ export default function PaymentEntryScripts() {
                 }
             },
             party: async function(frm) {
-                const partyType = frm.get_value("party_type");
                 const party = frm.get_value("party");
-                
-                // Update party_account filter
                 updatePartyAccountFilter(frm);
-                
-                if (party && partyType) {
-                    const partyField = getPartyField(partyType);
-                    const filters = JSON.stringify([[partyField, "=", party]]);
-                    setReferencesTableProperty(frm, "reference_id", "filters", filters);
+                if (party) {
+                    setReferenceIdFilters(frm);
                     if (!updatingRefs) {
                         updatingRefs = true;
                         try {
@@ -411,7 +398,7 @@ export default function PaymentEntryScripts() {
                         
                         // If reference_id changed or is new, process this row
                         if (referenceId && referenceId !== lastRefId) {
-                            const referenceType = (row as any).reference_type;
+                            const referenceType = frm.get_value("reference_type");
                             if (referenceType && referenceId) {
                                 try {
                                     const invoice = await zodula.doc.get_doc(referenceType as any, referenceId);
@@ -420,7 +407,6 @@ export default function PaymentEntryScripts() {
                                         
                                         const referencesResponse = await zodula.doc.select_docs("zerp__Payment Entry Reference", {
                                             filters: [
-                                                ["reference_type", "=", referenceType],
                                                 ["reference_id", "=", referenceId]
                                             ],
                                             limit: 10000,
@@ -440,7 +426,7 @@ export default function PaymentEntryScripts() {
                                             const paymentEntryId = (ref as any).payment_entry;
                                             if (paymentEntryId) {
                                                 const paymentEntry = await zodula.doc.get_doc("zerp__Payment Entry", paymentEntryId);
-                                                if (paymentEntry && (paymentEntry as any).doc_status === 1) {
+                                                if (paymentEntry && (paymentEntry as any).reference_type === referenceType && (paymentEntry as any).doc_status === 1) {
                                                     const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
                                                     totalAllocated += allocatedAmount;
                                                 }
@@ -534,13 +520,11 @@ export default function PaymentEntryScripts() {
                     if (existingParty && !frm.get_value("party")) {
                         frm.set_value("party", existingParty);
                     }
-                    setReferencesTableProperty(frm, "reference_type", "default", "zerp__Sales Invoice");
-                    const party = frm.get_value("party");
-                    if (party) {
-                        const filters = JSON.stringify([["customer", "=", party]]);
-                        setReferencesTableProperty(frm, "reference_id", "filters", filters);
+                    // Set reference_type only if not already set (e.g. preserve prefill from Delivery Order)
+                    if (!frm.get_value("reference_type")) {
+                        frm.set_value("reference_type", "zerp__Sales Invoice");
                     }
-                    // Update party_account filter after party is set
+                    setReferenceIdFilters(frm);
                     updatePartyAccountFilter(frm);
                     if (!updatingRefs) {
                         updatingRefs = true;
@@ -558,13 +542,10 @@ export default function PaymentEntryScripts() {
                     if (existingParty && !frm.get_value("party")) {
                         frm.set_value("party", existingParty);
                     }
-                    setReferencesTableProperty(frm, "reference_type", "default", "zerp__Purchase Invoice");
-                    const party = frm.get_value("party");
-                    if (party) {
-                        const filters = JSON.stringify([["supplier", "=", party]]);
-                        setReferencesTableProperty(frm, "reference_id", "filters", filters);
+                    if (!frm.get_value("reference_type")) {
+                        frm.set_value("reference_type", "zerp__Purchase Invoice");
                     }
-                    // Update party_account filter after party is set
+                    setReferenceIdFilters(frm);
                     updatePartyAccountFilter(frm);
                     if (!updatingRefs) {
                         updatingRefs = true;

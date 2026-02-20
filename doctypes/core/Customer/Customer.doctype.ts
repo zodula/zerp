@@ -3,7 +3,8 @@ export default $doctype({
         type: "Text",
         label: "Name",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        description: "Name must be real customer name or the company name."
     },
     tax_id: {
         type: "Text",
@@ -31,8 +32,9 @@ export default $doctype({
     },
 }, {
     label: "Customer",
-    naming_series: "{{name}} - {{organization_abbr}}",
+    naming_series: "CUS-{{organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
     search_fields: "name\nemail\nphone",
+    display_field: "name",
     is_quick_entry: 1,
     tabs: JSON.stringify([
         {

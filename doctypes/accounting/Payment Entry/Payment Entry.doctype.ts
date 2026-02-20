@@ -81,7 +81,15 @@ export default $doctype<"zerp__Payment Entry">({
     },
     reference_no: {
         type: "Text",
-        label: "Reference No"
+        label: "Reference No",
+    },
+    reference_type: {
+        type: "Reference",
+        label: "Reference Type",
+        reference: "zodula__Doctype",
+        filters: JSON.stringify([["name", "IN", ["zerp__Sales Invoice", "zerp__Purchase Invoice", "zerp__Delivery Order"]]]),
+        required: 0,
+        in_list_view: 0
     },
     references: {
         type: "Reference Table",
@@ -133,6 +141,7 @@ export default $doctype<"zerp__Payment Entry">({
                 ],
                 { type: "section", value: "Invoice References", align: "left" },
                 [
+                    { type: "field", value: "reference_type", align: "left" },
                     { type: "field", value: "references", align: "left" }
                 ]
             ]
@@ -291,26 +300,23 @@ export default $doctype<"zerp__Payment Entry">({
     }
     
     // Manage payment status for each referenced invoice document
-    if (doc.references && Array.isArray(doc.references)) {
-        const invoiceMap = new Map<string, Set<string>>(); // doctype -> Set of invoice IDs
-        for (const ref of doc.references) {
-            if (ref.reference_type && ref.reference_id) {
-                const doctype = ref.reference_type;
-                const invoiceId = ref.reference_id;
-                // Only process valid invoice types
-                if (doctype === "zerp__Sales Invoice" || doctype === "zerp__Purchase Invoice") {
-                    if (!invoiceMap.has(doctype)) {
-                        invoiceMap.set(doctype, new Set([invoiceId]));
-                    } else {
-                        invoiceMap.get(doctype)!.add(invoiceId);
-                    }
+    const refType = doc.reference_type as string | undefined;
+    if (refType && doc.references && Array.isArray(doc.references)) {
+        const doctype = refType;
+        const invoiceMap = new Map<string, Set<string>>();
+        if (doctype === "zerp__Sales Invoice" || doctype === "zerp__Purchase Invoice" || doctype === "zerp__Delivery Order") {
+            invoiceMap.set(doctype, new Set());
+            for (const ref of doc.references) {
+                const invoiceId = (ref as any).reference_id;
+                if (invoiceId) {
+                    invoiceMap.get(doctype)!.add(invoiceId);
                 }
             }
         }
-        // Update payment status for each referenced invoice
-        for (const [doctype, invoiceIds] of invoiceMap.entries()) {
-            for (const invoiceId of invoiceIds) {
-                await updateInvoicePaymentAmount(doctype as "zerp__Sales Invoice" | "zerp__Purchase Invoice", invoiceId);
+        // Update payment status for each referenced document
+        for (const [dt, docIds] of invoiceMap.entries()) {
+            for (const docId of docIds) {
+                await updatePaymentStatusForReference(dt as "zerp__Sales Invoice" | "zerp__Purchase Invoice" | "zerp__Delivery Order", docId);
             }
         }
     }
@@ -329,87 +335,66 @@ export default $doctype<"zerp__Payment Entry">({
     }
     
     // Manage payment status for each referenced invoice document (recalculate after cancellation)
-    if (doc.references && Array.isArray(doc.references)) {
-        const invoiceMap = new Map<string, Set<string>>(); // doctype -> Set of invoice IDs
-        for (const ref of doc.references) {
-            if (ref.reference_type && ref.reference_id) {
-                const doctype = ref.reference_type;
-                const invoiceId = ref.reference_id;
-                // Only process valid invoice types
-                if (doctype === "zerp__Sales Invoice" || doctype === "zerp__Purchase Invoice") {
-                    if (!invoiceMap.has(doctype)) {
-                        invoiceMap.set(doctype, new Set([invoiceId]));
-                    } else {
-                        invoiceMap.get(doctype)!.add(invoiceId);
-                    }
+    const refTypeCancel = doc.reference_type as string | undefined;
+    if (refTypeCancel && doc.references && Array.isArray(doc.references)) {
+        const doctype = refTypeCancel;
+        if (doctype === "zerp__Sales Invoice" || doctype === "zerp__Purchase Invoice" || doctype === "zerp__Delivery Order") {
+            for (const ref of doc.references) {
+                const docId = (ref as any).reference_id;
+                if (docId) {
+                    await updatePaymentStatusForReference(doctype as "zerp__Sales Invoice" | "zerp__Purchase Invoice" | "zerp__Delivery Order", docId);
                 }
-            }
-        }
-        // Update payment status for each referenced invoice
-        for (const [doctype, invoiceIds] of invoiceMap.entries()) {
-            for (const invoiceId of invoiceIds) {
-                await updateInvoicePaymentAmount(doctype as "zerp__Sales Invoice" | "zerp__Purchase Invoice", invoiceId);
             }
         }
     }
 });
 
 /**
- * Updates the payment status of an invoice based on all submitted payment entries
- * that reference it. This function calculates the total allocated amount from all
- * submitted payment entries and updates the invoice's payment_status accordingly.
+ * Updates the payment status of a reference document (Sales Invoice, Purchase Invoice, or Delivery Order)
+ * based on all submitted payment entries that reference it.
  */
-async function updateInvoicePaymentAmount(
-    doctype: "zerp__Sales Invoice" | "zerp__Purchase Invoice", 
-    invoiceId: string
+async function updatePaymentStatusForReference(
+    doctype: "zerp__Sales Invoice" | "zerp__Purchase Invoice" | "zerp__Delivery Order",
+    docId: string
 ) {
-    // Get the invoice
-    const invoice = await $zodula.doctype(doctype).get(invoiceId);
-    if (!invoice) {
-        throw new Error(`Invoice ${doctype} ${invoiceId} not found`);
+    const doc = await $zodula.doctype(doctype).get(docId);
+    if (!doc) {
+        throw new Error(`${doctype} ${docId} not found`);
     }
-    
-    const totalAmount = parseFloat(String(invoice.total_amount || 0)) || 0;
+
+    const totalAmount = parseFloat(String((doc as any).total_amount || 0)) || 0;
     if (totalAmount === 0) {
-        // If invoice has no amount, set status to Paid
-        await $zodula.doctype(doctype).update(invoiceId, {
+        await $zodula.doctype(doctype).update(docId, {
             payment_status: "Paid"
         } as any);
         return;
     }
-    
-    // Get all payment entry references that reference this invoice
+
     const references = await $zodula.doctype("zerp__Payment Entry Reference")
         .select()
-        .where("reference_type", "=", doctype)
-        .where("reference_id", "=", invoiceId);
-    
-    // Get all payment entries and sum their allocated amounts
-    // Only count allocated amounts from submitted payment entries
+        .where("reference_id", "=", docId);
+
     let totalAllocated = 0;
     for (const ref of references.docs) {
         const paymentEntryId = ref.payment_entry;
         if (paymentEntryId) {
             const paymentEntry = await $zodula.doctype("zerp__Payment Entry").get(paymentEntryId);
-            if (paymentEntry && paymentEntry.doc_status === 1) { // Only count submitted payment entries
+            if (paymentEntry && (paymentEntry as any).reference_type === doctype && paymentEntry.doc_status === 1) {
                 const allocatedAmount = parseFloat(String(ref.allocated_amount || 0)) || 0;
                 totalAllocated += allocatedAmount;
             }
         }
     }
-    
+
     const remainingAmount = totalAmount - totalAllocated;
-    
-    // Update payment_status based on remaining amount
     let paymentStatus: "Unpaid" | "Partially Paid" | "Paid" = "Unpaid";
-    if (remainingAmount <= 0.01) { // Allow small floating point differences
+    if (remainingAmount <= 0.01) {
         paymentStatus = "Paid";
     } else if (remainingAmount < totalAmount) {
         paymentStatus = "Partially Paid";
     }
-    
-    // Update the invoice with the new payment_status
-    await $zodula.doctype(doctype).update(invoiceId, {
+
+    await $zodula.doctype(doctype).update(docId, {
         payment_status: paymentStatus
     } as any);
 }

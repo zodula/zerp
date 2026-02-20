@@ -207,7 +207,7 @@ export default $doctype<"zerp__Purchase Invoice">(
     search_fields: "supplier\nsupplier_name",
     additional_connections: JSON.stringify([{
       doctype: "zerp__Payment Entry",
-      filters: [["references.reference_type", "=", "zerp__Purchase Invoice"],["references.reference_id", "=", "{{id}}"]],
+      filters: [["reference_type", "=", "zerp__Purchase Invoice"], ["references.reference_id", "=", "{{id}}"]],
       field: "references.reference_id"
     }]),
     tabs: JSON.stringify([

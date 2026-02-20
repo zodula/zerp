@@ -51,10 +51,11 @@ export default $doctype<"zerp__Delivery Order">(
     },
     save_price_for: {
       type: "Select",
-      label: "Save Price For",
-      options: "30 Days\n60 Days\n1 Year",
+      label: "Save Price For (Days)",
+      options: "\n30\n60\n365",
       required: 0,
       no_print: 1,
+      depends_on: "doc.price_project && doc.customer",
     },
     posting_date: {
       type: "Date",
@@ -265,11 +266,18 @@ export default $doctype<"zerp__Delivery Order">(
     track_changes: 1,
     comments_enabled: 1,
     search_fields: "customer\ncustomer_name",
-    additional_connections: JSON.stringify([{
-      doctype: "zerp__Sales Invoice",
-      filters: [["delivery_order", "=", "{{id}}"]],
-      field: "delivery_order"
-    }]),
+    additional_connections: JSON.stringify([
+      {
+        doctype: "zerp__Sales Invoice",
+        filters: [["delivery_order", "=", "{{id}}"]],
+        field: "delivery_order"
+      },
+      {
+        doctype: "zerp__Payment Entry",
+        filters: [["reference_type", "=", "zerp__Delivery Order"], ["references.reference_id", "=", "{{id}}"]],
+        field: "references.reference_id"
+      }
+    ]),
     tabs: JSON.stringify([
       {
         type: "Tab",
@@ -319,18 +327,18 @@ export default $doctype<"zerp__Delivery Order">(
         type: "Tab",
         label: "Addresses",
         layout: [
-          { type: "section", value: "Billing Address", align: "left" },
+          { type: "section", value: "Sender Address", align: "left" },
           [
-            { type: "field", value: "billing_address", align: "left" },
-            { type: "field", value: "billing_contact", align: "left" },
+            { type: "field", value: "sender_address", align: "left" },
+            { type: "field", value: "sender_contact", align: "left" },
           ],
           [
-            { type: "field", value: "billing_address_name", align: "left" },
-            { type: "field", value: "billing_contact_name", align: "left" },
+            { type: "field", value: "sender_address_name", align: "left" },
+            { type: "field", value: "sender_contact_name", align: "left" },
           ],
           [
-            { type: "field", value: "billing_inline_address", align: "left" },
-            { type: "field", value: "billing_contact_inline", align: "left" },
+            { type: "field", value: "sender_inline_address", align: "left" },
+            { type: "field", value: "sender_contact_inline", align: "left" },
           ],
           { type: "section", value: "Shipping Address", align: "left" },
           [
@@ -345,18 +353,18 @@ export default $doctype<"zerp__Delivery Order">(
             { type: "field", value: "shipping_inline_address", align: "left" },
             { type: "field", value: "shipping_contact_inline", align: "left" },
           ],
-          { type: "section", value: "Sender (for print template)", align: "left" },
+          { type: "section", value: "Billing Address", align: "left" },
           [
-            { type: "field", value: "sender_address", align: "left" },
-            { type: "field", value: "sender_contact", align: "left" },
+            { type: "field", value: "billing_address", align: "left" },
+            { type: "field", value: "billing_contact", align: "left" },
           ],
           [
-            { type: "field", value: "sender_address_name", align: "left" },
-            { type: "field", value: "sender_contact_name", align: "left" },
+            { type: "field", value: "billing_address_name", align: "left" },
+            { type: "field", value: "billing_contact_name", align: "left" },
           ],
           [
-            { type: "field", value: "sender_inline_address", align: "left" },
-            { type: "field", value: "sender_contact_inline", align: "left" },
+            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "field", value: "billing_contact_inline", align: "left" },
           ],
         ],
       },
@@ -428,9 +436,8 @@ export default $doctype<"zerp__Delivery Order">(
     const priceProject = (doc as any).price_project as string | undefined;
     const customer = (doc as any).customer as string | undefined;
     if (savePriceFor && priceProject && customer) {
-        const daysMap: Record<string, number> = { "30 Days": 30, "60 Days": 60, "1 Year": 365 };
-        const days = daysMap[savePriceFor];
-        if (days != null) {
+        const days = parseInt(String(savePriceFor), 10);
+        if (!Number.isNaN(days) && days > 0) {
             const baseDate = (doc as any).posting_date ? String((doc as any).posting_date) : $zodula.utils.format(new Date(), "date");
             const untilDate = $zodula.utils.format($zodula.utils.addDays(baseDate, days), "date");
             const items = (doc as any).delivery_order_items as any[] | undefined;
@@ -439,31 +446,41 @@ export default $doctype<"zerp__Delivery Order">(
                     const product = item?.product;
                     const uom = item?.uom;
                     const unitPrice = item?.unit_price != null ? parseFloat(String(item.unit_price)) : NaN;
+                    const priceListId = item?.price_list;
                     if (!product || !uom || Number.isNaN(unitPrice)) continue;
                     try {
-                        const { docs } = await $zodula.doctype("zerp__Price List")
-                            .select()
-                            .where("price_project", "=", priceProject)
-                            .where("customer", "=", customer)
-                            .where("party_type", "=", "Customer")
-                            .where("product", "=", product)
-                            .where("uom", "=", uom)
-                            .limit(1);
-                        if (docs.length > 0) {
-                            await $zodula.doctype("zerp__Price List").update((docs[0] as any).id, {
-                                price: unitPrice,
-                                until_date: untilDate,
-                            } as any);
-                        } else {
-                            await $zodula.doctype("zerp__Price List").insert({
-                                price_project: priceProject,
-                                party_type: "Customer",
-                                customer,
-                                product,
+                        if (priceListId) {
+                            // Item has a price list: update that doc instead of fetching one
+                            await $zodula.doctype("zerp__Price List").update(priceListId, {
                                 price: unitPrice,
                                 uom,
                                 until_date: untilDate,
                             } as any);
+                        } else {
+                            const { docs } = await $zodula.doctype("zerp__Price List")
+                                .select()
+                                .where("price_project", "=", priceProject)
+                                .where("customer", "=", customer)
+                                .where("party_type", "=", "Customer")
+                                .where("product", "=", product)
+                                .where("uom", "=", uom)
+                                .limit(1);
+                            if (docs.length > 0) {
+                                await $zodula.doctype("zerp__Price List").update((docs[0] as any).id, {
+                                    price: unitPrice,
+                                    until_date: untilDate,
+                                } as any);
+                            } else {
+                                await $zodula.doctype("zerp__Price List").insert({
+                                    price_project: priceProject,
+                                    party_type: "Customer",
+                                    customer,
+                                    product,
+                                    price: unitPrice,
+                                    uom,
+                                    until_date: untilDate,
+                                } as any);
+                            }
                         }
                     } catch (err) {
                         console.error("Error syncing Price List for product/uom:", product, uom, err);
@@ -472,4 +489,12 @@ export default $doctype<"zerp__Delivery Order">(
             }
         }
     }
-});
+})
+.on("before_submit", (ctx) => {
+    ctx.doc.delivery_order_items = ctx.doc.delivery_order_items?.map((item: any) => {
+        return {
+            ...item,
+            price_list: null,
+        };
+    });
+})

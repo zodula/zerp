@@ -268,21 +268,20 @@ const createPaymentHandler = async (
         console.error("Error fetching tax and charges from invoice:", error);
     }
 
-    // Prefill payment entry - child doctype scripts will calculate remaining_amount and allocated_amount
+    // Prefill payment entry - reference_type on parent; child rows only have reference_id
     const prefill: any = {
         posting_date: zodula.utils.format(new Date(), "date"),
         payment_type: config.paymentType,
         party_type: config.partyType,
         party: party,
-        payment_method: "Bank", // Default to Bank, user can change
-        party_account: partyAccount, // Set if found, otherwise user will need to select
-        base_amount: parseFloat(String((doc as any).net_total || 0)) || 0, // Prefill base amount from invoice net_total
+        reference_type: config.referenceType,
+        payment_method: "Bank",
+        party_account: partyAccount,
+        base_amount: parseFloat(String((doc as any).net_total || 0)) || 0,
         references: [{
-            reference_type: config.referenceType,
             reference_id: doc.id
-            // remaining_amount and allocated_amount will be calculated by child doctype scripts
         }],
-        tax_and_charges: taxAndCharges // Prefill tax and charges from invoice
+        tax_and_charges: taxAndCharges
     };
 
     context.navigate(`/desk/${org}/doctypes/zerp__Payment Entry/form`, {
