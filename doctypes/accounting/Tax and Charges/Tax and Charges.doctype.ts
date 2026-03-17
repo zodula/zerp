@@ -1,10 +1,4 @@
 export default $doctype({
-    payment_entry: {
-        type: "Reference",
-        label: "Payment Entry",
-        reference: "Payment Entry",
-        required: 0
-    },
     charge_type: {
         type: "Select",
         label: "Charge Type",
@@ -17,27 +11,21 @@ export default $doctype({
         type: "Reference",
         label: "Account Head",
         reference: "Account",
-        filters: JSON.stringify([["is_tax_account", "=", 1]]),
+        filters: JSON.stringify([["account_type", "IN", ["Tax", "Chargable"]], ["is_group", "!=", 1]]),
         required: 1,
-        in_list_view: 1
-    },
-    description: {
-        type: "Text",
-        label: "Description",
-        required: 0,
         in_list_view: 1
     },
     tax_type: {
         type: "Select",
         label: "Tax Type",
-        options: "Included\nExcluded",
+        options: "Included\nExcluded\nExcluded Subtract",
         required: 1,
         in_list_view: 1,
         default: "Excluded"
     },
     rate: {
         type: "Float",
-        label: "Rate (%)",
+        label: "Rate",
         required: 0,
         in_list_view: 1
     },
@@ -48,16 +36,14 @@ export default $doctype({
         readonly: 1,
         in_list_view: 1
     },
-    row_id: {
-        type: "Text",
-        label: "Row ID",
-        required: 0
+    total: {
+        type: "Currency",
+        label: "Total",
+        required: 0,
+        readonly: 1,
+        in_list_view: 1,
+        description: "Running total after this row (for On Previous Row Total)."
     },
-    included_in_print_rate: {
-        type: "Check",
-        label: "Included in Print Rate",
-        default: "0"
-    }
 }, {
     label: "Tax and Charges",
     is_child_doctype: 1,
@@ -77,7 +63,8 @@ export default $doctype({
                 { type: "section", value: "Amount", align: "left" },
                 [
                     { type: "field", value: "rate", align: "left" },
-                    { type: "field", value: "tax_amount", align: "left" }
+                    { type: "field", value: "tax_amount", align: "left" },
+                    { type: "field", value: "total", align: "left" }
                 ],
                 { type: "section", value: "Advanced", align: "left" },
                 [

@@ -1,570 +1,272 @@
-import { useEffect } from "react";
-import { zui, type FormType } from "@/zodula/ui";
 import { zodula } from "@/zodula/client";
+import { useZui } from "@/zodula/ui";
 
-// Calculate taxes and charges for Payment Entry
-function calculateTaxes(frm: FormType<"Payment Entry">) {
-    const baseAmount = parseFloat(String(frm.get_value("base_amount") || 0)) || 0;
-    const taxRows = frm.get_value("tax_and_charges") || [];
-    
-    if (!Array.isArray(taxRows) || taxRows.length === 0) {
-        frm.set_value("total_taxes_and_charges", 0);
-        frm.set_value("amount", baseAmount);
-        return;
-    }
-    
-    // Create a map of original array index to row for updating
-    const rowsWithOriginalIndex = taxRows.map((row: any, originalIndex: number) => ({
-        ...row,
-        _originalIndex: originalIndex
-    }));
-    
-    // Sort by idx to ensure proper order for calculation
-    const sortedTaxRows = [...rowsWithOriginalIndex].sort((a: any, b: any) => {
-        const idxA = parseFloat(String(a.idx || 0)) || 0;
-        const idxB = parseFloat(String(b.idx || 0)) || 0;
-        return idxA - idxB;
-    });
-    
-    let runningTotal = baseAmount;
-    let totalTaxesAndCharges = 0;
-    // Create a completely new array with new object references
-    const updatedRows = taxRows.map((row: any) => ({ ...row }));
-    
-    // Store calculated amounts by original index
-    const calculatedAmounts: Record<number, { tax_amount: number }> = {};
-    
-    for (let i = 0; i < sortedTaxRows.length; i++) {
-        const taxRow = sortedTaxRows[i];
-        const chargeType = taxRow.charge_type || "Actual";
-        const rate = parseFloat(String(taxRow.rate || 0)) || 0;
-        let taxAmount = 0;
-        
-        if (chargeType === "Actual") {
-            taxAmount = parseFloat(String(taxRow.tax_amount || 0)) || 0;
-        } else if (chargeType === "On Net Total") {
-            taxAmount = (baseAmount * rate) / 100;
-        } else if (chargeType === "On Previous Row Amount") {
-            if (i > 0) {
-                const prevRow = sortedTaxRows[i - 1];
-                const prevOriginalIndex = prevRow._originalIndex;
-                const prevTaxAmount = calculatedAmounts[prevOriginalIndex]?.tax_amount || parseFloat(String(prevRow.tax_amount || 0)) || 0;
-                taxAmount = (prevTaxAmount * rate) / 100;
-            }
-        } else if (chargeType === "On Previous Row Total") {
-            if (i > 0) {
-                const prevRow = sortedTaxRows[i - 1];
-                const prevOriginalIndex = prevRow._originalIndex;
-                // Use tax_amount instead of total for "On Previous Row Total"
-                const prevTaxAmount = calculatedAmounts[prevOriginalIndex]?.tax_amount || parseFloat(String(prevRow.tax_amount || 0)) || 0;
-                taxAmount = (prevTaxAmount * rate) / 100;
-            }
-        }
-        
-        // Store calculated amounts
-        const originalIndex = taxRow._originalIndex;
-        if (originalIndex !== undefined && originalIndex >= 0) {
-            calculatedAmounts[originalIndex] = {
-                tax_amount: taxAmount
-            };
-        }
-        
-        // For excluded taxes, add to running total; for included, it's already in the base
-        if (taxRow.tax_type === "Excluded") {
-            runningTotal += taxAmount;
-            totalTaxesAndCharges += taxAmount;
-        } else {
-            // For included taxes, they're already in the base amount
-            totalTaxesAndCharges += taxAmount;
-        }
-    }
-    
-    // Update all rows with calculated amounts - create completely new objects
-    for (let i = 0; i < updatedRows.length; i++) {
-        const calculated = calculatedAmounts[i];
-        if (calculated) {
-            updatedRows[i] = {
-                ...updatedRows[i],
-                tax_amount: calculated.tax_amount
-            };
-        }
-    }
-    
-    // Update the entire table at once with a new array reference to force re-render
-    // Use setTimeout to ensure React processes the update in the next tick
-    setTimeout(() => {
-        frm.set_value("tax_and_charges", updatedRows.map(row => ({ ...row })));
-        
-        // Update totals
-        frm.set_value("total_taxes_and_charges", totalTaxesAndCharges);
-        frm.set_value("amount", runningTotal);
-    }, 0);
-}
+const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
 
-// Calculate base_amount from references
-function calculateBaseAmount(frm: FormType<"Payment Entry">) {
-    const references = frm.get_value("references") || [];
-    if (!Array.isArray(references)) {
-        frm.set_value("base_amount", 0);
-        calculateTaxes(frm);
-        return;
-    }
-    
-    let baseAmount = 0;
-    for (const ref of references) {
-        const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
-        baseAmount += allocatedAmount;
-    }
-    
+const PARTY_BY_PAYMENT: Record<string, string[]> = {
+    Pay: ["Customer", "Employee"],
+    Receive: ["Supplier"],
+    Transfer: [],
+};
+const REFERENCE_TYPES_BY_PARTY: Record<string, string[]> = {
+    Customer: ["Sales Invoice"],
+    Employee: [],
+    Supplier: ["Purchase Invoice"],
+};
+
+/** Field on each reference type doctype that holds grand total (used to set remaining_amount). */
+const REFERENCE_TYPE_TOTAL_AMOUNT_FIELD: Record<string, string> = {
+    "Sales Invoice": "grand_total",
+    "Purchase Invoice": "grand_total",
+    "Delivery Note": "grand_total",
+};
+
+/** Field on each reference type doctype that links to party (customer/supplier); used to filter reference_id. */
+const REFERENCE_TYPE_PARTY_FIELD: Record<string, string> = {
+    "Sales Invoice": "customer",
+    "Purchase Invoice": "supplier",
+    "Delivery Note": "customer",
+};
+
+const NOT_GROUP = ["is_group", "!=", 1];
+const FILTERS = {
+    bankCash: JSON.stringify([["account_type", "IN", ["Bank", "Cash"]], NOT_GROUP]),
+    receivable: JSON.stringify([["account_type", "IN", ["Receivable"]], NOT_GROUP]),
+    payable: JSON.stringify([["account_type", "IN", ["Payable"]], NOT_GROUP]),
+    notGroup: JSON.stringify([NOT_GROUP]),
+};
+
+function recalcAllocations(frm: any): number {
+    const refs = (frm.get_value("references") ?? []) as any[];
+    const baseAmount = refs.reduce((sum, r) => sum + num(r?.allocated_amount), 0);
     frm.set_value("base_amount", baseAmount);
-    // Recalculate taxes after base_amount changes
-    calculateTaxes(frm);
+    frm.set_value("total_allocated", baseAmount);
+    return baseAmount;
 }
 
-async function calculateReferenceRows(frm: FormType<"Payment Entry">) {
-    const referenceType = frm.get_value("reference_type");
-    const rows = Array.isArray(frm.get_value("references"))
-        ? [...(frm.get_value("references") as any[])]
-        : [];
+function recalcTaxesWithBase(frm: any, baseAmount: number) {
+    const taxes = (frm.get_value("tax_and_charges") ?? []) as any[];
+    const sorted = [...taxes].sort((a, b) => (a?.idx ?? 0) - (b?.idx ?? 0));
+    let run = baseAmount;
+    const amt = new Map<any, number>();
+    const tot = new Map<any, number>();
+    sorted.forEach((r, i) => {
+        const rate = num(r?.rate);
+        const ct = r?.charge_type ?? "Actual";
+        const a =
+            ct === "Actual"
+                ? rate
+                : ct === "On Net Total"
+                    ? (baseAmount * rate) / 100
+                    : ct === "On Previous Row Amount" && i > 0
+                        ? ((amt.get(sorted[i - 1]) ?? 0) * rate) / 100
+                        : ct === "On Previous Row Total" && i > 0
+                            ? ((tot.get(sorted[i - 1]) ?? run) * rate) / 100
+                            : 0;
+        amt.set(r, a);
+        if (r?.tax_type === "Excluded") run += a;
+        tot.set(r, run);
+    });
+    sorted.forEach((r, i) => {
+        frm.set_value(`tax_and_charges.${i}.tax_amount`, amt.get(r) ?? 0);
+        frm.set_value(`tax_and_charges.${i}.total`, tot.get(r) ?? 0);
+    });
+    frm.set_value("total_taxes_and_charges", sorted.reduce((s, r) => s + (amt.get(r) ?? 0), 0));
+    frm.set_value("grand_total", run);
+}
 
-    let hasChanges = false;
+function recalcTaxes(frm: any) {
+    recalcTaxesWithBase(frm, num(frm.get_value("base_amount")));
+}
 
-    for (let idx = 0; idx < rows.length; idx++) {
-        const row = { ...rows[idx] };
-        const referenceId = (row as any).reference_id;
-
-        if (!referenceType || !referenceId) {
-            if ((row as any).remaining_amount !== 0) {
-                row.remaining_amount = 0;
-                hasChanges = true;
-            }
-            if ((row as any).allocated_amount !== 0) {
-                row.allocated_amount = 0;
-                hasChanges = true;
-            }
-            rows[idx] = row;
-            continue;
-        }
-
-        try {
-            const invoice = await zodula.doc.get_doc(referenceType as any, referenceId);
-            if (!invoice) {
-                if ((row as any).remaining_amount !== 0) {
-                    row.remaining_amount = 0;
-                    hasChanges = true;
-                }
-                rows[idx] = row;
-                continue;
-            }
-
-            const totalAmount = parseFloat(String((invoice as any).total_amount || 0)) || 0;
-
-            const referencesResponse = await zodula.doc.select_docs("Payment Entry Reference", {
-                filters: [
-                    ["reference_id", "=", referenceId]
-                ],
-                limit: 10000,
-                sort: "idx",
-                order: "asc"
-            });
-
-            let totalAllocated = 0;
-            const currentRowId = (row as any).id;
-
-            for (const ref of referencesResponse.docs) {
-                const refId = (ref as any).id;
-                if (currentRowId && refId === currentRowId) {
-                    continue;
-                }
-
-                const paymentEntryId = (ref as any).payment_entry;
-                if (paymentEntryId) {
-                    const paymentEntry = await zodula.doc.get_doc("Payment Entry", paymentEntryId);
-                    if (paymentEntry && (paymentEntry as any).reference_type === referenceType && (paymentEntry as any).doc_status === 1) {
-                        const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
-                        totalAllocated += allocatedAmount;
-                    }
-                }
-            }
-
-            const remainingAmount = Math.max(0, totalAmount - totalAllocated);
-            if ((row as any).remaining_amount !== remainingAmount) {
-                row.remaining_amount = remainingAmount;
-                hasChanges = true;
-            }
-
-            const currentAllocated = parseFloat(String((row as any).allocated_amount || 0)) || 0;
-            if (currentAllocated === 0 || (row as any).allocated_amount === undefined || (row as any).allocated_amount === null) {
-                const newAllocated = remainingAmount > 0 ? remainingAmount : totalAmount;
-                if (newAllocated !== currentAllocated) {
-                    row.allocated_amount = newAllocated;
-                    hasChanges = true;
-                }
-            }
-
-            rows[idx] = row;
-        } catch (error) {
-            console.error("Error calculating remaining amount for reference row:", error);
-            if ((row as any).remaining_amount !== 0) {
-                row.remaining_amount = 0;
-                hasChanges = true;
-            }
-            rows[idx] = row;
-        }
-    }
-
-    if (hasChanges) {
-        frm.set_value("references", rows as any);
-    }
-    
-    // Calculate and update total_allocated
-    let totalAllocated = 0;
-    for (const row of rows) {
-        const allocatedAmount = parseFloat(String((row as any).allocated_amount || 0)) || 0;
-        totalAllocated += allocatedAmount;
-    }
-    frm.set_value("total_allocated", totalAllocated);
-    
-    // Update base_amount from references and recalculate taxes
-    calculateBaseAmount(frm);
+function recalcAllocationsAndTaxes(frm: any) {
+    console.log("recalcAllocationsAndTaxes", frm);
+    const baseAmount = recalcAllocations(frm);
+    recalcTaxesWithBase(frm, baseAmount);
 }
 
 export default function PaymentEntryScripts() {
-    useEffect(() => {
-        let updatingRefs = false;
-        // Track last reference_id for each row to detect changes
-        const lastReferenceIds = new Map<number, string>();
-
-        const updatePartyReference = (frm: FormType<"Payment Entry">) => {
-            const partyType = frm.get_value("party_type");
-            const paymentType = frm.get_value("payment_type");
-            
-            // Only clear party if party_type is being changed and doesn't match payment_type
-            // Don't clear if we're in refresh and party_type matches the expected type for payment_type
-            if (partyType && (partyType === "Customer" || partyType === "Supplier")) {
-                const expectedPartyType = paymentType === "Receive" ? "Customer" : 
-                                         paymentType === "Pay" ? "Supplier" : null;
-                
-                // Only clear if party_type doesn't match what's expected for the payment_type
-                // This prevents clearing party when it's being set correctly from prefill
-                if (expectedPartyType && partyType !== expectedPartyType) {
-                    const currentParty = frm.get_value("party");
-                    if (currentParty) {
-                        frm.set_value("party", "");
-                    }
-                }
-            }
-        };
-
-        const updatePartyAccountFilter = (frm: FormType<"Payment Entry">) => {
-            const partyType = frm.get_value("party_type");
-            const party = frm.get_value("party");
-            
-            if (partyType && party) {
-                // Filter party_account to show only accounts related to the selected party
-                const filters = JSON.stringify([
-                    ["party_type", "=", partyType],
-                    ["party", "=", party]
-                ]);
-                frm.set_df_property("party_account", "filters", filters);
-            } else {
-                // Clear filters if party_type or party is not set
-                frm.set_df_property("party_account", "filters", JSON.stringify([]));
-            }
-        };
-
-        // Helper function to set reference_id filters for all rows based on parent reference_type and party
-        const setReferenceIdFilters = (frm: FormType<"Payment Entry">) => {
-            const referenceType = frm.get_value("reference_type");
-            const party = frm.get_value("party");
-            if (!referenceType || !party) {
+    useZui((zui) => {
+        async function setPartyFields(frm: any) {
+            const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+            const partyTypes = PARTY_BY_PAYMENT[paymentType] ?? [];
+            if (partyTypes.length === 0) {
+                await frm.set_df_property("party_type", "hidden", 1);
+                await frm.set_df_property("party", "hidden", 1);
+                await frm.set_value("party_type", "");
+                await frm.set_value("party", "");
+                await frm.set_df_property("references.-1.reference_type", "filters", JSON.stringify([["name", "IN", []]]));
                 return;
             }
-            const partyField = referenceType === "Sales Invoice" || referenceType === "Delivery Order" ? "customer" : "supplier";
-            const filters = JSON.stringify([[partyField, "=", party]]);
-            const references = frm.get_value("references");
-            if (Array.isArray(references)) {
-                references.forEach((_, idx) => {
-                    frm.set_df_child_table_property("references", idx, "reference_id", "filters", filters);
-                });
+            await frm.set_df_property("party_type", "hidden", 0);
+            await frm.set_df_property("party_type", "options", "\n" + partyTypes.join("\n"));
+            await frm.set_df_property("party", "hidden", 0);
+            const current = String(frm.get_value("party_type") ?? "").trim();
+            if (current && !partyTypes.includes(current)) {
+                await frm.set_value("party_type", "");
+                await frm.set_value("party", "");
             }
-        };
+            const key = current || partyTypes[0] || "";
+            await frm.set_df_property("references.-1.reference_type", "filters", JSON.stringify([["name", "IN", REFERENCE_TYPES_BY_PARTY[key] ?? []]]));
+        }
+
+        async function setReferenceTypeFilter(frm: any) {
+            const partyType = String(frm.get_value("party_type") ?? "").trim();
+            await frm.set_df_property("references.-1.reference_type", "filters", JSON.stringify([["name", "IN", REFERENCE_TYPES_BY_PARTY[partyType] ?? []]]));
+            await setReferenceIdFiltersForParty(frm);
+        }
+
+        /** Set reference_id filters so only docs for the selected party (customer/supplier) are listed. */
+        async function setReferenceIdFiltersForParty(frm: any) {
+            const party = frm.get_value("party");
+            const partyType = String(frm.get_value("party_type") ?? "").trim();
+            const refTypes = REFERENCE_TYPES_BY_PARTY[partyType] ?? [];
+            if (!party || refTypes.length === 0) {
+                await frm.set_df_property("references.-1.reference_id", "filters", JSON.stringify([["name", "IN", []]]));
+                return;
+            }
+            const firstRefType = refTypes[0] ?? "";
+            const partyField = firstRefType ? REFERENCE_TYPE_PARTY_FIELD[firstRefType] : null;
+            const newRowFilter = partyField ? JSON.stringify([[partyField, "=", party]]) : JSON.stringify([["name", "IN", []]]);
+            await frm.set_df_property("references.-1.reference_id", "filters", newRowFilter);
+
+            const refs = (frm.get_value("references") ?? []) as any[];
+            for (let i = 0; i < refs.length; i++) {
+                const refType = String(refs[i]?.reference_type ?? "").trim();
+                const field = refType ? REFERENCE_TYPE_PARTY_FIELD[refType] : null;
+                const filter = field ? JSON.stringify([[field, "=", party]]) : JSON.stringify([["name", "IN", []]]);
+                await frm.set_df_property(`references.${i}.reference_id`, "filters", filter);
+            }
+        }
+
+        async function setAccountFields(frm: any) {
+            const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+            const org = (frm.get_value("doc_organization") ?? zui.org) as string | undefined;
+            if (paymentType === "Receive") {
+                await frm.set_df_property("account_paid_to", "filters", FILTERS.bankCash);
+                await frm.set_df_property("account_paid_to", "required", 1);
+                await frm.set_df_property("account_paid_from", "filters", FILTERS.receivable);
+                await frm.set_df_property("account_paid_from", "required", 0);
+                if (org) {
+                    const res = await zodula.doc.select_docs("Account" as any, {
+                        filters: [["doc_organization", "=", org], ["account_type", "=", "Receivable"], ["is_group", "!=", 1]],
+                        limit: 1,
+                        sort: "account_code",
+                        order: "asc",
+                    });
+                    if (res?.docs?.[0]?.id) await frm.set_value("account_paid_from", res.docs[0].id);
+                    frm.set_value("account_paid_to", "");
+                }
+            } else if (paymentType === "Pay") {
+                await frm.set_df_property("account_paid_from", "filters", FILTERS.bankCash);
+                await frm.set_df_property("account_paid_from", "required", 1);
+                await frm.set_df_property("account_paid_to", "filters", FILTERS.payable);
+                await frm.set_df_property("account_paid_to", "required", 0);
+                if (org) {
+                    const res = await zodula.doc.select_docs("Account" as any, {
+                        filters: [["doc_organization", "=", org], ["account_type", "=", "Payable"], ["is_group", "!=", 1]],
+                        limit: 1,
+                        sort: "account_code",
+                        order: "asc",
+                    });
+                    if (res?.docs?.[0]?.id) await frm.set_value("account_paid_to", res.docs[0].id);
+                    frm.set_value("account_paid_from", "");
+                }
+            } else {
+                await frm.set_df_property("account_paid_to", "filters", FILTERS.notGroup);
+                await frm.set_df_property("account_paid_to", "hidden", 0);
+                await frm.set_df_property("account_paid_to", "required", 1);
+                await frm.set_df_property("account_paid_from", "filters", FILTERS.notGroup);
+                await frm.set_df_property("account_paid_from", "hidden", 0);
+                await frm.set_df_property("account_paid_from", "required", 1);
+                frm.set_value("account_paid_to", "");
+                frm.set_value("account_paid_from", "");
+            }
+        }
+
+        async function onLoadOrPaymentTypeChange(frm: any) {
+            await setPartyFields(frm);
+            await setAccountFields(frm);
+            await setReferenceIdFiltersForParty(frm);
+            recalcAllocationsAndTaxes(frm);
+        }
+
+        function onReferencesChange(frm: any) {
+            recalcAllocationsAndTaxes(frm);
+        }
+
+        async function onReferenceIdChange(frm: any) {
+            const idx = frm.idx ?? 0;
+            const refType = frm.get_value(`references.${idx}.reference_type`);
+            const refId = frm.get_value(`references.${idx}.reference_id`);
+            if (!refId || !refType) {
+                frm.set_value(`references.${idx}.remaining_amount`, 0);
+                frm.set_value(`references.${idx}.allocated_amount`, 0);
+                recalcAllocationsAndTaxes(frm);
+                return;
+            }
+
+            const totalField = REFERENCE_TYPE_TOTAL_AMOUNT_FIELD[refType];
+            if (!totalField) {
+                recalcAllocationsAndTaxes(frm);
+                return;
+            }
+
+            const baseDoc = (await zodula.doc.get_doc(refType as any, refId)) as any;
+            if (!baseDoc) {
+                recalcAllocationsAndTaxes(frm);
+                return;
+            }
+            const totalAmount = num(baseDoc[totalField]);
+
+            // Sum allocated amounts from other submitted Payment Entries that reference this doc
+            const refsRes = await zodula.doc.select_docs("Payment Entry Reference" as any, {
+                filters: [
+                    ["reference_id", "=", refId],
+                    ["reference_type", "=", refType],
+                ],
+                limit: 500,
+                sort: "id",
+                order: "asc",
+            });
+
+            let totalAllocated = 0;
+            for (const r of refsRes?.docs ?? []) {
+                const paymentEntryId = (r as any).parentid;
+                if (!paymentEntryId) continue;
+                const pe = (await zodula.doc.get_doc("Payment Entry" as any, paymentEntryId)) as any;
+                if (pe?.doc_status === "Submitted") {
+                    totalAllocated += num((r as any).allocated_amount);
+                }
+            }
+
+            const remaining = Math.max(0, totalAmount - totalAllocated);
+            frm.set_value(`references.${idx}.remaining_amount`, remaining);
+            frm.set_value(`references.${idx}.allocated_amount`, remaining);
+            const refs = (frm.get_value("references") ?? []) as any[];
+            const newBase = refs.reduce((sum, r, i) => sum + (i === idx ? remaining : num(r?.allocated_amount)), 0);
+            frm.set_value("base_amount", newBase);
+            frm.set_value("total_allocated", newBase);
+            recalcTaxesWithBase(frm, newBase);
+        }
+
+        const taxFieldHandlers = ["rate", "tax_amount", "charge_type", "tax_type", "idx"].reduce(
+            (acc, f) => ({ ...acc, [`tax_and_charges.${f}`]: recalcTaxes }),
+            {} as Record<string, (frm: any) => void>
+        );
 
         zui.form.on("Payment Entry", {
-            payment_type: async function(frm) {
-                const paymentType = frm.get_value("payment_type");
-                if (paymentType === "Receive") {
-                    // Set party_type to Customer for Receive payments
-                    if (frm.get_value("party_type") !== "Customer") {
-                        frm.set_value("party_type", "Customer");
-                    }
-                    // Set reference_type to Sales Invoice for Receive payments (parent field)
-                    frm.set_value("reference_type", "Sales Invoice");
-                    setReferenceIdFilters(frm);
-                    updatePartyAccountFilter(frm);
-                    if (!updatingRefs) {
-                        updatingRefs = true;
-                        try {
-                            await calculateReferenceRows(frm);
-                        } finally {
-                            updatingRefs = false;
-                        }
-                    }
-                } else if (paymentType === "Pay") {
-                    // Set party_type to Supplier for Pay payments
-                    if (frm.get_value("party_type") !== "Supplier") {
-                        frm.set_value("party_type", "Supplier");
-                    }
-                    // Set reference_type to Purchase Invoice for Pay payments (parent field)
-                    frm.set_value("reference_type", "Purchase Invoice");
-                    setReferenceIdFilters(frm);
-                    updatePartyAccountFilter(frm);
-                    if (!updatingRefs) {
-                        updatingRefs = true;
-                        try {
-                            await calculateReferenceRows(frm);
-                        } finally {
-                            updatingRefs = false;
-                        }
-                    }
-                }
-            },
-            reference_type: async function(frm) {
-                setReferenceIdFilters(frm);
-                if (!updatingRefs) {
-                    updatingRefs = true;
-                    try {
-                        await calculateReferenceRows(frm);
-                    } finally {
-                        updatingRefs = false;
-                    }
-                }
-            },
-            party_type: async function(frm) {
-                updatePartyReference(frm);
-                const party = frm.get_value("party");
-                updatePartyAccountFilter(frm);
-                if (party) {
-                    setReferenceIdFilters(frm);
-                    if (!updatingRefs) {
-                        updatingRefs = true;
-                        try {
-                            await calculateReferenceRows(frm);
-                        } finally {
-                            updatingRefs = false;
-                        }
-                    }
-                }
-            },
-            party: async function(frm) {
-                const party = frm.get_value("party");
-                updatePartyAccountFilter(frm);
-                if (party) {
-                    setReferenceIdFilters(frm);
-                    if (!updatingRefs) {
-                        updatingRefs = true;
-                        try {
-                            await calculateReferenceRows(frm);
-                        } finally {
-                            updatingRefs = false;
-                        }
-                    }
-                }
-            },
-            payment_method: async function(frm) {
-                const paymentMethod = frm.get_value("payment_method");
-                if (paymentMethod === "Bank") {
-                    // Filter organization_account to show only bank accounts
-                    const filters = JSON.stringify([["is_bank_account", "=", 1]]);
-                    frm.set_df_property("organization_account", "filters", filters);
-                } else {
-                    // Clear filters for other payment methods (show all accounts)
-                    frm.set_df_property("organization_account", "filters", JSON.stringify([]));
-                }
-            },
-            references: async function(frm) {
-                if (updatingRefs) return;
-                updatingRefs = true;
-                try {
-                    const rows = Array.isArray(frm.get_value("references"))
-                        ? [...(frm.get_value("references") as any[])]
-                        : [];
-                    
-                    // Process only rows where reference_id changed
-                    for (let idx = 0; idx < rows.length; idx++) {
-                        const row = rows[idx];
-                        const referenceId = (row as any).reference_id;
-                        const lastRefId = lastReferenceIds.get(idx);
-                        
-                        // If reference_id changed or is new, process this row
-                        if (referenceId && referenceId !== lastRefId) {
-                            const referenceType = frm.get_value("reference_type");
-                            if (referenceType && referenceId) {
-                                try {
-                                    const invoice = await zodula.doc.get_doc(referenceType as any, referenceId);
-                                    if (invoice) {
-                                        const totalAmount = parseFloat(String((invoice as any).total_amount || 0)) || 0;
-                                        
-                                        const referencesResponse = await zodula.doc.select_docs("Payment Entry Reference", {
-                                            filters: [
-                                                ["reference_id", "=", referenceId]
-                                            ],
-                                            limit: 10000,
-                                            sort: "idx",
-                                            order: "asc"
-                                        });
-                                        
-                                        let totalAllocated = 0;
-                                        const currentRowId = (row as any).id;
-                                        
-                                        for (const ref of referencesResponse.docs) {
-                                            const refId = (ref as any).id;
-                                            if (currentRowId && refId === currentRowId) {
-                                                continue;
-                                            }
-                                            
-                                            const paymentEntryId = (ref as any).payment_entry;
-                                            if (paymentEntryId) {
-                                                const paymentEntry = await zodula.doc.get_doc("Payment Entry", paymentEntryId);
-                                                if (paymentEntry && (paymentEntry as any).reference_type === referenceType && (paymentEntry as any).doc_status === 1) {
-                                                    const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
-                                                    totalAllocated += allocatedAmount;
-                                                }
-                                            }
-                                        }
-                                        
-                                        const remainingAmount = Math.max(0, totalAmount - totalAllocated);
-                                        const currentAllocated = parseFloat(String((row as any).allocated_amount || 0)) || 0;
-                                        
-                                        // Update row
-                                        row.remaining_amount = remainingAmount;
-                                        if (currentAllocated === 0 || (row as any).allocated_amount === undefined || (row as any).allocated_amount === null) {
-                                            row.allocated_amount = remainingAmount > 0 ? remainingAmount : totalAmount;
-                                        }
-                                        
-                                        // Update tracking
-                                        lastReferenceIds.set(idx, referenceId);
-                                    }
-                                } catch (error) {
-                                    console.error("Error calculating remaining amount for reference row:", error);
-                                }
-                            }
-                        } else if (!referenceId) {
-                            // Clear tracking and set allocated_amount to 0 if reference_id is removed
-                            lastReferenceIds.delete(idx);
-                            if ((row as any).allocated_amount !== 0) {
-                                row.allocated_amount = 0;
-                            }
-                            if ((row as any).remaining_amount !== 0) {
-                                row.remaining_amount = 0;
-                            }
-                        }
-                    }
-                    
-                    // Calculate and update total_allocated
-                    let totalAllocated = 0;
-                    for (const row of rows) {
-                        const allocatedAmount = parseFloat(String((row as any).allocated_amount || 0)) || 0;
-                        totalAllocated += allocatedAmount;
-                    }
-                    frm.set_value("total_allocated", totalAllocated);
-                    
-                    // Update form with any changes
-                    frm.set_value("references", rows as any);
-                    
-                    // Update base_amount from references and recalculate taxes
-                    calculateBaseAmount(frm);
-                } finally {
-                    updatingRefs = false;
-                }
-            },
-            base_amount: function(frm) {
-                // Recalculate taxes when base_amount changes
-                calculateTaxes(frm);
-            },
-            // Watch nested fields for tax calculations
-            "tax_and_charges.rate": function(frm) {
-                calculateTaxes(frm);
-            },
-            "tax_and_charges.charge_type": function(frm) {
-                calculateTaxes(frm);
-            },
-            "tax_and_charges.tax_type": function(frm) {
-                calculateTaxes(frm);
-            },
-            refresh: async function(frm) {
-                const paymentType = frm.get_value("payment_type");
-                const paymentMethod = frm.get_value("payment_method");
-                
-                // Preserve party value before updating party_type (since party depends on party_type)
-                const existingParty = frm.get_value("party");
-                
-                updatePartyReference(frm);
-                
-                // Update organization_account filters based on payment_method
-                if (paymentMethod === "Bank") {
-                    const filters = JSON.stringify([["is_bank_account", "=", 1]]);
-                    frm.set_df_property("organization_account", "filters", filters);
-                } else {
-                    frm.set_df_property("organization_account", "filters", JSON.stringify([]));
-                }
-                
-                // Calculate base_amount from references if they exist
-                calculateBaseAmount(frm);
-                
-                if (paymentType === "Receive") {
-                    if (frm.get_value("party_type") !== "Customer") {
-                        frm.set_value("party_type", "Customer");
-                    }
-                    // Restore party value after party_type is set (if it was set from prefill)
-                    if (existingParty && !frm.get_value("party")) {
-                        frm.set_value("party", existingParty);
-                    }
-                    // Set reference_type only if not already set (e.g. preserve prefill from Delivery Order)
-                    if (!frm.get_value("reference_type")) {
-                        frm.set_value("reference_type", "Sales Invoice");
-                    }
-                    setReferenceIdFilters(frm);
-                    updatePartyAccountFilter(frm);
-                    if (!updatingRefs) {
-                        updatingRefs = true;
-                        try {
-                            await calculateReferenceRows(frm);
-                        } finally {
-                            updatingRefs = false;
-                        }
-                    }
-                } else if (paymentType === "Pay") {
-                    if (frm.get_value("party_type") !== "Supplier") {
-                        frm.set_value("party_type", "Supplier");
-                    }
-                    // Restore party value after party_type is set (if it was set from prefill)
-                    if (existingParty && !frm.get_value("party")) {
-                        frm.set_value("party", existingParty);
-                    }
-                    if (!frm.get_value("reference_type")) {
-                        frm.set_value("reference_type", "Purchase Invoice");
-                    }
-                    setReferenceIdFilters(frm);
-                    updatePartyAccountFilter(frm);
-                    if (!updatingRefs) {
-                        updatingRefs = true;
-                        try {
-                            await calculateReferenceRows(frm);
-                        } finally {
-                            updatingRefs = false;
-                        }
-                    }
-                } else {
-                    // Update party_account filter even if payment_type is not set
-                    updatePartyAccountFilter(frm);
-                }
-            }
+            on_render: onLoadOrPaymentTypeChange,
+            payment_type: onLoadOrPaymentTypeChange,
+            party_type: setReferenceTypeFilter,
+            party: setReferenceIdFiltersForParty,
+            references: onReferencesChange,
+            "references.reference_type": setReferenceIdFiltersForParty,
+            "references.reference_id": onReferenceIdChange,
+            "references.allocated_amount": recalcAllocationsAndTaxes,
+            "references.idx": recalcAllocationsAndTaxes,
+            ...taxFieldHandlers,
         });
     }, []);
-
-    return null;
+    return <></>;
 }
-
-
-

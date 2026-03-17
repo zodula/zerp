@@ -121,10 +121,10 @@ async function updateAccountBalance(accountId: string) {
     // Calculate balance based on account type
     // Assets, Expenses: Debit - Credit (positive = debit balance)
     // Liabilities, Equity, Income: Credit - Debit (positive = credit balance)
-    const accountType = account.account_type as string;
+    const rootType = account.root_type as string;
     let balance = 0;
     
-    if (accountType === "Asset" || accountType === "Expense") {
+    if (rootType === "Asset" || rootType === "Expense") {
         balance = totalDebit - totalCredit;
     } else {
         balance = totalCredit - totalDebit;

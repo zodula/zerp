@@ -21,7 +21,7 @@ export default $doctype({
     },
 }, {
     label: "Vehicle",
-    naming_series: "VEH-{{organization_abbr}}-{#####}",
+    naming_series: "VEH-{{doc_organization_abbr}}-{#####}",
     search_fields: "plate_number",
     tabs: JSON.stringify([
         {

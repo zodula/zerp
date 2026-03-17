@@ -3,7 +3,6 @@ export default $doctype({
         type: "Text",
         label: "Account Code",
         required: 1,
-        unique: 1,
         in_list_view: 1
     },
     account_name: {
@@ -12,18 +11,39 @@ export default $doctype({
         required: 1,
         in_list_view: 1
     },
+    root_type: {
+        type: "Select",
+        label: "Root Type",
+        options: "Asset\nLiability\nEquity\nIncome\nExpense",
+        required: 1,
+        in_list_view: 1
+    },
     account_type: {
         type: "Select",
         label: "Account Type",
-        options: "Asset\nLiability\nEquity\nIncome\nExpense",
-        required: 1,
+        options: "Accumulated Depreciation\nAsset Received But Not Billed\nBank\nCash\nChargeable\nCapital Work in Progress\nCost of Goods Sold\nCurrent Asset\nCurrent Liability\nDepreciation\nDirect Expense\nDirect Income\nEquity\nExpense Account\nExpenses Included In Asset Valuation\nExpenses Included In Valuation\nFixed Asset\nIncome Account\nIndirect Expense\nIndirect Income\nLiability\nPayable\nReceivable\nRound Off\nRound Off for Opening\nStock\nStock Adjustment\nStock Received But Not Billed\nService Received But Not Billed\nTax\nTemporary",
+        in_list_view: 1
+    },
+    parent_account: {
+        type: "Reference",
+        label: "Parent Account",
+        reference: "Account",
+        filters: JSON.stringify([["root_type", "=", "{{root_type}}"]]),
+        in_list_view: 1
+    },
+    is_group: {
+        type: "Check",
+        label: "Is Group",
+        default: "0",
+        only_once: 1,
         in_list_view: 1
     },
     balance: {
         type: "Currency",
         label: "Balance",
         default: "0",
-        readonly: 1
+        readonly: 1,
+        in_tree_view: 1
     },
     party_type: {
         type: "Reference",
@@ -36,12 +56,6 @@ export default $doctype({
         type: "Reference",
         label: "Party",
         reference: "{{party_type}}",
-        in_list_view: 1
-    },
-    is_bank_account: {
-        type: "Check",
-        label: "Is Bank Account",
-        default: "0",
         in_list_view: 1
     },
     bank: {
@@ -64,16 +78,10 @@ export default $doctype({
         required: 0,
         in_list_view: 1
     },
-    is_tax_account: {
-        type: "Check",
-        label: "Is Tax Account",
-        default: "0",
-        in_list_view: 1
-    },
 }, {
     label: "Account",
-    naming_series: "{{account_code}}",
-    search_fields: "account_code\naccount_name",
+    naming_series: "{{account_code}} - {{account_name}} - {{doc_organization_abbr}}",
+    search_fields: "account_code\naccount_name\naccount_type",
     tabs: JSON.stringify([
         {
             type: "Tab", 
@@ -83,7 +91,10 @@ export default $doctype({
                 [
                     { type: "field", value: "account_code", align: "left" },
                     { type: "field", value: "account_name", align: "left" },
-                    { type: "field", value: "account_type", align: "left" }
+                    { type: "field", value: "root_type", align: "left" },
+                    { type: "field", value: "account_type", align: "left" },
+                    { type: "field", value: "parent_account", align: "left" },
+                    { type: "field", value: "is_group", align: "left" }
                 ],
                 { type: "section", value: "Balance", align: "left" },
                 [
@@ -96,14 +107,9 @@ export default $doctype({
                 ],
                 { type: "section", value: "Bank Information", align: "left" },
                 [
-                    { type: "field", value: "is_bank_account", align: "left" },
                     { type: "field", value: "bank", align: "left" },
                     { type: "field", value: "bank_name", align: "left" },
                     { type: "field", value: "bank_account_no", align: "left" }
-                ],
-                { type: "section", value: "Tax Information", align: "left" },
-                [
-                    { type: "field", value: "is_tax_account", align: "left" }
                 ]
             ]
         }

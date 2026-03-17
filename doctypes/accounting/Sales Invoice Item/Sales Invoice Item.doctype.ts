@@ -13,24 +13,13 @@ export default $doctype<"Sales Invoice Item">({
         required: 1,
         in_list_view: 1,
         readonly: 1,
-        fetch_from: "product.product_name"
     },
-    price_list: {
-        type: "Reference",
-        label: "Price List",
-        reference: "Price List",
-        required: 0,
-        no_print: 1,
-        in_list_view: 1,
-        description: "Can select price list only when Customer, Price Project, and Product are provided.",
-    },
-    product_image: {    
+    product_image: {
         type: "Image Preview",
         label: "Product Image",
         readonly: 1,
-        fetch_from: "product.product_image",
     },
-    item_description: {
+    product_description: {
         type: "Text",
         label: "Item Description"
     },
@@ -45,7 +34,8 @@ export default $doctype<"Sales Invoice Item">({
         label: "UOM",
         reference: "UOM",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        readonly: 1,
     },
     unit_price: {
         type: "Float",
@@ -60,34 +50,45 @@ export default $doctype<"Sales Invoice Item">({
         in_list_view: 1,
         readonly: 1
     },
+    weight: {
+        type: "Float",
+        label: "Weight (kg)",
+        readonly: 1,
+    },
+    volume: {
+        type: "Float",
+        label: "Volume (cm³)",
+        readonly: 1,
+    },
     length: {
         type: "Float",
-        label: "Length",
+        label: "Length (cm)",
         readonly: 1,
-        fetch_from: "product.length"
     },
     width: {
         type: "Float",
-        label: "Width",
+        label: "Width (cm)",
         readonly: 1,
-        fetch_from: "product.width"
     },
     height: {
         type: "Float",
         label: "Height",
         readonly: 1,
-        fetch_from: "product.height"
     },
-    weight: {
+    volume_total: {
         type: "Float",
-        label: "Weight",
+        label: "Total Volume (cm³)",
         readonly: 1,
-        fetch_from: "product.weight"
+    },
+    weight_total: {
+        type: "Float",
+        label: "Total Weight (kg)",
+        readonly: 1,
     }
 }, {
     label: "Sales Invoice Item",
     is_child_doctype: 1,
-    search_fields: "product_name\nitem_description",
+    search_fields: "product_name\nproduct_description",
     tabs: JSON.stringify([
         {
             type: "Tab",
@@ -98,8 +99,7 @@ export default $doctype<"Sales Invoice Item">({
                     { type: "field", value: "sales_invoice", align: "left" },
                     { type: "field", value: "product", align: "left" },
                     { type: "field", value: "product_name", align: "left" },
-                    { type: "field", value: "price_list", align: "left" },
-                    { type: "field", value: "item_description", align: "left" }
+                    { type: "field", value: "product_description", align: "left" }
                 ],
                 { type: "section", value: "Quantity & Pricing", align: "left" },
                 [
@@ -114,6 +114,11 @@ export default $doctype<"Sales Invoice Item">({
                     { type: "field", value: "width", align: "left" },
                     { type: "field", value: "height", align: "left" },
                     { type: "field", value: "weight", align: "left" }
+                ],
+                [
+                    { type: "field", value: "volume", align: "left" },
+                    { type: "field", value: "volume_total", align: "left" },
+                    { type: "field", value: "weight_total", align: "left" }
                 ]
             ]
         }

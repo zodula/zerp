@@ -19,7 +19,7 @@ export default $doctype({
     },
 }, {
     label: "Leave Period",
-    naming_series: "LP-{{organization_abbr}}-{{year}}",
+    naming_series: "LP-{{doc_organization_abbr}}-{{year}}",
     search_fields: "year",
     display_field: "year",
     tabs: JSON.stringify([

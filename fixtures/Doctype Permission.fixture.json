@@ -18,7 +18,6 @@
     "can_own_delete": 0,
     "can_own_submit": 0,
     "can_own_cancel": 0,
-    "app": "zerp",
-    "organization": "System Panel"
+    "app": "zerp"
   }
 ]

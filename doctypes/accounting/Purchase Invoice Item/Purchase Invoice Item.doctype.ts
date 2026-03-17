@@ -15,10 +15,10 @@ export default $doctype<"Purchase Invoice Item">({
         readonly: 1,
         fetch_from: "product.product_name"
     },
-    price_list: {
+    price: {
         type: "Reference",
-        label: "Price List",
-        reference: "Price List",
+        label: "Price",
+        reference: "Price",
         required: 0,
         no_print: 1,
         in_list_view: 1,
@@ -29,7 +29,7 @@ export default $doctype<"Purchase Invoice Item">({
         readonly: 1,
         fetch_from: "product.product_image"
     },
-    item_description: {
+    product_description: {
         type: "Text",
         label: "Item Description"
     },
@@ -86,7 +86,7 @@ export default $doctype<"Purchase Invoice Item">({
 }, {
     label: "Purchase Invoice Item",
     is_child_doctype: 1,
-    search_fields: "product_name\nitem_description",
+    search_fields: "product_name\nproduct_description",
     tabs: JSON.stringify([
         {
             type: "Tab",
@@ -97,8 +97,8 @@ export default $doctype<"Purchase Invoice Item">({
                     { type: "field", value: "purchase_invoice", align: "left" },
                     { type: "field", value: "product", align: "left" },
                     { type: "field", value: "product_name", align: "left" },
-                    { type: "field", value: "price_list", align: "left" },
-                    { type: "field", value: "item_description", align: "left" }
+                    { type: "field", value: "price", align: "left" },
+                    { type: "field", value: "product_description", align: "left" }
                 ],
                 { type: "section", value: "Quantity & Pricing", align: "left" },
                 [
@@ -119,6 +119,6 @@ export default $doctype<"Purchase Invoice Item">({
     ])
 })
 .on("before_save", (ctx) => {
-    ctx.doc.price_list = null;
+    ctx.doc.price = null;
 })
 

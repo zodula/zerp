@@ -1,15 +1,16 @@
-export default $doctype({
+export default $doctype<"Address">({
     address_name: {
         type: "Text",
         label: "Address Name",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
     },
     address_type: {
         type: "Select",
         label: "Address Type",
-        options: "\nBilling\nShipping\nOffice\nHome\nOther",
-        in_list_view: 1
+        options: "\nBilling\nShipping\nSender\nOther",
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
     address_line1: {
         type: "Text",
@@ -18,7 +19,8 @@ export default $doctype({
     },
     address_line2: {
         type: "Text",
-        label: "Address Line 2"
+        label: "Address Line 2",
+        in_quick_entry: 1,
     },
     city: {
         type: "Text",
@@ -33,7 +35,8 @@ export default $doctype({
     },
     postal_code: {
         type: "Text",
-        label: "Postal Code"
+        label: "Postal Code",
+        in_quick_entry: 1,
     },
     country: {
         type: "Text",
@@ -53,13 +56,15 @@ export default $doctype({
         type: "Reference Table",
         label: "Links",
         reference: "Address Link Item",
-        required: 0
+        required: 0,
+        in_quick_entry: 1,
     }
 }, {
     label: "Address",
-    naming_series: "ADS-{{organization_abbr}}-{YYYY}{MM}{DD}{#####}",
+    naming_series: "ADS-{{doc_organization_abbr}}-{YYYY}{MM}{DD}{#####}",
     search_fields: "address_name\naddress_type\ncity\nprovince\ninline_address",
-    track_changes: 1,
+    display_field: "address_name",
+    is_quick_entry: 1,
     tabs: JSON.stringify([
         {
             type: "Tab",
@@ -93,4 +98,7 @@ export default $doctype({
             ]
         }
     ])
+})
+.on("before_save", async ({ doc }) => {
+    doc.inline_address = `${doc.address_line1} ${doc.address_line2} ${doc.city} ${doc.province} ${doc.postal_code} ${doc.country}`;
 })

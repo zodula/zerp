@@ -2,6 +2,10 @@
   {
     "id": "Default Company Letter Head",
     "name": "Default Company Letter Head",
-    "organization": "System Panel"
+    "html_content": null,
+    "html_footer_content": null,
+    "css_content": null,
+    "repeat_every_page": 1,
+    "css_extra": null
   }
 ]

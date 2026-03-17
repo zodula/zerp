@@ -22,7 +22,7 @@ export default $doctype({
     },
 }, {
     label: "Leave Type",
-    naming_series: "{{name}} - {{organization_abbr}}",
+    naming_series: "{{name}} - {{doc_organization_abbr}}",
     search_fields: "name",
     tabs: JSON.stringify([
         {

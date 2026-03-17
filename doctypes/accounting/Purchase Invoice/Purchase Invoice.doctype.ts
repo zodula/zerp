@@ -7,10 +7,10 @@ export default $doctype<"Purchase Invoice">(
       required: 1,
       no_print: 1,
     },
-    delivery_manifest: {
+    delivery_trip: {
       type: "Reference",
-      label: "Delivery Manifest",
-      reference: "Delivery Manifest",
+      label: "Delivery Trip",
+      reference: "Delivery Trip",
       required: 0,
       no_print: 1,
     },
@@ -50,6 +50,7 @@ export default $doctype<"Purchase Invoice">(
       reference: "Price Project",
       required: 0,
       no_print: 1,
+      filters: JSON.stringify([["is_buying", "=", 1]]),
     },
     posting_date: {
       type: "Date",
@@ -77,9 +78,9 @@ export default $doctype<"Purchase Invoice">(
       in_list_view: 1,
       readonly: 1,
     },
-    total_amount: {
+    grand_total: {
       type: "Currency",
-      label: "Total Amount",
+      label: "Grand Total",
       required: 0,
       in_list_view: 1,
       readonly: 1,
@@ -200,7 +201,7 @@ export default $doctype<"Purchase Invoice">(
   },
   {
     label: "Purchase Invoice",
-    naming_series: "PINV{{organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
+    naming_series: "PINV{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     comments_enabled: 1,
@@ -219,7 +220,7 @@ export default $doctype<"Purchase Invoice">(
           [
             { type: "field", value: "supplier", align: "left" },
             { type: "field", value: "supplier_name", align: "left" },
-            { type: "field", value: "delivery_manifest", align: "left" },
+            { type: "field", value: "delivery_trip", align: "left" },
             { type: "field", value: "posting_date", align: "left" },
             { type: "field", value: "due_date", align: "left" },
             { type: "field", value: "price_project", align: "left" },
@@ -246,7 +247,7 @@ export default $doctype<"Purchase Invoice">(
           [
             { type: "field", value: "net_total", align: "left" },
             { type: "field", value: "total_taxes_and_charges", align: "left" },
-            { type: "field", value: "total_amount", align: "left" },
+            { type: "field", value: "grand_total", align: "left" },
           ],
         ],
       },
@@ -347,6 +348,6 @@ export default $doctype<"Purchase Invoice">(
     }
 
     doc.total_taxes_and_charges = totalTaxesAndCharges;
-    doc.total_amount = runningTotal;
+    doc.grand_total = runningTotal;
 });
 

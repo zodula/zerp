@@ -1,0 +1,47 @@
+[
+  {
+    "id": "365056b9b444c8a9",
+    "name": "Accounting",
+    "idx": 0,
+    "workspace_parent": null,
+    "icon": "DollarSign",
+    "app": "zerp",
+    "is_system": 0
+  },
+  {
+    "id": "e6f7890123456789",
+    "name": "TMS",
+    "idx": 50,
+    "workspace_parent": null,
+    "icon": "Truck",
+    "app": "zerp",
+    "is_system": 0
+  },
+  {
+    "id": "f7890123456789ab",
+    "name": "HRMS",
+    "idx": 10,
+    "workspace_parent": null,
+    "icon": "Users",
+    "app": "zerp",
+    "is_system": 0
+  },
+  {
+    "id": "0123456789abcdef",
+    "name": "Stock",
+    "idx": 20,
+    "workspace_parent": null,
+    "icon": "Package",
+    "app": "zerp",
+    "is_system": 0
+  },
+  {
+    "id": "1234567890abcdef",
+    "name": "Core",
+    "idx": 30,
+    "workspace_parent": null,
+    "icon": "Building2",
+    "app": "zerp",
+    "is_system": 0
+  }
+]

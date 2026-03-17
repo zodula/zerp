@@ -32,7 +32,7 @@ export default $doctype({
     },
 }, {
     label: "Customer",
-    naming_series: "CUS-{{organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
+    naming_series: "CUS-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
     search_fields: "name\nemail\nphone",
     display_field: "name",
     is_quick_entry: 1,

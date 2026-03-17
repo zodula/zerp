@@ -14,6 +14,7 @@ export default $doctype({
 }, {
     label: "Tax Template",
     search_fields: "title",
+    naming_series: "{{title}} - {{doc_organization}}",
     tabs: JSON.stringify([
         {
             type: "Tab",

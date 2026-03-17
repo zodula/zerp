@@ -1,15 +1,17 @@
 export default $doctype({
-    payment_entry: {
+    reference_type: {
         type: "Reference",
-        label: "Payment Entry",
-        reference: "Payment Entry",
-        required: 1
+        label: "Reference Type",
+        reference: "Doctype",
+        filters: JSON.stringify([["name", "IN", ["Sales Invoice", "Purchase Invoice", "Delivery Note"]]]),
+        required: 1,
+        in_list_view: 0
     },
     reference_id: {
         type: "Reference",
         label: "Reference ID",
         reference: "{{reference_type}}",
-        filters: JSON.stringify([["doc_status", "=", "1"]]),
+        filters: JSON.stringify([["doc_status", "=", "Submitted"]]),
         required: 1
     },
     remaining_amount: {
@@ -17,7 +19,7 @@ export default $doctype({
         label: "Remaining Amount",
         required: 0,
         readonly: 1,
-        in_list_view: 0
+        in_list_view: 1
     },
     allocated_amount: {
         type: "Currency",

@@ -52,7 +52,7 @@ export default $doctype<"Leave Application">({
     },
 }, {
     label: "Leave Application",
-    naming_series: "LEAVE-{{organization_abbr}}-{YYYY}-{#####}",
+    naming_series: "LEAVE-{{doc_organization_abbr}}-{YYYY}-{#####}",
     search_fields: "employee\nemployee_name\nleave_type",
     is_submittable: 1,
     track_changes: 1,

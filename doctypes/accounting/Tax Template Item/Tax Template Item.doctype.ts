@@ -1,10 +1,4 @@
 export default $doctype({
-    tax_template: {
-        type: "Reference",
-        label: "Tax Template",
-        reference: "Tax Template",
-        required: 1
-    },
     charge_type: {
         type: "Select",
         label: "Charge Type",
@@ -17,7 +11,7 @@ export default $doctype({
         type: "Reference",
         label: "Account Head",
         reference: "Account",
-        filters: JSON.stringify([["is_tax_account", "=", 1]]),
+        filters: JSON.stringify([["account_type", "=", "Tax"]]),
         required: 1,
         in_list_view: 1
     },
@@ -30,14 +24,14 @@ export default $doctype({
     tax_type: {
         type: "Select",
         label: "Tax Type",
-        options: "Included\nExcluded",
+        options: "Included\nExcluded\nExcluded Subtract",
         required: 1,
         in_list_view: 1,
         default: "Excluded"
     },
     rate: {
         type: "Float",
-        label: "Rate (%)",
+        label: "Rate",
         required: 0,
         in_list_view: 1
     },
