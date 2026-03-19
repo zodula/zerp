@@ -81,7 +81,6 @@ function recalcTaxes(frm: any) {
 }
 
 function recalcAllocationsAndTaxes(frm: any) {
-    console.log("recalcAllocationsAndTaxes", frm);
     const baseAmount = recalcAllocations(frm);
     recalcTaxesWithBase(frm, baseAmount);
 }

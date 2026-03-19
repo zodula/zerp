@@ -3,7 +3,6 @@ import { useZui } from "@/zodula/ui";
 
 export default function AccountScripts() {
     useZui((zui) => {
-        console.log("AccountScripts", zui.org);
         zui.list.set_secondary_button(
             "Account",
             "Setup Standard Accounts",

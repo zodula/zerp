@@ -43,7 +43,6 @@ export default $doctype<"Price Project">(
     ])
 })
     .on("before_save", async ({ doc }) => {
-        console.log(doc, "doc")
         if (doc.is_selling !== 1 && doc.is_buying !== 1) {
             throw new Error("At least one of Is Selling or Is Buying must be enabled.");
         }
