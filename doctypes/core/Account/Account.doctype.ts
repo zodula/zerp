@@ -80,7 +80,7 @@ export default $doctype({
     },
 }, {
     label: "Account",
-    naming_series: "{{account_code}} - {{account_name}} - {{doc_organization_abbr}}",
+    naming_series: "{{account_code}} - {{account_name}}",
     search_fields: "account_code\naccount_name\naccount_type",
     tabs: JSON.stringify([
         {

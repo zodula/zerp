@@ -51,7 +51,7 @@ export default $doctype<"Installation Note">(
   },
   {
     label: "Installation Note",
-    naming_series: "IN-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
+    naming_series: "IN-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     search_fields: "delivery_note",

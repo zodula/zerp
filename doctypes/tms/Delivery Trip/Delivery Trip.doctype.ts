@@ -102,7 +102,7 @@ export default $doctype<"Delivery Trip">({
     }
 }, {
     label: "Delivery Trip",
-    naming_series: "DOT-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
+    naming_series: "DOT-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     search_fields: "source_warehouse\ntarget_warehouse\ndriver\nvehicle\ntransporter",

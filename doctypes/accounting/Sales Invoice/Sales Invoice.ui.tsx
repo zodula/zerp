@@ -3,6 +3,15 @@ import { useZui } from "@/zodula/ui";
 
 const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
 
+function applyCustomerLinkFilters(frm: any) {
+    const customer = frm.get_value("customer");
+    const f = customer ? JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", customer]]) : JSON.stringify([["link_type", "=", "Customer"]]);
+    frm.set_df_property?.("billing_address", "filters", f);
+    frm.set_df_property?.("shipping_address", "filters", f);
+    frm.set_df_property?.("billing_contact", "filters", f);
+    frm.set_df_property?.("shipping_contact", "filters", f);
+}
+
 function docStatusBadge(doc: any, t: (k: string) => string) {
     const s = doc?.doc_status ?? "";
     if (s === "Submitted") {
@@ -79,13 +88,15 @@ export default function SalesInvoiceScripts() {
         zui.form.on("Sales Invoice", {
             on_render(frm) {
                 frm.set_badge_config?.("doc_status", { getValue: (doc, t) => docStatusBadge(doc, t ?? zui.t) });
-                zui.org && zodula.doc.get_doc("ERP Setting" as any, `ERP Setting - ${zui.org}` as any).then((erp: any) => {
+                applyCustomerLinkFilters(frm);
+                zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any).then((erp: any) => {
                     if (!erp) return;
                     if (!frm.get_value("price_project") && (erp.default_sales_invoice_price_project ?? erp.default_delivery_note_price_project)) frm.set_value("price_project", erp.default_sales_invoice_price_project ?? erp.default_delivery_note_price_project);
                     if (!frm.get_value("apply_tax_template") && (erp.default_sales_invoice_tax_template ?? erp.default_delivery_note_tax_template)) frm.set_value("apply_tax_template", erp.default_sales_invoice_tax_template ?? erp.default_delivery_note_tax_template);
                 });
             },
             customer: async (frm) => {
+                applyCustomerLinkFilters(frm);
                 const c = frm.get_value("customer") ? await zodula.doc.get_doc("Customer", frm.get_value("customer")) : null;
                 const vals = c ? [c.name ?? "", c.tax_id ?? "", c.phone ?? "", c.address ?? ""] : ["", "", "", ""];
                 ["customer_name", "customer_tax_id", "customer_phone", "customer_address"].forEach((k, i) => frm.set_value(k as any, vals[i]));
@@ -142,8 +153,6 @@ export default function SalesInvoiceScripts() {
         });
 
         zui.form.set_secondary_button("Sales Invoice", "Create Payment Entry", async (frm) => {
-            const org = zui.org;
-            if (!org) return;
             const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
             const totalAmount = num(frm.get_value("grand_total"));
             const prefill: Record<string, any> = {
@@ -156,7 +165,7 @@ export default function SalesInvoiceScripts() {
                 "references.0.reference_id": invoiceId,
                 "references.0.allocated_amount": totalAmount,
             };
-            zui.router?.push(`/desk/${org}/doctypes/Payment Entry/form`, { state: { prefill } });
+            zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill } });
         }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" });
     }, []);
     return <></>;

@@ -4,7 +4,6 @@ import { Link, useRouter } from "@/zodula/ui/components/router";
 import { PackageSearch } from "lucide-react";
 
 export default function OrgTrackPage() {
-  const { org } = useParams<{ org: string }>();
   const router = useRouter()
   const [id, setId] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -18,18 +17,10 @@ export default function OrgTrackPage() {
         return;
       }
       setError(null);
-      router.push(`/org/${org}/track/${encodeURIComponent(trimmed)}`);
+      router.push(`/org/track/${encodeURIComponent(trimmed)}`);
     },
-    [id, org]
+    [id]
   );
-
-  if (!org) {
-    return (
-      <div className="auth-page-bg zd:min-h-screen zd:flex zd:items-center zd:justify-center zd:relative">
-        <p className="zd:relative zd:z-10 zd:text-muted-foreground">Missing organization.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="auth-page-bg zd:min-h-screen zd:flex zd:items-center zd:justify-center zd:px-4 zd:py-10 zd:relative">
@@ -71,7 +62,7 @@ export default function OrgTrackPage() {
           </button>
         </form>
         <p className="zd:mt-6 zd:text-sm zd:text-center">
-          <Link to={`/org/${org}`} className="zd:text-muted-foreground hover:zd:text-foreground">
+          <Link to={`/org`} className="zd:text-muted-foreground hover:zd:text-foreground">
             ← Back to name card
           </Link>
         </p>

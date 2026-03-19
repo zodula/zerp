@@ -128,7 +128,7 @@ export default $doctype<"Delivery Note">(
       reference: "Address",
       required: 0,
       no_print: 1,
-      filters: JSON.stringify([["links.link_doctype", "=", "Customer"], ["links.link_id", "=", "{{customer}}"]]),
+      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
     },
     shipping_address: {
       type: "Reference",
@@ -136,7 +136,7 @@ export default $doctype<"Delivery Note">(
       reference: "Address",
       required: 1,
       no_print: 1,
-      filters: JSON.stringify([["links.link_doctype", "=", "Customer"], ["links.link_id", "=", "{{customer}}"]]),
+      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
     },
     shipping_inline_address: {
       type: "Text",
@@ -151,7 +151,7 @@ export default $doctype<"Delivery Note">(
       reference: "Contact",
       required: 0,
       no_print: 1,
-      filters: JSON.stringify([["links.link_doctype", "=", "Customer"], ["links.link_id", "=", "{{customer}}"]]),
+      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
     },
     billing_contact_inline: {
       type: "Text",
@@ -166,7 +166,7 @@ export default $doctype<"Delivery Note">(
       reference: "Contact",
       required: 0,
       no_print: 1,
-      filters: JSON.stringify([["links.link_doctype", "=", "Customer"], ["links.link_id", "=", "{{customer}}"]]),
+      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
     },
     shipping_contact_inline: {
       type: "Text",
@@ -181,7 +181,7 @@ export default $doctype<"Delivery Note">(
       reference: "Address",
       required: 0,
       no_print: 0,
-      filters: JSON.stringify([["links.link_doctype", "=", "Customer"], ["links.link_id", "=", "{{customer}}"]]),
+      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
     },
     sender_inline_address: {
       type: "Text",
@@ -196,7 +196,7 @@ export default $doctype<"Delivery Note">(
       reference: "Contact",
       required: 0,
       no_print: 0,
-      filters: JSON.stringify([["links.link_doctype", "=", "Customer"], ["links.link_id", "=", "{{customer}}"]]),
+      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
     },
     sender_contact_inline: {
       type: "Text",
@@ -211,6 +211,7 @@ export default $doctype<"Delivery Note">(
       reference: "Warehouse",
       required: 0,
       no_print: 0,
+      readonly: 1,
     },
     installation_percentage: {
       type: "Float",
@@ -224,7 +225,7 @@ export default $doctype<"Delivery Note">(
   },
   {
     label: "Delivery Note",
-    naming_series: "DO{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
+    naming_series: "DO-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     comments_enabled: 1,
@@ -321,15 +322,14 @@ export default $doctype<"Delivery Note">(
     ]),
   }
 )
-  .on("before_submit", async ({ doc }) => {
+  .on("before_save", async ({ doc }) => {
     if (doc.source_warehouse) {
       doc.to_warehouse = doc.source_warehouse;
     }
   })
   .on("after_submit", async ({ doc }) => {
-    const org = doc.doc_organization;
-    if (!org) return;
-    const erp = await $zodula.doctype("ERP Setting").get(`ERP Setting - ${org}`);
+    if (!doc.id) return;
+    const erp = await $zodula.doctype("ERP Setting").select().limit(1).then(r => r.docs[0]);
     const isSavePrice = erp?.is_save_price === 1;
     const priceSaveFor = erp?.price_save_for;
     if (!isSavePrice || !priceSaveFor) return;

@@ -4,6 +4,17 @@ import { useEffect } from "react";
 
 const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
 
+function applyCustomerLinkFilters(frm: any) {
+    const customer = frm.get_value("customer");
+    const f = customer ? JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", customer]]) : JSON.stringify([["link_type", "=", "Customer"]]);
+    frm.set_df_property?.("billing_address", "filters", f);
+    frm.set_df_property?.("shipping_address", "filters", f);
+    frm.set_df_property?.("sender_address", "filters", f);
+    frm.set_df_property?.("billing_contact", "filters", f);
+    frm.set_df_property?.("shipping_contact", "filters", f);
+    frm.set_df_property?.("sender_contact", "filters", f);
+}
+
 function docStatusBadge(doc: any, t: (k: string) => string) {
     const s = doc?.doc_status ?? "";
     if (s === "Submitted") {
@@ -20,7 +31,7 @@ function docStatusBadge(doc: any, t: (k: string) => string) {
 
 export default function DeliveryOrderScripts() {
     useZui(async (zui) => {
-        const erpSetting = await zodula.doc.get_doc("ERP Setting" as any, `ERP Setting - ${zui.org}` as any) as any;
+        const erpSetting = await zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any) as any;
         const enableWeightCalc = erpSetting?.enable_delivery_order_weight_calculation === 1;
         // Start here
         const applyDocTotals = (frm: any) => {
@@ -81,7 +92,8 @@ export default function DeliveryOrderScripts() {
         zui.form.on("Delivery Note", {
             on_render(frm) {
                 frm.set_badge_config?.("doc_status", { getValue: (doc, t) => docStatusBadge(doc, t ?? zui.t) });
-                zui.org && zodula.doc.get_doc("ERP Setting" as any, `ERP Setting - ${zui.org}` as any).then((erp: any) => {
+                applyCustomerLinkFilters(frm);
+                zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any).then((erp: any) => {
                     if (!erp) return;
                     if (!frm.get_value("price_project") && erp.default_delivery_note_price_project) frm.set_value("price_project", erp.default_delivery_note_price_project);
                     if (!frm.get_value("apply_tax_template") && erp.default_delivery_note_tax_template) frm.set_value("apply_tax_template", erp.default_delivery_note_tax_template);
@@ -114,6 +126,7 @@ export default function DeliveryOrderScripts() {
                 syncTaxTableReadOnly(frm);
             },
             customer: async (frm) => {
+                applyCustomerLinkFilters(frm);
                 const c = frm.get_value("customer") ? await zodula.doc.get_doc("Customer", frm.get_value("customer")) : null;
                 const vals = c ? [c.name ?? "", c.tax_id ?? "", c.phone ?? "", c.address ?? ""] : ["", "", "", ""];
                 ["customer_name", "customer_tax_id", "customer_phone", "customer_address"].forEach((k, i) => frm.set_value(k as any, vals[i]));
@@ -260,8 +273,6 @@ export default function DeliveryOrderScripts() {
         }, { condition: (ctx) => (ctx.doc?.doc_status ?? "Draft") === "Draft" });
 
         zui.form.set_secondary_button("Delivery Note", "Create Sales Invoice", async (frm) => {
-            const org = zui.org;
-            if (!org) return;
             const prefill: Record<string, any> = {
                 delivery_note: frm.get_value("id") ?? frm?.doc?.id,
                 customer: frm.get_value("customer"),
@@ -284,7 +295,7 @@ export default function DeliveryOrderScripts() {
 
             let useDefaultProduct = false;
             try {
-                const erp = await zodula.doc.get_doc("ERP Setting" as any, `ERP Setting - ${org}` as any) as any;
+                const erp = await zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any) as any;
                 if (erp?.default_delivery_sales_product) {
                     const sales_product = await zodula.doc.get_doc("Product", erp.default_delivery_sales_product) as any;
                     prefill["sales_invoice_items.0.product"] = sales_product?.id ?? "";
@@ -322,7 +333,7 @@ export default function DeliveryOrderScripts() {
                     useDefaultProduct = true;
                 }
             } catch {
-                // ignore and fall back to copying delivery order items
+
             }
 
             if (!useDefaultProduct) {
@@ -347,12 +358,10 @@ export default function DeliveryOrderScripts() {
                 });
             }
 
-            zui.router?.push(`/desk/${org}/doctypes/Sales Invoice/form`, { state: { prefill } });
+            zui.router?.push(`/desk/doctypes/Sales Invoice/form`, { state: { prefill } });
         }, { icon: "FileText", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" });
 
         zui.form.set_secondary_button("Delivery Note", "Create Installation Note", async (frm) => {
-            const org = zui.org;
-            if (!org) return;
             const now = new Date();
             const hh = String(now.getHours()).padStart(2, "0");
             const mm = String(now.getMinutes()).padStart(2, "0");
@@ -369,7 +378,7 @@ export default function DeliveryOrderScripts() {
                 prefill[`${base}quantity`] = item.quantity ?? 0;
                 prefill[`${base}uom`] = item.uom ?? "";
             });
-            zui.router?.push(`/desk/${org}/doctypes/Installation Note/form`, { state: { prefill } });
+            zui.router?.push(`/desk/doctypes/Installation Note/form`, { state: { prefill } });
         }, { icon: "Wrench", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && ctx?.doc?.installation_percentage < 100 });
     }, []);
     return <></>;

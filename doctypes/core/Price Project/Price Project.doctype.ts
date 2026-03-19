@@ -25,7 +25,7 @@ export default $doctype<"Price Project">(
         },
     }, {
     label: "Price Project",
-    naming_series: "PP-{YYYY}-{MM}-{########}",
+    naming_series: "{{name}}",
     search_fields: "name\ndescription",
     is_quick_entry: 1,
     tabs: JSON.stringify([
@@ -43,6 +43,7 @@ export default $doctype<"Price Project">(
     ])
 })
     .on("before_save", async ({ doc }) => {
+        console.log(doc, "doc")
         if (doc.is_selling !== 1 && doc.is_buying !== 1) {
             throw new Error("At least one of Is Selling or Is Buying must be enabled.");
         }

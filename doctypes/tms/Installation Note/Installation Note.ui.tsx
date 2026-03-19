@@ -8,13 +8,11 @@ export default function InstallationNoteScripts() {
         zui.form.on("Installation Note", {
             delivery_note: async (frm) => {
                 const deliveryNoteId = frm.get_value("delivery_note");
-                const currentItems = (frm.get_value("installation_note_items") ?? []) as any[];
                 if (!deliveryNoteId) {
-                    for (let i = 0; i < currentItems.length; i++) {
-                        await frm.set_value(`installation_note_items.${i}.idx`, -1);
-                    }
+                    frm.clear_table?.("installation_note_items");
                     return;
                 }
+                frm.clear_table?.("installation_note_items");
                 const dn = await zodula.doc.get_doc("Delivery Note" as any, deliveryNoteId) as any;
                 const items = (dn?.delivery_note_items ?? []) as any[];
                 for (let i = 0; i < items.length; i++) {
@@ -23,9 +21,6 @@ export default function InstallationNoteScripts() {
                     await frm.set_value(`installation_note_items.${i}.product_name`, row?.product_name ?? "");
                     await frm.set_value(`installation_note_items.${i}.quantity`, num(row?.quantity));
                     await frm.set_value(`installation_note_items.${i}.uom`, row?.uom ?? "");
-                }
-                for (let i = items.length; i < currentItems.length; i++) {
-                    await frm.set_value(`installation_note_items.${i}.idx`, -1);
                 }
                 if (!frm.get_value("installation_date")) {
                     await frm.set_value("installation_date", zodula.date.today());

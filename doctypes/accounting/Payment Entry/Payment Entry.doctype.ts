@@ -5,7 +5,7 @@ export default $doctype<"Payment Entry">({
     naming_series: {
         type: "Select",
         label: "Naming Series",
-        options: "\nRV-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}\nPV-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}\nTV-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
+        options: "\nRV-{YYYY}-{MM}-{DD}-{#####}\nPV-{YYYY}-{MM}-{DD}-{#####}\nTV-{YYYY}-{MM}-{DD}-{#####}",
         required: 0,
         readonly: 1,
         hidden: 1,
@@ -29,7 +29,7 @@ export default $doctype<"Payment Entry">({
         type: "Reference",
         label: "Party Type",
         reference: "Doctype",
-        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]]),
+        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier", "Employee"]]]),
         in_list_view: 1
     },
     party: {
@@ -45,16 +45,16 @@ export default $doctype<"Payment Entry">({
         readonly: 1,
         in_list_view: 1
     },
-    base_amount: {
+    total_allocated: {
         type: "Currency",
-        label: "Base Amount",
+        label: "Total Allocated",
         required: 0,
         readonly: 1,
         in_list_view: 1
     },
-    total_allocated: {
+    unallocated_amount: {
         type: "Currency",
-        label: "Total Allocated",
+        label: "Unallocated Amount",
         required: 0,
         readonly: 1,
         in_list_view: 1
@@ -66,9 +66,9 @@ export default $doctype<"Payment Entry">({
         readonly: 1,
         in_list_view: 1
     },
-    grand_total: {
+    total_grand_total: {
         type: "Currency",
-      label: "Grand Total",
+        label: "Total Grand Total",
         required: 0,
         readonly: 1,
         in_list_view: 1
@@ -114,13 +114,15 @@ export default $doctype<"Payment Entry">({
         type: "Reference Table",
         label: "References",
         reference: "Payment Entry Reference",
-        required: 0
+        required: 0,
+        depends_on: "doc.payment_type == \"Receive\" || doc.payment_type == \"Pay\""
     },
     tax_and_charges: {
         type: "Reference Table",
         label: "Tax and Charges",
         reference: "Tax and Charges",
-        required: 0
+        required: 0,
+        depends_on: "doc.payment_type == \"Receive\" || doc.payment_type == \"Pay\""
     },
     payer_signature: {
         type: "Signature",
@@ -167,10 +169,10 @@ export default $doctype<"Payment Entry">({
                 ],
                 { type: "section", value: "Amounts", align: "left" },
                 [
-                    { type: "field", value: "base_amount", align: "left" },
                     { type: "field", value: "total_allocated", align: "left" },
+                    { type: "field", value: "unallocated_amount", align: "left" },
                     { type: "field", value: "total_taxes_and_charges", align: "left" },
-                    { type: "field", value: "grand_total", align: "left" },
+                    { type: "field", value: "total_grand_total", align: "left" },
                     { type: "field", value: "paid_amount", align: "left" }
                 ],
                 { type: "section", value: "Payment", align: "left" },
@@ -200,9 +202,9 @@ export default $doctype<"Payment Entry">({
 .on("before_change", async ({ doc }) => {
     // Sync naming_series from payment_type (Receive=RV, Pay=PV, Transfer=TV)
     const seriesByType: Record<string, string> = {
-        Receive: "RV-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
-        Pay: "PV-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
-        Transfer: "TV-{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}"
+        Receive: "RV-{YYYY}-{MM}-{DD}-{#####}",
+        Pay: "PV-{YYYY}-{MM}-{DD}-{#####}",
+        Transfer: "TV-{YYYY}-{MM}-{DD}-{#####}"
     };
     const series = doc.payment_type ? seriesByType[doc.payment_type as string] : undefined;
     if (series) {
@@ -213,15 +215,15 @@ export default $doctype<"Payment Entry">({
     const doctypeSchema = loader.from("doctype").get("Payment Entry").schema;
     ZodulaDoctypeHelper.validateDoc(doc, doctypeSchema, false);
     
-    // Calculate base_amount from references (sum of allocated amounts)
-    let baseAmount = 0;
+    // Calculate total_allocated from references (sum of allocate_amount)
+    let totalAllocated = 0;
     if (doc.references && Array.isArray(doc.references)) {
         for (const ref of doc.references) {
-            const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
-            baseAmount += allocatedAmount;
+            const allocateAmount = parseFloat(String((ref as any).allocate_amount || 0)) || 0;
+            totalAllocated += allocateAmount;
         }
     }
-    doc.base_amount = baseAmount;
+    doc.total_allocated = totalAllocated;
 
     // Calculate taxes and charges
     const taxRows = doc.tax_and_charges && Array.isArray(doc.tax_and_charges) ? doc.tax_and_charges : [];
@@ -233,7 +235,7 @@ export default $doctype<"Payment Entry">({
         return idxA - idxB;
     });
 
-    let runningTotal = baseAmount;
+    let runningTotal = totalAllocated;
     let totalTaxesAndCharges = 0;
 
     for (let i = 0; i < sortedTaxRows.length; i++) {
@@ -245,7 +247,7 @@ export default $doctype<"Payment Entry">({
         if (chargeType === "Actual") {
             taxAmount = parseFloat(String(taxRow.tax_amount || 0)) || 0;
         } else if (chargeType === "On Net Total") {
-            taxAmount = (baseAmount * rate) / 100;
+            taxAmount = (totalAllocated * rate) / 100;
         } else if (chargeType === "On Previous Row Amount") {
             if (i > 0) {
                 const prevRow = sortedTaxRows[i - 1] as any;
@@ -274,24 +276,10 @@ export default $doctype<"Payment Entry">({
     }
 
     doc.total_taxes_and_charges = totalTaxesAndCharges;
-    doc.grand_total = runningTotal;
-    
-    // Calculate total_allocated from references
-    let totalAllocated = 0;
-    if (doc.references && Array.isArray(doc.references)) {
-        for (const ref of doc.references) {
-            const allocatedAmount = parseFloat(String((ref as any).allocated_amount || 0)) || 0;
-            totalAllocated += allocatedAmount;
-        }
-    }
-    
-    // Update total_allocated field
-    doc.total_allocated = totalAllocated;
-    
-    // Validate that total_allocated equals base_amount (not grand_total, since grand_total includes taxes)
-    if (Math.abs(totalAllocated - baseAmount) > 0.01) { // Allow small floating point differences
-        throw new Error(`Total Allocated (${totalAllocated}) must equal Base Amount (${baseAmount})`);
-    }
+    doc.total_grand_total = runningTotal;
+
+    const paidAmount = parseFloat(String(doc.paid_amount || 0)) || 0;
+    doc.unallocated_amount = paidAmount - totalAllocated;
 })
 .on("after_submit", async ({ doc }) => {
     // General Ledger: credit account_paid_from, debit account_paid_to
@@ -405,17 +393,17 @@ async function updatePaymentStatusForReference(
         if (paymentEntryId && refType === doctype) {
             const paymentEntry = await $zodula.doctype("Payment Entry").get(paymentEntryId);
             if (paymentEntry && paymentEntry.doc_status === "Submitted") {
-                const allocatedAmount = parseFloat(String(ref.allocated_amount || 0)) || 0;
+                const allocatedAmount = parseFloat(String((ref as any).allocate_amount || 0)) || 0;
                 totalAllocated += allocatedAmount;
             }
         }
     }
 
-    const remainingAmount = totalAmount - totalAllocated;
+    const outstandingAmount = totalAmount - totalAllocated;
     let paymentStatus: "Unpaid" | "Partially Paid" | "Paid" = "Unpaid";
-    if (remainingAmount <= 0.01) {
+    if (outstandingAmount <= 0.01) {
         paymentStatus = "Paid";
-    } else if (remainingAmount < totalAmount) {
+    } else if (outstandingAmount < totalAmount) {
         paymentStatus = "Partially Paid";
     }
 

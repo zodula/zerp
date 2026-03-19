@@ -20,7 +20,7 @@ export default $doctype({
         required: 0,
         in_list_view: 1,
         readonly: 1,
-        fetch_from: "delivery_note.shipping_address.address_name",
+        fetch_from: "delivery_note.shipping_address.inline_address",
     },
     shipping_address: {
         type: "Reference",

@@ -20,7 +20,7 @@ export default $doctype({
     },
 }, {
     label: "Warehouse",
-    naming_series: "{{name}} - {{doc_organization_abbr}}",
+    naming_series: "{{name}}",
     search_fields: "name\nwarehouse_code\naddress",
     tabs: JSON.stringify([
         {

@@ -31,24 +31,17 @@ function ensureUrl(value: string | null | undefined): string | null {
 }
 
 export default function OrgNameCardPage() {
-  const { org } = useParams<{ org: string }>();
   const [orgData, setOrgData] = useState<{ org: Record<string, unknown> | null } | null>(null);
   const [showTrackDelivery, setShowTrackDelivery] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!org) {
-      setLoading(false);
-      setOrgData(null);
-      setShowTrackDelivery(false);
-      return;
-    }
     setLoading(true);
     setError(null);
     setShowTrackDelivery(false);
-    const orgPromise = zodula.get_action("zodula.org.getInfo" as Zodula.ActionPath, { params: { org } });
-    const menuPromise = zodula.get_action("zerp.website.get_additional_menu" as Zodula.ActionPath, { params: { org } });
+    const orgPromise = zodula.get_action("zodula.org.getInfo" as Zodula.ActionPath, {});
+    const menuPromise = zodula.get_action("zerp.website.get_additional_menu" as Zodula.ActionPath, {});
     orgPromise
       .then((data: { org: Record<string, unknown> | null }) => {
         setOrgData(data ?? { org: null });
@@ -63,17 +56,9 @@ export default function OrgNameCardPage() {
         setShowTrackDelivery(menu?.additional_menu_delivery_note_tracking === true);
       })
       .catch(() => setShowTrackDelivery(false));
-  }, [org]);
+  }, []);
 
   const doc = orgData?.org ?? null;
-
-  if (!org) {
-    return (
-      <div className="auth-page-bg zd:min-h-screen zd:flex zd:items-center zd:justify-center zd:relative">
-        <p className="zd:relative zd:z-10 zd:text-muted-foreground">Missing organization.</p>
-      </div>
-    );
-  }
 
   if (loading) {
     return (
@@ -93,7 +78,7 @@ export default function OrgNameCardPage() {
 
   const o = doc as unknown as Record<string, unknown>;
   const logoUrl = o.logo ?? null
-  const name = (o.organization_name as string) ?? (o.unique_name as string) ?? o.id;
+  const name = (o.organization_name as string) ?? o.id;
   const address = (o.address as string)?.trim() || null;
   const phone = (o.phone as string)?.trim() || null;
   const email = (o.email as string)?.trim() || null;
@@ -129,7 +114,7 @@ export default function OrgNameCardPage() {
           </div>
           {showTrackDelivery && (
             <Link
-              to={`/org/${org}/track`}
+              to={`/org/track`}
               className="zd:inline-flex zd:items-center zd:justify-center zd:gap-2 zd:py-2.5 zd:px-4 zd:rounded-full zd:text-sm zd:font-medium zd:bg-primary zd:text-primary-foreground hover:zd:opacity-90 zd:transition-opacity"
             >
               <PackageSearch className="zd:w-4 zd:h-4" />

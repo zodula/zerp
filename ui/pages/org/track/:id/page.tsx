@@ -5,7 +5,7 @@ import { PackageSearch, Truck, ArrowRight, Calendar, User } from "lucide-react";
 import { previewFile } from "@/zodula/ui/components/custom/file-preview";
 
 export default function OrgTrackIdPage() {
-  const { org, id } = useParams<{ org: string; id: string }>();
+  const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<{
     delivery_note: Record<string, unknown> | null;
     trips: Record<string, unknown>[];
@@ -16,7 +16,7 @@ export default function OrgTrackIdPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!org || !id) {
+    if (!id) {
       setLoading(false);
       return;
     }
@@ -24,7 +24,7 @@ export default function OrgTrackIdPage() {
     setError(null);
     zodula
       .get_action("zodula.core.delivery_note_tracking" as Zodula.ActionPath, {
-        params: { org, delivery_note_id: decodeURIComponent(id) },
+        params: { delivery_note_id: decodeURIComponent(id) },
       })
       .then((res: {
         delivery_note: Record<string, unknown> | null;
@@ -51,12 +51,12 @@ export default function OrgTrackIdPage() {
         });
       })
       .finally(() => setLoading(false));
-  }, [org, id]);
+  }, [id]);
 
-  if (!org || !id) {
+  if (!id) {
     return (
       <div className="auth-page-bg zd:min-h-screen zd:flex zd:items-center zd:justify-center zd:relative">
-        <p className="zd:relative zd:z-10 zd:text-muted-foreground">Missing organization or Delivery Note ID.</p>
+        <p className="zd:relative zd:z-10 zd:text-muted-foreground">Missing Delivery Note ID.</p>
       </div>
     );
   }
@@ -74,7 +74,7 @@ export default function OrgTrackIdPage() {
       <div className="auth-page-bg zd:min-h-screen zd:flex zd:items-center zd:justify-center zd:p-4 zd:relative">
         <div className="zd:relative zd:z-10 zd:text-center">
           <p className="zd:text-muted-foreground">{error ?? "Delivery Note not found."}</p>
-          <Link to={`/org/${org}/track`} className="zd:mt-4 zd:inline-block zd:text-sm zd:text-primary hover:zd:underline">
+          <Link to={`/org/track`} className="zd:mt-4 zd:inline-block zd:text-sm zd:text-primary hover:zd:underline">
             ← Try another ID
           </Link>
         </div>
@@ -235,11 +235,11 @@ export default function OrgTrackIdPage() {
         )}
 
         <p className="zd:mt-4 zd:text-sm zd:text-center">
-          <Link to={`/org/${org}/track`} className="zd:text-muted-foreground hover:zd:text-foreground">
+          <Link to={`/org/track`} className="zd:text-muted-foreground hover:zd:text-foreground">
             Track another order
           </Link>
           {" · "}
-          <Link to={`/org/${org}`} className="zd:text-muted-foreground hover:zd:text-foreground">
+          <Link to={`/org`} className="zd:text-muted-foreground hover:zd:text-foreground">
             Name card
           </Link>
         </p>

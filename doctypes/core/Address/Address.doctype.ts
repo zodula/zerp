@@ -1,10 +1,4 @@
 export default $doctype<"Address">({
-    address_name: {
-        type: "Text",
-        label: "Address Name",
-        required: 1,
-        in_list_view: 1,
-    },
     address_type: {
         type: "Select",
         label: "Address Type",
@@ -52,18 +46,24 @@ export default $doctype<"Address">({
         type: "Check",
         label: "Is Organization Address"
     },
-    links: {
-        type: "Reference Table",
-        label: "Links",
-        reference: "Address Link Item",
+    link_type: {
+        type: "Reference",
+        label: "Link Type",
+        reference: "Doctype",
         required: 0,
         in_quick_entry: 1,
-    }
+    },
+    link_id: {
+        type: "Reference",
+        label: "Link ID",
+        reference: "{{link_type}}",
+        required: 0,
+        in_quick_entry: 1,
+    },
 }, {
     label: "Address",
-    naming_series: "ADS-{{doc_organization_abbr}}-{YYYY}{MM}{DD}{#####}",
-    search_fields: "address_name\naddress_type\ncity\nprovince\ninline_address",
-    display_field: "address_name",
+    naming_series: "ADS-{YYYY}{MM}{DD}{#####}",
+    search_fields: "address_type\ncity\nprovince\ninline_address",
     is_quick_entry: 1,
     tabs: JSON.stringify([
         {
@@ -72,7 +72,6 @@ export default $doctype<"Address">({
             layout: [
                 { type: "section", value: "Address Information", align: "left" },
                 [
-                    { type: "field", value: "address_name", align: "left" },
                     { type: "field", value: "address_type", align: "left" },
                     { type: "field", value: "is_organization_address", align: "left" }
                 ],
@@ -91,14 +90,15 @@ export default $doctype<"Address">({
                 [
                     { type: "field", value: "inline_address", align: "left" }
                 ],
-                { type: "section", value: "Links", align: "left" },
+                { type: "section", value: "Link", align: "left" },
                 [
-                    { type: "field", value: "links", align: "left" }
-                ]
+                    { type: "field", value: "link_type", align: "left" },
+                    { type: "field", value: "link_id", align: "left" }
+                ],
             ]
         }
     ])
 })
 .on("before_save", async ({ doc }) => {
-    doc.inline_address = `${doc.address_line1} ${doc.address_line2} ${doc.city} ${doc.province} ${doc.postal_code} ${doc.country}`;
+    doc.inline_address = [doc.address_line1, doc.address_line2, doc.city, doc.province, doc.postal_code, doc.country].filter(Boolean).join(" ");
 })

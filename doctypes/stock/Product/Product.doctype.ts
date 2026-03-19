@@ -3,7 +3,9 @@ export default $doctype<"Product">({
         type: "Text",
         label: "Item Name",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        unique: 1,
+        group: "group1",
     },
     product_category: {
         type: "Reference",
@@ -48,6 +50,8 @@ export default $doctype<"Product">({
         reference: "UOM",
         required: 1,
         in_list_view: 1,
+        group: "group1",
+        unique: 1,
     },
     product_image: {
         type: "File",
@@ -55,9 +59,8 @@ export default $doctype<"Product">({
     }
 }, {
     label: "Product",
-    naming_series: "ITM-{{doc_organization_abbr}}-{YYYY}{MM}{DD}{#####}",
-    search_fields: "product_name",
-    display_field: "product_name",
+    naming_series: "ITM-{YYYY}{MM}{DD}{#####}",
+    search_fields: "product_name\nuom",
     is_quick_entry: 1,
     tabs: JSON.stringify([
         {

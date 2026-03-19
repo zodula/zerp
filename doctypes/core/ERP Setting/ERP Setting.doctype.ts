@@ -35,7 +35,7 @@ export default $doctype<"ERP Setting">(
     },
     enable_delivery_order_weight_calculation: {
       type: "Check",
-      label: "Enable Delivery Order Weight Calculation",
+      label: "Enable Delivery Note Weight Calculation",
       default: "0",
       description: "When enabled, shows the Calculate Price By Weight button on Delivery Note items.",
     },
@@ -48,9 +48,9 @@ export default $doctype<"ERP Setting">(
   },
   {
     label: "ERP Setting",
-    is_organization_single: 1,
     track_changes: 1,
     comments_enabled: 1,
+    is_single: 1,
     tabs: JSON.stringify([
       {
         type: "Tab",

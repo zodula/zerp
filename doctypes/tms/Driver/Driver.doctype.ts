@@ -34,7 +34,7 @@ export default $doctype({
     },
 }, {
     label: "Driver",
-    naming_series: "DRV-{{doc_organization_abbr}}-{#####}",
+    naming_series: "DRV-{#####}",
     search_fields: "name\nphone\nlicense_number\ntransporter",
     tabs: JSON.stringify([
         {

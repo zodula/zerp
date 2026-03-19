@@ -133,7 +133,7 @@ export default $doctype<"Purchase Invoice">(
       label: "Billing Address Name",
       required: 0,
       readonly: 1,
-      fetch_from: "billing_address.address_name",
+      fetch_from: "billing_address.inline_address",
     },
     shipping_address: {
       type: "Reference",
@@ -154,7 +154,7 @@ export default $doctype<"Purchase Invoice">(
       label: "Shipping Address Name",
       required: 0,
       readonly: 1,
-      fetch_from: "shipping_address.address_name",
+      fetch_from: "shipping_address.inline_address",
     },
     billing_contact: {
       type: "Reference",
@@ -201,7 +201,7 @@ export default $doctype<"Purchase Invoice">(
   },
   {
     label: "Purchase Invoice",
-    naming_series: "PINV{{doc_organization_abbr}}-{YYYY}-{MM}-{DD}-{#####}",
+    naming_series: "PINV-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     comments_enabled: 1,
