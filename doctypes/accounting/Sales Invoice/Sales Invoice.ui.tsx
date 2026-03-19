@@ -26,18 +26,9 @@ function docStatusBadge(doc: any, t: (k: string) => string) {
     return { status: t(s) || s, variant: v };
 }
 
-function syncRow(frm: any, idx: number) {
-    const q = num(frm.get_value(`sales_invoice_items.${idx}.quantity`));
-    const up = num(frm.get_value(`sales_invoice_items.${idx}.unit_price`));
-    frm.set_value(`sales_invoice_items.${idx}.total_price`, q * up);
-}
-
-function createRecalcTotals() {
-    let lock = false;
-    return (frm: any) => {
-        if (lock) return;
-        lock = true;
-        try {
+export default function SalesInvoiceScripts() {
+    useZui(async (zui) => {
+        const applyDocTotals = (frm: any) => {
             const items = (frm.get_value("sales_invoice_items") ?? []) as any[];
             const net = items.reduce((sum, r) => sum + num(r?.total_price), 0);
             frm.set_value("net_total", net);
@@ -46,39 +37,43 @@ function createRecalcTotals() {
             let run = net;
             const amt = new Map<any, number>();
             const tot = new Map<any, number>();
+            let totalTaxes = 0;
             sorted.forEach((r, i) => {
                 const rate = num(r?.rate);
                 const ct = r?.charge_type ?? "Actual";
-                let a = ct === "Actual" ? rate : ct === "On Net Total" ? (net * rate) / 100
-                    : ct === "On Previous Row Amount" && i > 0 ? ((amt.get(sorted[i - 1]) ?? 0) * rate) / 100
-                        : ct === "On Previous Row Total" && i > 0 ? ((tot.get(sorted[i - 1]) ?? run) * rate) / 100 : 0;
+                const a =
+                    ct === "Actual"
+                        ? rate
+                        : ct === "On Net Total"
+                            ? (net * rate) / 100
+                            : ct === "On Previous Row Amount" && i > 0
+                                ? ((amt.get(sorted[i - 1]) ?? 0) * rate) / 100
+                                : ct === "On Previous Row Total" && i > 0
+                                    ? ((tot.get(sorted[i - 1]) ?? run) * rate) / 100
+                                    : 0;
                 amt.set(r, a);
-                if (r?.tax_type === "Excluded") run += a;
+
+                if (r?.tax_type === "Excluded") {
+                    run += a;
+                } else if (r?.tax_type === "Excluded Subtract") {
+                    run -= a;
+                }
+
+                const effect = r?.tax_type === "Excluded Subtract" ? -a : a;
+                totalTaxes += effect;
                 tot.set(r, run);
             });
             taxes.forEach((r, i) => {
                 frm.set_value(`tax_and_charges.${i}.tax_amount`, amt.get(r) ?? 0);
                 frm.set_value(`tax_and_charges.${i}.total`, tot.get(r) ?? 0);
             });
-            frm.set_value("total_taxes_and_charges", sorted.reduce((s, r) => s + (amt.get(r) ?? 0), 0));
+            frm.set_value("total_taxes_and_charges", totalTaxes);
             frm.set_value("grand_total", run);
-        } finally {
-            lock = false;
-        }
-    };
-}
+        };
 
-export default function SalesInvoiceScripts() {
-    useZui((zui) => {
-        const recalcTotals = createRecalcTotals();
-        let itemTimer: ReturnType<typeof setTimeout> | null = null;
-        const onItem = (frm: any) => {
-            const idx = frm.idx ?? 0;
-            if (itemTimer) clearTimeout(itemTimer);
-            itemTimer = setTimeout(() => {
-                itemTimer = null;
-                syncRow(frm, idx);
-            }, 120);
+        const syncTaxTableReadOnly = (frm: any) => {
+            const hasTemplate = !!frm.get_value("apply_tax_template");
+            frm.set_df_property?.("tax_and_charges", "readonly", hasTemplate ? 1 : 0);
         };
 
         zui.list.on("Sales Invoice", {
@@ -94,6 +89,29 @@ export default function SalesInvoiceScripts() {
                     if (!frm.get_value("price_project") && (erp.default_sales_invoice_price_project ?? erp.default_delivery_note_price_project)) frm.set_value("price_project", erp.default_sales_invoice_price_project ?? erp.default_delivery_note_price_project);
                     if (!frm.get_value("apply_tax_template") && (erp.default_sales_invoice_tax_template ?? erp.default_delivery_note_tax_template)) frm.set_value("apply_tax_template", erp.default_sales_invoice_tax_template ?? erp.default_delivery_note_tax_template);
                 });
+                syncTaxTableReadOnly(frm);
+            },
+            apply_tax_template: async (frm) => {
+                const tplId = frm.get_value("apply_tax_template");
+                if (!tplId) {
+                    syncTaxTableReadOnly(frm);
+                    return;
+                }
+                const tpl = await zodula.doc.get_doc("Tax Template" as any, tplId) as any;
+                const items = (tpl?.tax_template_items ?? []) as any[];
+                const currentItems = (frm.get_value("tax_and_charges") ?? []) as any[];
+                currentItems.forEach((it: any, i: number) => {
+                    frm.set_value(`tax_and_charges.${i}.idx`, i);
+                });
+                items.forEach(async (it: any, i: number) => {
+                    frm.set_value(`tax_and_charges.${i}.charge_type`, it.charge_type ?? "Actual");
+                    frm.set_value(`tax_and_charges.${i}.account_head`, it.account_head ?? "");
+                    frm.set_value(`tax_and_charges.${i}.description`, it.description ?? "");
+                    frm.set_value(`tax_and_charges.${i}.tax_type`, it.tax_type ?? "Excluded");
+                    await new Promise(resolve => setTimeout(resolve, 50));
+                    frm.set_value(`tax_and_charges.${i}.rate`, num(it.rate));
+                });
+                syncTaxTableReadOnly(frm);
             },
             customer: async (frm) => {
                 applyCustomerLinkFilters(frm);
@@ -106,50 +124,84 @@ export default function SalesInvoiceScripts() {
             },
             "sales_invoice_items.product": async (frm) => {
                 const idx = frm.idx ?? 0;
-                const pid = frm.get_value(`sales_invoice_items.${idx}.product`);
-                const keys = ["uom", "product_name", "product_description", "product_image"];
+                const pid = frm.doc?.sales_invoice_items?.[idx]?.product;
                 if (!pid) {
-                    keys.forEach(k => frm.set_value(`sales_invoice_items.${idx}.${k}` as any, k === "uom" ? "" : ""));
-                    syncRow(frm, idx);
-                    recalcTotals(frm);
+                    frm.set_value(`sales_invoice_items.${idx}.uom`, "");
+                    frm.set_value(`sales_invoice_items.${idx}.product_name`, "");
+                    frm.set_value(`sales_invoice_items.${idx}.product_description`, "");
+                    frm.set_value(`sales_invoice_items.${idx}.product_image`, "");
+                    frm.set_value(`sales_invoice_items.${idx}.length`, 0);
+                    frm.set_value(`sales_invoice_items.${idx}.width`, 0);
+                    frm.set_value(`sales_invoice_items.${idx}.height`, 0);
+                    frm.set_value(`sales_invoice_items.${idx}.weight`, 0);
+                    frm.set_value(`sales_invoice_items.${idx}.volume`, 0);
+                    frm.set_value(`sales_invoice_items.${idx}.volume_total`, 0);
+                    frm.set_value(`sales_invoice_items.${idx}.weight_total`, 0);
+                    frm.set_value(`sales_invoice_items.${idx}.unit_price`, 0);
+                    applyDocTotals(frm);
                     return;
                 }
                 const p = await zodula.doc.get_doc("Product", pid) as any;
                 if (!p) return;
-                frm.set_value(`sales_invoice_items.${idx}.uom`, "");
+                const length = num(p.length);
+                const width = num(p.width);
+                const height = num(p.height);
+                const weight = num(p.weight);
+                const volume = num(p.volume);
+                const q = num(frm.get_value(`sales_invoice_items.${idx}.quantity`));
+                const productUom = p.uom ?? "";
+                frm.set_value(`sales_invoice_items.${idx}.uom`, productUom);
                 frm.set_value(`sales_invoice_items.${idx}.product_name`, p.product_name ?? "");
                 frm.set_value(`sales_invoice_items.${idx}.product_description`, p.product_description ?? "");
                 frm.set_value(`sales_invoice_items.${idx}.product_image`, p.product_image ?? "");
+                frm.set_value(`sales_invoice_items.${idx}.length`, length);
+                frm.set_value(`sales_invoice_items.${idx}.width`, width);
+                frm.set_value(`sales_invoice_items.${idx}.height`, height);
+                frm.set_value(`sales_invoice_items.${idx}.weight`, weight);
+                frm.set_value(`sales_invoice_items.${idx}.volume`, volume);
+                frm.set_value(`sales_invoice_items.${idx}.volume_total`, volume * q);
+                frm.set_value(`sales_invoice_items.${idx}.weight_total`, weight * q);
                 const priceProject = frm.get_value("price_project");
                 const customer = frm.get_value("customer");
-                if (priceProject && customer) {
-                    const today = zodula.date.today();
-                    const res = await zodula.doc.select_docs("Price" as any, {
-                        limit: 1, sort: "until_date", order: "asc",
-                        filters: [["product", "=", pid], ["price_project", "=", priceProject], ["customer", "=", customer], ["from_date", "<=", today], ["until_date", ">=", today]],
-                    });
-                    const pl = (res?.docs ?? [])[0] as any;
-                    if (pl) {
-                        zui.toast.success(`Price: ${p.product_name}, ${pl.uom}, ${num(pl.price)}`);
-                        frm.set_value(`sales_invoice_items.${idx}.uom`, pl.uom ?? "");
-                        frm.set_value(`sales_invoice_items.${idx}.unit_price`, num(pl.price));
-                        frm.set_value(`sales_invoice_items.${idx}.total_price`, num(frm.get_value(`sales_invoice_items.${idx}.quantity`)) * num(pl.price));
+                if (productUom) {
+                    if (priceProject && customer) {
+                        const today = frm.get_value("posting_date") || zodula.date.today();
+                        const res = await zodula.doc.select_docs("Price" as any, {
+                            limit: 1, sort: "until_date", order: "asc",
+                            filters: [["product", "=", pid], ["price_project", "=", priceProject], ["customer", "=", customer], ["uom", "=", productUom], ["from_date", "<=", today], ["until_date", ">=", today]],
+                        });
+                        const pl = (res?.docs ?? [])[0] as any;
+                        if (pl) {
+                            zui.toast.success(`Price: ${num(pl.price)}`);
+                            frm.set_value(`sales_invoice_items.${idx}.unit_price`, num(pl.price));
+                        }
                     }
                 }
-                recalcTotals(frm);
+                const unitPrice = num(frm.get_value(`sales_invoice_items.${idx}.unit_price`));
+                frm.set_value(`sales_invoice_items.${idx}.total_price`, q * unitPrice);
+                applyDocTotals(frm);
             },
-            ...["quantity", "unit_price"].reduce((acc, f) => ({ ...acc, [`sales_invoice_items.${f}`]: onItem }), {} as Record<string, (frm: any) => void>),
-            "sales_invoice_items.total_price": recalcTotals,
-            "sales_invoice_items.idx": recalcTotals,
-            ...["rate", "tax_amount", "charge_type", "tax_type", "idx"].reduce((acc, f) => ({ ...acc, [`tax_and_charges.${f}`]: recalcTotals }), {} as Record<string, (frm: any) => void>),
-            apply_tax_template: async (frm) => {
-                const tid = frm.get_value("apply_tax_template");
-                if (!tid) return;
-                const res = await zodula.doc.select_docs("Tax Template Item" as any, { limit: 100, sort: "idx", order: "asc", filters: [["tax_template", "=", tid]] });
-                const list = (res?.docs ?? []).map((item: any, i: number) => ({ idx: i, account_head: item.account_head ?? "", description: item.description ?? "", charge_type: item.charge_type ?? "Actual", tax_type: item.tax_type ?? "Excluded", rate: item.rate ?? 0, tax_amount: 0 }));
-                frm.set_value("tax_and_charges" as any, list as any);
-                recalcTotals(frm);
+            "sales_invoice_items.idx": async (frm) => {
+                applyDocTotals(frm);
             },
+            "sales_invoice_items.quantity": async (frm) => {
+                const idx = frm.idx ?? 0;
+                const q = num(frm.get_value(`sales_invoice_items.${idx}.quantity`));
+                const up = num(frm.get_value(`sales_invoice_items.${idx}.unit_price`));
+                frm.set_value(`sales_invoice_items.${idx}.volume_total`, num(frm.get_value(`sales_invoice_items.${idx}.volume`)) * q);
+                frm.set_value(`sales_invoice_items.${idx}.weight_total`, num(frm.get_value(`sales_invoice_items.${idx}.weight`)) * q);
+                frm.set_value(`sales_invoice_items.${idx}.total_price`, q * up);
+            },
+            "sales_invoice_items.unit_price": async (frm) => {
+                const idx = frm.idx ?? 0;
+                const q = num(frm.get_value(`sales_invoice_items.${idx}.quantity`));
+                frm.set_value(`sales_invoice_items.${idx}.total_price`, q * num(frm.get_value(`sales_invoice_items.${idx}.unit_price`)));
+            },
+            "sales_invoice_items.total_price": (frm) => applyDocTotals(frm),
+            "tax_and_charges.idx": (frm) => applyDocTotals(frm),
+            "tax_and_charges.rate": (frm) => applyDocTotals(frm),
+            "tax_and_charges.charge_type": (frm) => applyDocTotals(frm),
+            "tax_and_charges.tax_type": (frm) => applyDocTotals(frm),
         });
 
         zui.form.set_secondary_button("Sales Invoice", "Create Payment Entry", async (frm) => {
