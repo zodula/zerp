@@ -1,0 +1,8 @@
+[
+  {
+    "id": "Employee Kiosk",
+    "name": "Employee Kiosk",
+    "description": "Role for kiosk users performing employee check-in.",
+    "is_system": 0
+  }
+]

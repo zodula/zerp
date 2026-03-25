@@ -1,41 +1,54 @@
-export default $doctype({
-    name: {
+export default $doctype<"Employee">({
+    title: {
         type: "Text",
-        label: "Employee Name",
+        label: "Title",
+        required: 0,
+    },
+    first_name: {
+        type: "Text",
+        label: "First Name",
         required: 1,
-        in_list_view: 1,
+    },
+    last_name: {
+        type: "Text",
+        label: "Last Name",
+        required: 1,
+    },
+    full_name: {
+        type: "Text",
+        label: "Full Name",
+        required: 0,
+        readonly: 1,
     },
     employee_number: {
         type: "Text",
         label: "Employee Number",
         in_list_view: 1,
+        unique: 1,
     },
     designation: {
         type: "Reference",
         label: "Designation",
         reference: "Designation",
         required: 0,
-        in_list_view: 1,
     },
     department: {
         type: "Reference",
         label: "Department",
         reference: "Department",
         required: 0,
-        in_list_view: 1,
     },
     branch: {
         type: "Reference",
         label: "Branch",
         reference: "Branch",
         required: 0,
-        in_list_view: 1,
     },
     gender: {
         type: "Select",
         label: "Gender",
         options: "\nMale\nFemale\nOther",
-        in_list_view: 1,
+        required: 1,
     },
     date_of_birth: {
         type: "Date",
@@ -44,17 +57,15 @@ export default $doctype({
     date_of_joining: {
         type: "Date",
         label: "Date of Joining",
-        in_list_view: 1,
+        required: 1,
     },
     email: {
         type: "Email",
         label: "Email",
-        in_list_view: 1,
     },
     phone: {
         type: "Text",
         label: "Phone",
-        in_list_view: 1,
     },
     address: {
         type: "Text",
@@ -67,44 +78,58 @@ export default $doctype({
         default: "Active",
         in_list_view: 1,
     },
-    base_monthly_salary: {
+    base_salary: {
         type: "Float",
-        label: "Base Monthly Salary",
-        required: 0,
-        in_list_view: 1,
-        description: "If the salary type is Daily, the base monthly salary will be divided by the monthly divider from Payroll Setting.",
+        label: "Base Salary",
+        required: 1,
+        description: "This is base salary per {salary_type}",
     },
     salary_type: {
         type: "Select",
         label: "Salary Type",
-        options: "Daily\nFortnightly\nMonthly",
-        required: 0,
-        in_list_view: 1,
+        options: "Daily\nMonthly",
+        default: "Monthly",
+        required: 1,
     },
     salary_channel: {
         type: "Select",
         label: "Salary Channel",
         options: "\nBank\nCash",
         required: 0,
-        in_list_view: 1,
     },
     bank_name: {
         type: "Text",
         label: "Bank Name",
         required: 0,
-        in_list_view: 1,
     },
     bank_account_no: {
         type: "Text",
         label: "Bank Account No",
         required: 0,
-        in_list_view: 1,
+    },
+    work_shift: {
+        type: "Reference",
+        label: "Work Shift",
+        reference: "Work Shift",
+        required: 1,
+    },
+    expense_approver: {
+        type: "Reference",
+        label: "Expense Approver",
+        reference: "User",
+        required: 0,
+    },
+    attendance_approver: {
+        type: "Reference",
+        label: "Attendance Approver",
+        reference: "User",
+        required: 0,
     },
 }, {
     label: "Employee",
-    naming_series: "EMP-{#####}",
-    display_field: "name",
-    search_fields: "name\nemployee_number\nemail\nphone\ndesignation\ndepartment",
+    naming_series: "EMP-{YYYY}-{MM}-{DD}-{#####}",
+    display_field: "full_name",
+    search_fields: "full_name\nemployee_number\nemail\nphone\ndesignation\ndepartment",
     track_changes: 1,
     tabs: JSON.stringify([
         {
@@ -113,7 +138,12 @@ export default $doctype({
             layout: [
                 { type: "section", value: "Basic Information", align: "left" },
                 [
-                    { type: "field", value: "name", align: "left" },
+                    { type: "field", value: "title", align: "left" },
+                    { type: "field", value: "first_name", align: "left" },
+                    { type: "field", value: "last_name", align: "left" },
+                ],
+                [
+                    { type: "field", value: "full_name", align: "left" },
                     { type: "field", value: "employee_number", align: "left" },
                     { type: "field", value: "status", align: "left" },
                 ],
@@ -149,7 +179,7 @@ export default $doctype({
             layout: [
                 { type: "section", value: "Salary", align: "left" },
                 [
-                    { type: "field", value: "base_monthly_salary", align: "left" },
+                    { type: "field", value: "base_salary", align: "left" },
                     { type: "field", value: "salary_type", align: "left" },
                     { type: "field", value: "salary_channel", align: "left" },
                 ],
@@ -160,5 +190,19 @@ export default $doctype({
                 ],
             ],
         },
+        {
+            type: "Tab",
+            label: "Work Shift & Approvers",
+            layout: [
+                [
+                    { type: "field", value: "work_shift", align: "left" },
+                    { type: "field", value: "expense_approver", align: "left" },
+                    { type: "field", value: "attendance_approver", align: "left" },
+                ],
+            ],
+        },
     ]),
-});
+})
+    .on("before_save", async ({ doc }) => {
+        doc.full_name = [doc.title, doc.first_name, doc.last_name].filter(Boolean).join(" ").trim();
+    });

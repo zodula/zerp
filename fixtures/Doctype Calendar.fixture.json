@@ -1,0 +1,15 @@
+[
+  {
+    "id": "zerp-calendar-attendance",
+    "name": "Attendance",
+    "doctype": "Attendance",
+    "primary_date_doctype": "Holiday",
+    "primary_date_fieldname": "date",
+    "primary_value_field": "name",
+    "primary_sub_value_field": "",
+    "secondary_date_doctype": "Attendance",
+    "secondary_date_fieldname": "attendance_date",
+    "secondary_value_field": "employee_name",
+    "secondary_sub_value_field": "status"
+  }
+]

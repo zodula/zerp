@@ -246,6 +246,45 @@ async function ensureStandardPriceProjects(names?: { selling?: string; buying?: 
   return { created: created.length, ids: created };
 }
 
+async function ensureFiscalYear(input?: {
+  year_name?: string;
+  start_date?: string;
+  end_date?: string;
+}) {
+  const today = $zodula.date.today();
+  const yyyy = Number(String(today).slice(0, 4)) || new Date().getFullYear();
+  const fallbackYearName = String(yyyy);
+  const fallbackStart = `${fallbackYearName}-01-01`;
+  const fallbackEnd = `${fallbackYearName}-12-31`;
+
+  const yearName = String(input?.year_name ?? fallbackYearName).trim() || fallbackYearName;
+  const startDate = String(input?.start_date ?? fallbackStart).slice(0, 10);
+  const endDate = String(input?.end_date ?? fallbackEnd).slice(0, 10);
+
+  if (startDate > endDate) {
+    throw new Error("Fiscal Year end_date must be greater than or equal to start_date.");
+  }
+
+  const existing = await $zodula.doctype("Fiscal Year").get(yearName as any).bypass(true).fields(["id"] as any);
+  if (!existing?.id) {
+    await $zodula.doctype("Fiscal Year").insert({
+      year_name: yearName,
+      start_date: startDate,
+      end_date: endDate,
+      is_short_year: 0,
+    } as any);
+    return { created: 1, id: yearName };
+  }
+
+  await $zodula.doctype("Fiscal Year").update(yearName as any, {
+    year_name: yearName,
+    start_date: startDate,
+    end_date: endDate,
+    is_short_year: 0,
+  } as any).bypass(true);
+  return { created: 0, id: yearName };
+}
+
 export default $action(async (ctx) => {
   const hasRoles = await $zodula.session.hasRoles(["System Admin"]);
   if (!hasRoles) return ctx.json({ error: "Unauthorized" }, 403);
@@ -256,16 +295,27 @@ export default $action(async (ctx) => {
     standard_account_codes,
     create_standard_price_projects,
     standard_price_lists,
+    fiscal_year,
     mark_setup,
   } = ctx.body;
 
   let orgUpdated = false;
   if (organization && Object.keys(organization).length > 0) {
+    const currency = (organization as any)?.currency;
+    const { currency: _c, ...orgFields } = organization as any;
+
     await $zodula
       .doctype("Organization")
-      .update("Organization", organization)
+      .update("Organization", orgFields)
       .bypass(true);
     orgUpdated = true;
+
+    if (currency != null && currency !== "") {
+      await $zodula
+        .doctype("Global Setting")
+        .update("Global Setting", { currency: String(currency).trim() } as any)
+        .bypass(true);
+    }
   }
 
   let accounts = { created: 0, ids: [] as string[] };
@@ -278,10 +328,12 @@ export default $action(async (ctx) => {
     priceProjects = await ensureStandardPriceProjects(standard_price_lists);
   }
 
+  const fiscalYearResult = await ensureFiscalYear(fiscal_year);
+
   if (mark_setup) {
     await $zodula
-      .doctype("Organization")
-      .update("Organization", { is_setup: 1 } as any)
+      .doctype("Global Setting")
+      .update("Global Setting", { is_setup: 1 } as any)
       .bypass(true);
   }
 
@@ -290,6 +342,7 @@ export default $action(async (ctx) => {
     org_updated: orgUpdated,
     accounts_created: accounts.created,
     price_projects_created: priceProjects.created,
+    fiscal_year_id: fiscalYearResult.id,
   });
 }, {
   body: z.object({
@@ -310,6 +363,11 @@ export default $action(async (ctx) => {
       selling: z.string().optional(),
       buying: z.string().optional(),
     }).optional(),
+    fiscal_year: z.object({
+      year_name: z.string().optional(),
+      start_date: z.string().optional(),
+      end_date: z.string().optional(),
+    }).optional(),
     mark_setup: z.boolean().optional().default(true),
   }),
   response: {
@@ -318,6 +376,7 @@ export default $action(async (ctx) => {
       org_updated: z.boolean(),
       accounts_created: z.number(),
       price_projects_created: z.number(),
+      fiscal_year_id: z.string().optional(),
     }).passthrough(),
   },
 });

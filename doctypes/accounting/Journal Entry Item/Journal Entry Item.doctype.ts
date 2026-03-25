@@ -1,21 +1,9 @@
 export default $doctype({
-    journal_entry: {
-        type: "Reference",
-        label: "Journal Entry",
-        reference: "Journal Entry",
-        required: 1,
-        in_list_view: 1
-    },
     account: {
         type: "Reference",
         label: "Account",
         reference: "Account",
         required: 1,
-        in_list_view: 1
-    },
-    memo: {
-        type: "Text",
-        label: "Memo",
         in_list_view: 1
     },
     party_type: {
@@ -29,6 +17,11 @@ export default $doctype({
         type: "Reference",
         label: "Party",
         reference: "{{party_type}}",
+        in_list_view: 1
+    },
+    memo: {
+        type: "Text",
+        label: "Memo",
         in_list_view: 1
     },
     debit_amount: {

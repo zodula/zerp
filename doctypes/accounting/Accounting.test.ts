@@ -107,6 +107,7 @@ test("Payment Entry: updates Sales Invoice payment_status via references", async
       party_type: "Customer",
       party: customerName,
       paid_amount: 100,
+      to_paid_amount: 100,
       payment_method: "Cash",
       references: [
         {

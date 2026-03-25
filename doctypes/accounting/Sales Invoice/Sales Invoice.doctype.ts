@@ -7,14 +7,6 @@ export default $doctype<"Sales Invoice">(
       required: 1,
       no_print: 1,
     },
-    customer_name: {
-      type: "Text",
-      label: "Customer Name",
-      required: 0,
-      readonly: 1,
-      in_list_view: 1,
-      no_print: 1,
-    },
     customer_tax_id: {
       type: "Text",
       label: "Customer Tax ID",
@@ -44,6 +36,13 @@ export default $doctype<"Sales Invoice">(
       no_print: 1,
       readonly: 1,
     },
+    ignore_price_project: {
+      type: "Check",
+      label: "Ignore Price Project",
+      default: "0",
+      no_print: 1,
+      description: "Skip loading prices from Price list and do not save prices to Price on submit.",
+    },
     price_project: {
       type: "Reference",
       label: "Price Project",
@@ -51,6 +50,7 @@ export default $doctype<"Sales Invoice">(
       required: 0,
       no_print: 1,
       filters: JSON.stringify([["is_selling", "=", 1]]),
+      depends_on: "!doc.ignore_price_project",
     },
     posting_date: {
       type: "Date",
@@ -75,7 +75,7 @@ export default $doctype<"Sales Invoice">(
     },
     total_taxes_and_charges: {
       type: "Currency",
-      label: "Total Taxes and Charges",
+      label: "VAT Amount",
       required: 0,
       in_list_view: 1,
       readonly: 1,
@@ -95,14 +95,27 @@ export default $doctype<"Sales Invoice">(
       required: 1,
       readonly: 1,
       no_print: 1,
-      hidden: 1,
     },
-    apply_tax_template: {
+    apply_vat_template: {
       type: "Reference",
-      label: "Apply Tax Template",
-      reference: "Tax Template",
+      label: "Apply VAT Template",
+      reference: "VAT Template",
       required: 0,
-      no_print: 1
+      no_print: 1,
+    },
+    vat_type: {
+      type: "Select",
+      label: "Vat Type",
+      options: "Included\nExcluded",
+      default: "Excluded",
+      required: 0,
+      in_list_view: 1,
+    },
+    vat_rate: {
+      type: "Float",
+      label: "VAT Rate",
+      required: 0,
+      in_list_view: 1,
     },
     sales_invoice_items: {
       type: "Reference Table",
@@ -110,12 +123,6 @@ export default $doctype<"Sales Invoice">(
       reference: "Sales Invoice Item",
       required: 0,
       height: 200,
-    },
-    tax_and_charges: {
-      type: "Reference Table",
-      label: "Tax and Charges",
-      reference: "Tax and Charges",
-      required: 0
     },
     billing_inline_address: {
       type: "Text",
@@ -184,7 +191,7 @@ export default $doctype<"Sales Invoice">(
     is_submittable: 1,
     track_changes: 1,
     comments_enabled: 1,
-    search_fields: "customer\ncustomer_name",
+    search_fields: "customer",
     additional_connections: JSON.stringify([{
       doctype: "Payment Entry",
       filters: [["references.reference_type", "=", "Sales Invoice"], ["references.reference_id", "=", "{{id}}"]],
@@ -198,9 +205,9 @@ export default $doctype<"Sales Invoice">(
           { type: "section", value: "Basic Information", align: "left" },
           [
             { type: "field", value: "customer", align: "left" },
-            { type: "field", value: "customer_name", align: "left" },
             { type: "field", value: "posting_date", align: "left" },
             { type: "field", value: "due_date", align: "left" },
+            { type: "field", value: "ignore_price_project", align: "left" },
             { type: "field", value: "price_project", align: "left" },
           ],
           { type: "section", value: "Customer Information", align: "left" },
@@ -213,13 +220,11 @@ export default $doctype<"Sales Invoice">(
           [
             { type: "field", value: "sales_invoice_items", align: "left" },
           ],
-          { type: "section", value: "Tax Configuration", align: "left" },
+          { type: "section", value: "VAT Configuration", align: "left" },
           [
-            { type: "field", value: "apply_tax_template", align: "left" },
-          ],
-          { type: "section", value: "Taxes and Charges", align: "left" },
-          [
-            { type: "field", value: "tax_and_charges", align: "left" },
+            { type: "field", value: "apply_vat_template", align: "left" },
+            { type: "field", value: "vat_type", align: "left" },
+            { type: "field", value: "vat_rate", align: "left" },
           ],
           { type: "section", value: "Totals", align: "left" },
           [
@@ -266,8 +271,37 @@ export default $doctype<"Sales Invoice">(
     ]),
   }
 )
+  .on("before_change", async ({ doc }) => {
+    const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
+    const items = doc.sales_invoice_items as any[] | undefined;
+    const net = Array.isArray(items) ? items.reduce((sum, r) => sum + num(r?.total_price), 0) : 0;
+    doc.net_total = net;
+
+    const docAny = doc as any;
+    const vatType = (docAny.vat_type ?? "Excluded") as string;
+    const vatRate = num(docAny.vat_rate);
+
+    let vatAmount = 0;
+    let grandTotal = net;
+
+    if (vatRate > 0) {
+      if (vatType === "Excluded") {
+        vatAmount = (net * vatRate) / 100;
+        grandTotal = net + vatAmount;
+      } else {
+        // VAT is included in the net_total, so extract the VAT portion.
+        const denom = 100 + vatRate;
+        vatAmount = denom !== 0 ? (net * vatRate) / denom : 0;
+        grandTotal = net;
+      }
+    }
+
+    docAny.total_taxes_and_charges = vatAmount;
+    docAny.grand_total = grandTotal;
+  })
   .on("after_submit", async ({ doc }) => {
     if (!doc.id) return;
+    if (Number((doc as any).ignore_price_project) === 1) return;
     const erp = await $zodula.doctype("ERP Setting").select().limit(1).then(r => r.docs[0]);
     const isSavePrice = erp?.is_save_price === 1;
     const priceSaveFor = erp?.price_save_for;
@@ -299,7 +333,6 @@ export default $doctype<"Sales Invoice">(
           price_project: priceProject,
           is_selling: 1,
           customer,
-          customer_name: doc.customer_name ?? "",
           product,
           product_name: item?.product_name ?? "",
           price: unitPrice,
@@ -309,4 +342,4 @@ export default $doctype<"Sales Invoice">(
         });
       }
     }
-  })
+  });

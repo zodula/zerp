@@ -5,13 +5,15 @@ export default $doctype({
         reference: "Employee",
         required: 1,
         in_list_view: 1,
+        unique: 1,
+        group: "group1"
     },
     employee_name: {
         type: "Text",
         label: "Employee Name",
         readonly: 1,
         in_list_view: 1,
-        fetch_from: "employee.name",
+        fetch_from: "employee.full_name",
     },
     leave_type: {
         type: "Reference",
@@ -19,6 +21,8 @@ export default $doctype({
         reference: "Leave Type",
         required: 1,
         in_list_view: 1,
+        unique: 1,
+        group: "group1"
     },
     leave_period: {
         type: "Reference",
@@ -26,6 +30,8 @@ export default $doctype({
         reference: "Leave Period",
         required: 1,
         in_list_view: 1,
+        unique: 1,
+        group: "group1"
     },
     total_leaves_allowed: {
         type: "Float",
@@ -44,18 +50,23 @@ export default $doctype({
     label: "Leave Allocation",
     naming_series: "LA-{{employee}}-{{leave_type}}-{{leave_period}}",
     search_fields: "employee\nemployee_name\nleave_type",
+    is_submittable: 1,
     tabs: JSON.stringify([
         {
             type: "Tab",
             label: "Main",
             layout: [
-                { type: "section", value: "Allocation", align: "left" },
+                { type: "section", value: "Employee", align: "left" },
                 [
                     { type: "field", value: "employee", align: "left" },
                     { type: "field", value: "employee_name", align: "left" },
+                ],
+                { type: "section", value: "Leave Allocation", align: "left" },
+                [
                     { type: "field", value: "leave_type", align: "left" },
                     { type: "field", value: "leave_period", align: "left" },
                 ],
+                { type: "section", value: "Leave Balance", align: "left" },
                 [
                     { type: "field", value: "total_leaves_allowed", align: "left" },
                     { type: "field", value: "leaves_taken", align: "left" },

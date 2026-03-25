@@ -14,15 +14,6 @@ export default $doctype<"Purchase Invoice">(
       required: 0,
       no_print: 1,
     },
-    supplier_name: {
-      type: "Text",
-      label: "Supplier Name",
-      required: 0,
-      readonly: 1,
-      in_list_view: 1,
-      fetch_from: "supplier.name",
-      no_print: 1,
-    },
     supplier_tax_id: {
       type: "Text",
       label: "Supplier Tax ID",
@@ -57,12 +48,14 @@ export default $doctype<"Purchase Invoice">(
       label: "Posting Date",
       required: 1,
       in_list_view: 1,
+      default: "TODAY()",
     },
     due_date: {
       type: "Date",
       label: "Due Date",
       required: 1,
       in_list_view: 1,
+      no_print: 1,
     },
     net_total: {
       type: "Currency",
@@ -88,49 +81,31 @@ export default $doctype<"Purchase Invoice">(
     payment_status: {
       type: "Select",
       label: "Payment Status",
-      options: "Unpaid\nPartially Paid\nPaid",
-      default: "Unpaid",
+      options: "To Bill\nUnpaid\nPartially Paid\nPaid",
+      default: "To Bill",
       required: 1,
       readonly: 1,
       no_print: 1,
       hidden: 1,
     },
-    apply_tax_template: {
-      type: "Reference",
-      label: "Apply Tax Template",
-      reference: "Tax Template",
-      required: 0,
-      no_print: 1
-    },
     purchase_invoice_items: {
       type: "Reference Table",
       label: "Purchase Invoice Items",
       reference: "Purchase Invoice Item",
-      required: 0
-    },
-    tax_and_charges: {
-      type: "Reference Table",
-      label: "Tax and Charges",
-      reference: "Tax and Charges",
-      required: 0
+      required: 0,
+      height: 200,
     },
     billing_address: {
       type: "Reference",
       label: "Billing Address",
       reference: "Address",
       required: 0,
-      no_print: 1
+      no_print: 1,
+      filters: JSON.stringify([["link_type", "=", "Supplier"], ["link_id", "=", "{{supplier}}"]]),
     },
     billing_inline_address: {
       type: "Text",
       label: "Billing Inline Address",
-      required: 0,
-      readonly: 1,
-      fetch_from: "billing_address.inline_address",
-    },
-    billing_address_name: {
-      type: "Text",
-      label: "Billing Address Name",
       required: 0,
       readonly: 1,
       fetch_from: "billing_address.inline_address",
@@ -140,18 +115,12 @@ export default $doctype<"Purchase Invoice">(
       label: "Shipping Address",
       reference: "Address",
       required: 0,
-      no_print: 1
+      no_print: 1,
+      filters: JSON.stringify([["link_type", "=", "Supplier"], ["link_id", "=", "{{supplier}}"]]),
     },
     shipping_inline_address: {
       type: "Text",
       label: "Shipping Inline Address",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_address.inline_address",
-    },
-    shipping_address_name: {
-      type: "Text",
-      label: "Shipping Address Name",
       required: 0,
       readonly: 1,
       fetch_from: "shipping_address.inline_address",
@@ -161,14 +130,8 @@ export default $doctype<"Purchase Invoice">(
       label: "Billing Contact",
       reference: "Contact",
       required: 0,
-      no_print: 1
-    },
-    billing_contact_name: {
-      type: "Text",
-      label: "Billing Contact Name",
-      required: 0,
-      readonly: 1,
-      fetch_from: "billing_contact.name",
+      no_print: 1,
+      filters: JSON.stringify([["link_type", "=", "Supplier"], ["link_id", "=", "{{supplier}}"]]),
     },
     billing_contact_inline: {
       type: "Text",
@@ -182,14 +145,8 @@ export default $doctype<"Purchase Invoice">(
       label: "Shipping Contact",
       reference: "Contact",
       required: 0,
-      no_print: 1
-    },
-    shipping_contact_name: {
-      type: "Text",
-      label: "Shipping Contact Name",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.name",
+      no_print: 1,
+      filters: JSON.stringify([["link_type", "=", "Supplier"], ["link_id", "=", "{{supplier}}"]]),
     },
     shipping_contact_inline: {
       type: "Text",
@@ -205,10 +162,10 @@ export default $doctype<"Purchase Invoice">(
     is_submittable: 1,
     track_changes: 1,
     comments_enabled: 1,
-    search_fields: "supplier\nsupplier_name",
+    search_fields: "supplier",
     additional_connections: JSON.stringify([{
       doctype: "Payment Entry",
-      filters: [["reference_type", "=", "Purchase Invoice"], ["references.reference_id", "=", "{{id}}"]],
+      filters: [["references.reference_type", "=", "Purchase Invoice"], ["references.reference_id", "=", "{{id}}"]],
       field: "references.reference_id"
     }]),
     tabs: JSON.stringify([
@@ -219,7 +176,6 @@ export default $doctype<"Purchase Invoice">(
           { type: "section", value: "Basic Information", align: "left" },
           [
             { type: "field", value: "supplier", align: "left" },
-            { type: "field", value: "supplier_name", align: "left" },
             { type: "field", value: "delivery_trip", align: "left" },
             { type: "field", value: "posting_date", align: "left" },
             { type: "field", value: "due_date", align: "left" },
@@ -234,14 +190,6 @@ export default $doctype<"Purchase Invoice">(
           { type: "section", value: "Items", align: "left" },
           [
             { type: "field", value: "purchase_invoice_items", align: "left" },
-          ],
-          { type: "section", value: "Tax Configuration", align: "left" },
-          [
-            { type: "field", value: "apply_tax_template", align: "left" },
-          ],
-          { type: "section", value: "Taxes and Charges", align: "left" },
-          [
-            { type: "field", value: "tax_and_charges", align: "left" },
           ],
           { type: "section", value: "Totals", align: "left" },
           [
@@ -261,10 +209,6 @@ export default $doctype<"Purchase Invoice">(
             { type: "field", value: "billing_contact", align: "left" },
           ],
           [
-            { type: "field", value: "billing_address_name", align: "left" },
-            { type: "field", value: "billing_contact_name", align: "left" },
-          ],
-          [
             { type: "field", value: "billing_inline_address", align: "left" },
             { type: "field", value: "billing_contact_inline", align: "left" },
           ],
@@ -274,12 +218,18 @@ export default $doctype<"Purchase Invoice">(
             { type: "field", value: "shipping_contact", align: "left" },
           ],
           [
-            { type: "field", value: "shipping_address_name", align: "left" },
-            { type: "field", value: "shipping_contact_name", align: "left" },
-          ],
-          [
             { type: "field", value: "shipping_inline_address", align: "left" },
             { type: "field", value: "shipping_contact_inline", align: "left" },
+          ],
+        ],
+      },
+      {
+        type: "Tab",
+        label: "References",
+        layout: [
+          { type: "section", value: "References", align: "left" },
+          [
+            { type: "field", value: "delivery_trip", align: "left" },
           ],
         ],
       },
@@ -287,67 +237,11 @@ export default $doctype<"Purchase Invoice">(
   }
 )
 .on("before_change", async ({ doc }) => {
-    // Calculate net_total from items
-    let netTotal = 0;
-    if (doc.purchase_invoice_items && Array.isArray(doc.purchase_invoice_items)) {
-        for (const item of doc.purchase_invoice_items) {
-            const totalPrice = parseFloat(String((item as any).total_price || 0)) || 0;
-            netTotal += totalPrice;
-        }
-    }
-    doc.net_total = netTotal;
-
-    // Calculate taxes and charges
-    const taxRows = doc.tax_and_charges && Array.isArray(doc.tax_and_charges) ? doc.tax_and_charges : [];
-    
-    // Sort by idx to ensure proper order
-    const sortedTaxRows = [...taxRows].sort((a: any, b: any) => {
-        const idxA = (a as any).idx || 0;
-        const idxB = (b as any).idx || 0;
-        return idxA - idxB;
-    });
-
-    let runningTotal = netTotal;
-    let totalTaxesAndCharges = 0;
-
-    for (let i = 0; i < sortedTaxRows.length; i++) {
-        const taxRow = sortedTaxRows[i] as any;
-        const chargeType = taxRow.charge_type || "Actual";
-        const rate = parseFloat(String(taxRow.rate || 0)) || 0;
-        let taxAmount = 0;
-
-        if (chargeType === "Actual") {
-            taxAmount = parseFloat(String(taxRow.tax_amount || 0)) || 0;
-        } else if (chargeType === "On Net Total") {
-            taxAmount = (netTotal * rate) / 100;
-        } else if (chargeType === "On Previous Row Amount") {
-            if (i > 0) {
-                const prevRow = sortedTaxRows[i - 1] as any;
-                const prevTaxAmount = parseFloat(String(prevRow.tax_amount || 0)) || 0;
-                taxAmount = (prevTaxAmount * rate) / 100;
-            }
-        } else if (chargeType === "On Previous Row Total") {
-            if (i > 0) {
-                const prevRow = sortedTaxRows[i - 1] as any;
-                // Use tax_amount instead of total for "On Previous Row Total"
-                const prevTaxAmount = parseFloat(String(prevRow.tax_amount || 0)) || 0;
-                taxAmount = (prevTaxAmount * rate) / 100;
-            }
-        }
-
-        taxRow.tax_amount = taxAmount;
-        
-        // For excluded taxes, add to running total; for included, it's already in the base
-        if (taxRow.tax_type === "Excluded") {
-            runningTotal += taxAmount;
-            totalTaxesAndCharges += taxAmount;
-        } else {
-            // For included taxes, they're already in the base amount
-            totalTaxesAndCharges += taxAmount;
-        }
-    }
-
-    doc.total_taxes_and_charges = totalTaxesAndCharges;
-    doc.grand_total = runningTotal;
-});
+    const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
+    const items = (doc.purchase_invoice_items ?? []) as any[];
+    const net = items.reduce((sum, r) => sum + num(r?.total_price), 0);
+    doc.net_total = net;
+    doc.total_taxes_and_charges = 0;
+    doc.grand_total = net;
+})
 

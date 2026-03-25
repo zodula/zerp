@@ -29,7 +29,8 @@ export default $doctype({
         label: "Parent Account",
         reference: "Account",
         filters: JSON.stringify([["root_type", "=", "{{root_type}}"]]),
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1
     },
     is_group: {
         type: "Check",
@@ -50,13 +51,15 @@ export default $doctype({
         label: "Party Type",
         reference: "Doctype",
         filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]]),
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1
     },
     party: {
         type: "Reference",
         label: "Party",
         reference: "{{party_type}}",
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1
     },
     bank: {
         type: "Reference",
@@ -82,6 +85,7 @@ export default $doctype({
     label: "Account",
     naming_series: "{{account_code}} - {{account_name}}",
     search_fields: "account_code\naccount_name\naccount_type",
+    is_quick_entry: 1,
     tabs: JSON.stringify([
         {
             type: "Tab", 
@@ -115,3 +119,12 @@ export default $doctype({
         }
     ])
 })
+    .on("before_save", async ({ doc }) => {
+        const parentId = (doc as any).parent_account as string | undefined | null;
+        if (!parentId) return;
+        const parent = await $zodula.doctype("Account").get(parentId);
+        if (!parent) throw new Error("Parent account not found");
+        if (Number((parent as any).is_group) !== 1) {
+            throw new Error("Parent account must be a group (Is Group)");
+        }
+    })

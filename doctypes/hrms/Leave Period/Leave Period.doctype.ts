@@ -4,24 +4,28 @@ export default $doctype({
         label: "Year",
         required: 1,
         in_list_view: 1,
+        in_quick_entry: 1,
     },
     from_date: {
         type: "Date",
         label: "From Date",
         required: 1,
         in_list_view: 1,
+        in_quick_entry: 1,
     },
     to_date: {
         type: "Date",
         label: "To Date",
         required: 1,
         in_list_view: 1,
+        in_quick_entry: 1,
     },
 }, {
     label: "Leave Period",
     naming_series: "LP-{{year}}",
     search_fields: "year",
     display_field: "year",
+    is_quick_entry: 1,
     tabs: JSON.stringify([
         {
             type: "Tab",

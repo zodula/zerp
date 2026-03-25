@@ -4,31 +4,29 @@ export default $doctype<"Attendance">({
         label: "Employee",
         reference: "Employee",
         required: 1,
-        in_list_view: 1,
-        only_once: 1,
+        is_quick_filter: 1,
     },
     employee_name: {
         type: "Text",
         label: "Employee Name",
         readonly: 1,
         in_list_view: 1,
-        fetch_from: "employee.name",
-        only_once: 1,
+        is_quick_filter: 1,
     },
     attendance_date: {
         type: "Date",
         label: "Attendance Date",
         required: 1,
         in_list_view: 1,
-        only_once: 1,
+        is_quick_filter: 1,
     },
     status: {
         type: "Select",
         label: "Status",
-        options: "Present\nAbsent\nOn Leave\nHalf Day",
+        options: "Present\nAbsent\nOn Leave",
         required: 1,
         in_list_view: 1,
-        only_once: 1,
+        is_quick_filter: 1,
     },
     leave_type: {
         type: "Reference",
@@ -36,43 +34,44 @@ export default $doctype<"Attendance">({
         reference: "Leave Type",
         required: 0,
         depends_on: "doc.status === 'On Leave'",
-        only_once: 1,
+        is_quick_filter: 1,
     },
-    check_in: {
-        type: "Time",
-        label: "Check In",
-        only_once: 1,
+    is_late_entry: {
+        type: "Check",
+        label: "Is Late Entry",
+        default: "0",
     },
-    check_out: {
-        type: "Time",
-        label: "Check Out",
-        only_once: 1,
+    is_early_exit: {
+        type: "Check",
+        label: "Is Early Exit",
+        default: "0",
     },
-    working_hours: {
-        type: "Float",
-        label: "Working Hours",
+    is_half_day: {
+        type: "Check",
+        label: "Is Half Day",
+        default: "0",
+        in_list_view: 1,
+    },
+    is_leave_without_pay: {
+        type: "Check",
+        label: "Is Leave Without Pay",
         readonly: 1,
-        only_once: 1,
+        depends_on: "doc.status === 'On Leave'",
     },
     leave_application: {
         type: "Reference",
         label: "Leave Application",
         reference: "Leave Application",
         required: 0,
-        depends_on: "doc.status === 'On Leave'",
-        only_once: 1,
-    },
-    force_attendance: {
-        type: "Check",
-        label: "Force Attendance",
-        default: "0",
-        depends_on: "doc.status === 'On Leave'",
-        only_once: 1,
+        readonly: 1,
+        depends_on: "!!doc.leave_application",
     },
 }, {
     label: "Attendance",
-    naming_series: "ATT-{{employee}}-{{attendance_date}}",
-    search_fields: "employee\nemployee_name",
+    naming_series: "ATT-{{attendance_date}}-{{employee}}",
+    display_field: "employee_name",
+    search_fields: "employee\nattendance_date",
+    is_submittable: 0,
     track_changes: 1,
     tabs: JSON.stringify([
         {
@@ -91,32 +90,35 @@ export default $doctype<"Attendance">({
                     { type: "field", value: "check_in", align: "left" },
                     { type: "field", value: "check_out", align: "left" },
                     { type: "field", value: "working_hours", align: "left" },
+                    { type: "field", value: "is_late_entry", align: "left" },
+                    { type: "field", value: "is_early_exit", align: "left" },
+                    { type: "field", value: "is_half_day", align: "left" },
                 ],
                 { type: "section", value: "Leave", align: "left" },
                 [
                     { type: "field", value: "leave_type", align: "left" },
                     { type: "field", value: "leave_application", align: "left" },
-                    { type: "field", value: "force_attendance", align: "left" },
+                    { type: "field", value: "is_leave_without_pay", align: "left" },
                 ],
             ],
         },
     ]),
 })
-.on("before_change", async ({ doc, old }) => {
-    await validateLeaveBalance(
-        doc as unknown as Record<string, unknown>,
-        old as unknown as Record<string, unknown> | undefined
-    );
-})
-.on("after_insert", async ({ doc }) => {
-    await recalculateLeaveAllocationFromAttendance(doc as unknown as Record<string, unknown>);
-})
-.on("after_change", async ({ doc }) => {
-    await recalculateLeaveAllocationFromAttendance(doc as unknown as Record<string, unknown>);
-})
-.on("after_delete", async ({ doc }) => {
-    await recalculateLeaveAllocationFromAttendance(doc as unknown as Record<string, unknown>);
-});
+    .on("before_change", async ({ doc, old }) => {
+        if (doc.leave_type) {
+            const leave_type_doc = await $zodula.doctype("Leave Type").get(doc.leave_type);
+            if (!!leave_type_doc?.is_leave_without_pay) {
+                doc.is_leave_without_pay = 1;
+            }
+        }
+        const employee_doc = await $zodula.doctype("Employee").get(doc.employee);
+        doc.employee_name = employee_doc.full_name ?? '';
+        await validateLeaveBalance(
+            doc as unknown as Record<string, unknown>,
+            old as unknown as Record<string, unknown> | undefined
+        );
+    })
+    ;
 
 /** Normalize date string to yyyy-MM-dd for consistent comparison and queries */
 function normalizeDateString(dateValue: string | undefined | null): string | null {
@@ -177,55 +179,20 @@ async function calculateLeavesTakenInPeriod(
         if (!attDate || attDate < fromDate || attDate > toDate) continue;
         if (excludeAttendanceId && a.id === excludeAttendanceId) continue;
         const status = a.status as string | undefined | null;
-        if (status !== "On Leave" && status !== "Half Day") continue;
+        if (status !== "On Leave") continue;
         const attLeaveType = await getLeaveTypeFromAttendance(a);
         if (attLeaveType !== leaveTypeId) continue;
-        total += status === "Half Day" ? 0.5 : 1;
+        total += a.is_half_day ? 0.5 : 1;
     }
     return total;
-}
-
-async function recalculateLeaveAllocationFromAttendance(attendanceDoc: Record<string, unknown>) {
-    const employeeId = attendanceDoc.employee as string | undefined | null;
-    const attendanceDateRaw = attendanceDoc.attendance_date as string | undefined | null;
-    if (!employeeId || !attendanceDateRaw) return;
-
-    const attendanceDate = normalizeDateString(attendanceDateRaw);
-    if (!attendanceDate) return;
-
-    const leaveTypeId = await getLeaveTypeFromAttendance(attendanceDoc);
-    if (!leaveTypeId) return;
-
-    const period = await findLeavePeriodContainingDate(attendanceDate);
-    if (!period) return;
-
-    const { docs: allocations } = await $zodula.doctype("Leave Allocation")
-        .select()
-        .where("employee", "=", employeeId)
-        .where("leave_type", "=", leaveTypeId)
-        .where("leave_period", "=", period.id);
-
-    if (!allocations?.length) return;
-
-    const leavesTaken = await calculateLeavesTakenInPeriod(
-        employeeId,
-        leaveTypeId,
-        period.from_date,
-        period.to_date
-    );
-
-    await $zodula.doctype("Leave Allocation").update((allocations[0] as { id: string }).id, {
-        leaves_taken: leavesTaken,
-    } as any);
 }
 
 async function validateLeaveBalance(
     doc: Record<string, unknown>,
     old: Record<string, unknown> | undefined
 ) {
-    if (doc.force_attendance) return;
     const status = doc.status as string | undefined | null;
-    if (status !== "On Leave" && status !== "Half Day") return;
+    if (status !== "On Leave") return;
 
     const employeeId = doc.employee as string | undefined | null;
     const attendanceDateRaw = doc.attendance_date as string | undefined | null;
@@ -240,7 +207,7 @@ async function validateLeaveBalance(
     const period = await findLeavePeriodContainingDate(attendanceDate);
     if (!period) {
         throw new Error(
-            "No Leave Period found that contains this attendance date. Create a Leave Period covering this date, or check Force Attendance to override."
+            "No Leave Period found that contains this attendance date. Create a Leave Period covering this date."
         );
     }
 
@@ -248,11 +215,12 @@ async function validateLeaveBalance(
         .select()
         .where("employee", "=", employeeId)
         .where("leave_type", "=", leaveTypeId)
-        .where("leave_period", "=", period.id);
+        .where("leave_period", "=", period.id)
+        .where("doc_status", "=", "Submitted");
 
     if (!allocations?.length) {
         throw new Error(
-            "No leave allocation found for this employee, leave type and period. Create a Leave Allocation, or check Force Attendance to override."
+            "No leave allocation found for this employee, leave type and period. Create a Leave Allocation."
         );
     }
 
@@ -272,13 +240,13 @@ async function validateLeaveBalance(
     );
 
     const oldDays =
-        !old ? 0 : (old.status === "On Leave" ? 1 : old.status === "Half Day" ? 0.5 : 0);
-    const newDays = status === "On Leave" ? 1 : 0.5;
+        !old ? 0 : (old.status === "On Leave" ? 1 : old.is_half_day ? 0.5 : 0);
+    const newDays = status === "On Leave" ? 1 : doc.is_half_day ? 0.5 : 0;
     const effectiveTaken = leavesTaken - oldDays + newDays;
 
     if (effectiveTaken >= totalAllowed) {
         throw new Error(
-            `Leave balance exceeded. Allowed: ${totalAllowed}, would be taken: ${effectiveTaken}. Check "Force Attendance" to override.`
+            `Leave balance exceeded. Allowed: ${totalAllowed}, would be taken: ${effectiveTaken}.`
         );
     }
 }

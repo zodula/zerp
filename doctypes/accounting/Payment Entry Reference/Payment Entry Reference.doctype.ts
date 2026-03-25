@@ -14,11 +14,10 @@ export default $doctype({
         filters: JSON.stringify([["doc_status", "=", "Submitted"]]),
         required: 1
     },
-    grand_total: {
-        type: "Currency",
-        label: "Grand Total",
+    memo: {
+        type: "Text",
+        label: "Memo",
         required: 0,
-        readonly: 1,
         in_list_view: 1
     },
     outstanding_amount: {
@@ -32,12 +31,6 @@ export default $doctype({
         type: "Currency",
         label: "Allocate Amount",
         required: 1
-    },
-    memo: {
-        type: "Text",
-        label: "Memo",
-        required: 0,
-        in_list_view: 1
     }
 }, {
     label: "Payment Entry Reference",

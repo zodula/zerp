@@ -117,6 +117,7 @@ test("Payment Entry General Ledger: account_paid_from (Receive)", async () => {
     party_type: "Customer",
     party: customerName,
     paid_amount: 100,
+    to_paid_amount: 100,
     payment_method: "Cash",
     account_paid_from: accountFrom.id,
     references: [
@@ -171,6 +172,7 @@ test("Payment Entry General Ledger: account_paid_to (Receive)", async () => {
     party_type: "Customer",
     party: customerName,
     paid_amount: 100,
+    to_paid_amount: 100,
     payment_method: "Cash",
     account_paid_to: accountTo.id,
     references: [
@@ -230,6 +232,7 @@ test("Payment Entry General Ledger: both accounts (Receive)", async () => {
     party_type: "Customer",
     party: customerName,
     paid_amount: 100,
+    to_paid_amount: 100,
     payment_method: "Cash",
     account_paid_from: accountFrom.id,
     account_paid_to: accountTo.id,
@@ -272,5 +275,41 @@ test("Payment Entry General Ledger: both accounts (Receive)", async () => {
   expect(glAfter.length).toBe(0);
   expect(await getAccountBalance(accountFrom.id)).toBe(0);
   expect(await getAccountBalance(accountTo.id)).toBe(0);
+});
+
+test("Payment Entry: no references, unallocated drives total and GL", async () => {
+  const suffix = uniqueSuffix();
+  const customerName = `Test Customer ${suffix}`;
+  await $zodula.doctype("Customer").insert({ name: customerName }).bypass(true);
+
+  const accountFrom = await createAccount({
+    code: `AF-${suffix}`,
+    name: `Account From ${suffix}`,
+    rootType: "Asset",
+  });
+
+  const pe = await $zodula.doctype("Payment Entry").insert({
+    payment_type: "Receive",
+    posting_date: "2026-03-19",
+    party_type: "Customer",
+    party: customerName,
+    unallocated_amount: 80,
+    paid_amount: 80,
+    to_paid_amount: 80,
+    payment_method: "Cash",
+    account_paid_from: accountFrom.id,
+    references: [],
+  } as any).bypass(true);
+
+  expect((pe as any).total_allocated).toBe(0);
+  expect((pe as any).total_amount).toBe(80);
+
+  await $zodula.doctype("Payment Entry").submit(pe.id).bypass(true);
+
+  const gl = await getGLRowsForPaymentEntry(pe.id);
+  expect(gl.length).toBe(1);
+  expect(Number((gl[0] as any).credit_amount)).toBe(80);
+
+  await $zodula.doctype("Payment Entry").cancel(pe.id).bypass(true);
 });
 

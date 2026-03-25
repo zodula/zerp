@@ -1,4 +1,11 @@
 export default $doctype<"Address">({
+    name: {
+        type: "Text",
+        label: "Name",
+        required: 1,
+        in_list_view: 1,
+        in_quick_entry: 1,
+    },
     address_type: {
         type: "Select",
         label: "Address Type",
@@ -62,7 +69,7 @@ export default $doctype<"Address">({
     },
 }, {
     label: "Address",
-    naming_series: "ADS-{YYYY}{MM}{DD}{#####}",
+    naming_series: "{{name}}",
     search_fields: "address_type\ncity\nprovince\ninline_address",
     is_quick_entry: 1,
     tabs: JSON.stringify([
@@ -72,6 +79,7 @@ export default $doctype<"Address">({
             layout: [
                 { type: "section", value: "Address Information", align: "left" },
                 [
+                    { type: "field", value: "name", align: "left" },
                     { type: "field", value: "address_type", align: "left" },
                     { type: "field", value: "is_organization_address", align: "left" }
                 ],
@@ -99,6 +107,6 @@ export default $doctype<"Address">({
         }
     ])
 })
-.on("before_save", async ({ doc }) => {
-    doc.inline_address = [doc.address_line1, doc.address_line2, doc.city, doc.province, doc.postal_code, doc.country].filter(Boolean).join(" ");
-})
+    .on("before_save", async ({ doc }) => {
+        doc.inline_address = [doc.address_line1, doc.address_line2, doc.city, doc.province, doc.postal_code, doc.country].filter(Boolean).join(" ");
+    })

@@ -12,7 +12,7 @@ export default $doctype({
         required: 0,
         in_list_view: 1,
         readonly: 1,
-        fetch_from: "delivery_note.customer_name",
+        fetch_from: "delivery_note.customer",
     },
     shipping_address_name: {
         type: "Text",

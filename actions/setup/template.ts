@@ -140,8 +140,6 @@ const ESSENTIAL_DEFAULT_CODES = [
 ] as const;
 
 export default $action(async (ctx) => {
-  const hasRoles = await $zodula.session.hasRoles(["System Admin"]);
-  if (!hasRoles) return ctx.json({ error: "Unauthorized" }, 403);
 
   return ctx.json({
     accounts: STANDARD_ACCOUNTS,

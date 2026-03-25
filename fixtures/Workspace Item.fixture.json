@@ -80,22 +80,6 @@
     "parentfield": "workspace_items"
   },
   {
-    "id": "5d6e7f8901122334",
-    "idx": 50,
-    "type": "Link - Doctype",
-    "value": "Tax Template",
-    "label": null,
-    "url": null,
-    "html": null,
-    "text": null,
-    "filters": null,
-    "heading_level": "2",
-    "badge_variant": null,
-    "parentid": "365056b9b444c8a9",
-    "parentype": "Workspace",
-    "parentfield": "workspace_items"
-  },
-  {
     "id": "6e7f890112233445",
     "idx": 60,
     "type": "Link - Doctype",

@@ -3,7 +3,8 @@ export default $doctype<"Journal Entry">({
         type: "Date",
         label: "Journal Date",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        default: "TODAY()",
     },
     description: {
         type: "Text",
@@ -21,11 +22,26 @@ export default $doctype<"Journal Entry">({
         type: "Reference Table",
         label: "Journal Entry Items",
         reference: "Journal Entry Item",
-        required: 0
+      required: 0,
+      height: 200,
+    },
+    total_debit: {
+      type: "Currency",
+      label: "Total Debit",
+      required: 0,
+      readonly: 1,
+      in_list_view: 1,
+    },
+    total_credit: {
+      type: "Currency",
+      label: "Total Credit",
+      required: 0,
+      readonly: 1,
+      in_list_view: 1,
     }
 }, {
     label: "Journal Entry",
-    naming_series: "JE-{{journal_date}}",
+    naming_series: "JE-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     search_fields: "description\nreference_doctype\nreference_id",
@@ -39,6 +55,11 @@ export default $doctype<"Journal Entry">({
                     { type: "field", value: "journal_date", align: "left" },
                     { type: "field", value: "description", align: "left" }
                 ],
+                { type: "section", value: "Totals", align: "left" },
+                [
+                    { type: "field", value: "total_debit", align: "left" },
+                    { type: "field", value: "total_credit", align: "left" }
+                ],
                 { type: "section", value: "Journal Entry Items", align: "left" },
                 [
                     { type: "field", value: "journal_entry_items", align: "left" }
@@ -47,15 +68,21 @@ export default $doctype<"Journal Entry">({
                 [
                     { type: "field", value: "reference_doctype", align: "left" },
                     { type: "field", value: "reference_id", align: "left" }
-                ],
-                { type: "section", value: "Approval", align: "left" },
-                [
-                    { type: "field", value: "created_by", align: "left" },
-                    { type: "field", value: "approved_by", align: "left" }
                 ]
             ]
         }
     ])
+})
+.on("before_change", async ({ doc }) => {
+    let totalDebit = 0;
+    let totalCredit = 0;
+    const rows = (doc.journal_entry_items ?? []) as any[];
+    for (const item of rows) {
+        totalDebit += parseFloat(String((item as any).debit_amount || 0)) || 0;
+        totalCredit += parseFloat(String((item as any).credit_amount || 0)) || 0;
+    }
+    (doc as any).total_debit = totalDebit;
+    (doc as any).total_credit = totalCredit;
 })
 .on("before_submit", async ({ doc }) => {
     // Validate that debits equal credits
@@ -85,6 +112,8 @@ export default $doctype<"Journal Entry">({
     if (Math.abs(totalDebit - totalCredit) > 0.01) {
         throw new Error(`Total Debits (${totalDebit}) must equal Total Credits (${totalCredit})`);
     }
+    (doc as any).total_debit = totalDebit;
+    (doc as any).total_credit = totalCredit;
 })
 .on("after_submit", async ({ doc }) => {
     // Create General Ledger entries for each journal entry item (aligned with General Ledger doctype)
@@ -107,7 +136,7 @@ export default $doctype<"Journal Entry">({
                 reference_id: doc.id,
                 description: itemData.memo || description,
                 party_type: itemData.party_type ?? undefined,
-                party: itemData.party ?? undefined
+                party: itemData.party ?? undefined,
             } as any);
         }
     }
@@ -123,4 +152,4 @@ export default $doctype<"Journal Entry">({
     for (const glEntry of glEntries.docs) {
         await $zodula.doctype("General Ledger").delete(glEntry.id);
     }
-})
+});

@@ -86,53 +86,103 @@ export default $doctype<"General Ledger">({
         }
     ])
 })
+.on("before_save", async ({ doc }) => {
+    await assertAccountIsNotGroupForGl(doc.account as string | undefined);
+    const postingDate = String(doc.posting_date ?? "").slice(0, 10);
+    if (!postingDate) return;
+})
+.on("before_delete", async ({ doc }) => {
+    await assertAccountIsNotGroupForGl(doc.account as string | undefined);
+})
 .on("after_insert", async ({ doc }) => {
-    // Update account balance when a new General Ledger entry is created
-    await updateAccountBalance(doc.account as string);
+    await updateAccountBalanceFromGlAndRollup(doc.account as string);
 })
 .on("after_delete", async ({ doc }) => {
-    // Update account balance when a General Ledger entry is deleted
-    await updateAccountBalance(doc.account as string);
+    await updateAccountBalanceFromGlAndRollup(doc.account as string);
 });
 
-async function updateAccountBalance(accountId: string) {
+async function assertAccountIsNotGroupForGl(accountId: string | undefined) {
     if (!accountId) return;
-    
-    // Get all General Ledger entries for this account
+    const account = await $zodula.doctype("Account").get(accountId);
+    if (!account) return;
+    if (Number((account as any).is_group) === 1) {
+        throw new Error("General Ledger cannot use a group account; post only to ledger (non-group) accounts.");
+    }
+}
+
+/** Leaf balance from GL lines; group balance = sum of direct child balances. Then refresh every ancestor group. */
+async function updateAccountBalanceFromGlAndRollup(accountId: string) {
+    if (!accountId) return;
+
+    const account = await $zodula.doctype("Account").get(accountId);
+    if (!account) return;
+
+    if (Number((account as any).is_group) === 1) {
+        await recalcGroupBalanceFromChildren(accountId);
+    } else {
+        await recalcLeafBalanceFromGeneralLedger(accountId);
+    }
+
+    let parentId = (account as any).parent_account as string | undefined | null;
+    while (parentId) {
+        await recalcGroupBalanceFromChildren(parentId);
+        const parent = await $zodula.doctype("Account").get(parentId);
+        if (!parent) break;
+        parentId = (parent as any).parent_account as string | undefined | null;
+    }
+}
+
+async function recalcLeafBalanceFromGeneralLedger(accountId: string) {
     const glEntries = await $zodula.doctype("General Ledger")
         .select()
         .where("account", "=", accountId);
-    
-    // Calculate total balance
+
     let totalDebit = 0;
     let totalCredit = 0;
-    
+
     for (const entry of glEntries.docs) {
         const debit = parseFloat(String(entry.debit_amount || 0)) || 0;
         const credit = parseFloat(String(entry.credit_amount || 0)) || 0;
         totalDebit += debit;
         totalCredit += credit;
     }
-    
-    // Get account to determine account type
+
     const account = await $zodula.doctype("Account").get(accountId);
     if (!account) return;
-    
-    // Calculate balance based on account type
-    // Assets, Expenses: Debit - Credit (positive = debit balance)
-    // Liabilities, Equity, Income: Credit - Debit (positive = credit balance)
+
     const rootType = account.root_type as string;
     let balance = 0;
-    
+
     if (rootType === "Asset" || rootType === "Expense") {
         balance = totalDebit - totalCredit;
     } else {
         balance = totalCredit - totalDebit;
     }
-    
-    // Update account balance
+
     await $zodula.doctype("Account").update(accountId, {
-        balance: balance
+        balance,
     } as any);
+}
+
+async function recalcGroupBalanceFromChildren(groupId: string) {
+    const { docs: children } = await $zodula
+        .doctype("Account")
+        .select()
+        .where("parent_account", "=", groupId);
+    let sum = 0;
+    for (const c of children) {
+        sum += parseFloat(String((c as any).balance ?? 0)) || 0;
+    }
+    await $zodula.doctype("Account").update(groupId, { balance: sum } as any);
+}
+
+async function resolveFiscalYearByDate(date: string) {
+    const rows = await $zodula.doctype("Fiscal Year").select();
+    const hit = rows.docs.find((fy: any) => {
+        const s = String(fy.start_date ?? "").slice(0, 10);
+        const e = String(fy.end_date ?? "").slice(0, 10);
+        return !!s && !!e && s <= date && date <= e;
+    });
+    return hit ?? null;
 }
 

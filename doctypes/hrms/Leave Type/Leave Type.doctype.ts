@@ -4,26 +4,26 @@ export default $doctype({
         label: "Leave Type Name",
         required: 1,
         in_list_view: 1,
+        in_quick_entry: 1,
     },
     max_leaves_allowed: {
         type: "Float",
         label: "Max Leaves Allowed",
         default: "0",
+        in_quick_entry: 1,
     },
-    is_carry_forward: {
+
+    is_leave_without_pay: {
         type: "Check",
-        label: "Is Carry Forward",
+        label: "Is Leave Without Pay",
         default: "0",
-    },
-    is_paid: {
-        type: "Check",
-        label: "Is Paid Leave",
-        default: "1",
+        in_quick_entry: 1,
     },
 }, {
     label: "Leave Type",
     naming_series: "{{name}}",
     search_fields: "name",
+    is_quick_entry: 1,
     tabs: JSON.stringify([
         {
             type: "Tab",
