@@ -34,28 +34,12 @@ export default $doctype<"Delivery Trip">({
         required: 0,
         in_list_view: 1,
     },
-    driver_name: {
-        type: "Text",
-        label: "Driver Name",
-        required: 0,
-        readonly: 1,
-        in_list_view: 1,
-        fetch_from: "driver.name",
-    },
     vehicle: {
         type: "Reference",
         label: "Vehicle",
         reference: "Vehicle",
         required: 0,
         in_list_view: 1,
-    },
-    vehicle_plate: {
-        type: "Text",
-        label: "Vehicle Plate",
-        required: 0,
-        readonly: 1,
-        in_list_view: 1,
-        fetch_from: "vehicle.plate_number",
     },
     transporter: {
         type: "Reference",
@@ -66,13 +50,10 @@ export default $doctype<"Delivery Trip">({
         readonly: 1,
         fetch_from: "driver.transporter",
     },
-    transporter_name: {
-        type: "Text",
-        label: "Transporter Name",
+    append_delivery_note: {
+        type: "Scanner",
+        label: "Append Delivery Note",
         required: 0,
-        readonly: 1,
-        in_list_view: 1,
-        fetch_from: "transporter.name",
     },
     delivery_trip_items: {
         type: "Reference Table",
@@ -93,18 +74,12 @@ export default $doctype<"Delivery Trip">({
         readonly: 1,
         in_list_view: 1,
     },
-    payment_type: {
-        type: "Select",
-        label: "Payment Type",
-        options: "Cash\nCheque\nBank\nOther",
-        required: 0,
-        in_list_view: 1,
-    }
 }, {
     label: "Delivery Trip",
-    naming_series: "DOT-{YYYY}-{MM}-{DD}-{#####}",
+    naming_series: "DT-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
+    default_show_id_qrcode: 1,
     search_fields: "source_warehouse\ntarget_warehouse\ndriver\nvehicle\ntransporter",
     tabs: JSON.stringify([
         {
@@ -135,6 +110,9 @@ export default $doctype<"Delivery Trip">({
                 ],
                 { type: "section", value: "Delivery Trip Items", align: "left" },
                 [
+                    { type: "field", value: "append_delivery_note", align: "left" },
+                ],
+                [
                     { type: "field", value: "delivery_trip_items", align: "left" },
                 ],
                 { type: "section", value: "Expenses", align: "left" },
@@ -151,16 +129,42 @@ export default $doctype<"Delivery Trip">({
         },
     ]),
 })
-.on("before_change", async ({ doc }) => {
-    let total = 0;
-    const items = (doc as any).delivery_trip_expense_items;
-    if (Array.isArray(items)) {
-        for (const row of items) {
-            const qty = parseFloat(String((row as any).quantity ?? 0)) || 0;
-            const rate = parseFloat(String((row as any).rate ?? 0)) || 0;
-            const amount = parseFloat(String((row as any).amount ?? 0)) || qty * rate;
-            total += amount;
+    .on("before_change", async ({ doc }) => {
+        let total = 0;
+        const items = (doc as any).delivery_trip_expense_items;
+        if (Array.isArray(items)) {
+            for (const row of items) {
+                const qty = parseFloat(String((row as any).quantity ?? 0)) || 0;
+                const rate = parseFloat(String((row as any).rate ?? 0)) || 0;
+                const amount = parseFloat(String((row as any).amount ?? 0)) || qty * rate;
+                total += amount;
+            }
         }
-    }
-    (doc as any).total_expense_amount = total;
-});
+        doc.total_expense_amount = total;
+    })
+    .on("after_submit", async ({ doc }) => {
+        const tripItems = doc.delivery_trip_items;
+        if (!Array.isArray(tripItems)) return;
+
+        const deliveryNoteIds = Array.from(new Set(
+            tripItems
+                .map((row: any) => String(row?.delivery_note ?? "").trim())
+                .filter(Boolean)
+        ));
+        if (!deliveryNoteIds.length) return;
+
+        const tripInfo = {
+            source_warehouse: doc.source_warehouse ?? null,
+            target_warehouse: doc.target_warehouse ?? null,
+            driver: doc.driver ?? null,
+            vehicle: doc.vehicle ?? null,
+            transporter: doc.transporter ?? null,
+        };
+
+        for (const deliveryNoteId of deliveryNoteIds) {
+            await $zodula
+                .doctype("Delivery Note")
+                .update(deliveryNoteId, tripInfo as any)
+                .bypass(true);
+        }
+    });

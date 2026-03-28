@@ -15,13 +15,13 @@ export default $doctype<"Price Project">(
             type: "Check",
             label: "Is Selling",
             default: "0",
-            description: "When enabled, this price project is used for selling products.",
+            description: "When enabled, this price project is used for selling items.",
         },
         is_buying: {
             type: "Check",
             label: "Is Buying",
             default: "0",
-            description: "When enabled, this price project is used for buying products.",
+            description: "When enabled, this price project is used for buying items.",
         },
     }, {
     label: "Price Project",

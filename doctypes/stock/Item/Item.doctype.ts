@@ -1,5 +1,5 @@
-export default $doctype<"Product">({
-    product_name: {
+export default $doctype<"Item">({
+    item_name: {
         type: "Text",
         label: "Item Name",
         required: 1,
@@ -7,14 +7,14 @@ export default $doctype<"Product">({
         unique: 1,
         group: "group1",
     },
-    product_category: {
+    item_category: {
         type: "Reference",
-        label: "Product Category",
-        reference: "Product Category",
+        label: "Item Category",
+        reference: "Item Category",
         required: 1,
         in_list_view: 1
     },
-    product_description: {
+    item_description: {
         type: "Text",
         label: "Item Description"
     },
@@ -53,14 +53,14 @@ export default $doctype<"Product">({
         group: "group1",
         unique: 1,
     },
-    product_image: {
+    item_image: {
         type: "File",
-        label: "Product Image"
+        label: "Item Image"
     }
 }, {
-    label: "Product",
+    label: "Item",
     naming_series: "ITM-{YYYY}{MM}{DD}{#####}",
-    search_fields: "product_name\nuom",
+    search_fields: "item_name\nuom",
     is_quick_entry: 1,
     tabs: JSON.stringify([
         {
@@ -69,11 +69,11 @@ export default $doctype<"Product">({
             layout: [
                 { type: "section", value: "Basic Information", align: "left" },
                 [
-                    { type: "field", value: "product_name", align: "left" },
-                    { type: "field", value: "product_category", align: "left" }
+                    { type: "field", value: "item_name", align: "left" },
+                    { type: "field", value: "item_category", align: "left" }
                 ],
                 [
-                    { type: "field", value: "product_description", align: "left" }
+                    { type: "field", value: "item_description", align: "left" }
                 ],
                 { type: "section", value: "Dimensions & Weight", align: "left" },
                 [
@@ -88,13 +88,13 @@ export default $doctype<"Product">({
                     { type: "field", value: "barcode", align: "left" },
                     { type: "field", value: "uom", align: "left" }
                 ],
-                { type: "section", value: "Product Image", align: "left" },
+                { type: "section", value: "Item Image", align: "left" },
                 [
-                    { type: "field", value: "product_image", align: "left" }
+                    { type: "field", value: "item_image", align: "left" }
                 ],
                 { type: "section", value: "Customers", align: "left" },
                 [
-                    { type: "field", value: "product_customer", align: "left" }
+                    { type: "field", value: "item_customer", align: "left" }
                 ]
             ]
         }
@@ -107,12 +107,13 @@ export default $doctype<"Product">({
         doc.volume = l * w * h;
     })
     .on("after_change", async ({ doc }) => {
-        const priceLists = await $zodula.doctype("Price").select().where("product", "=", doc?.id)
+        const priceLists = await $zodula.doctype("Price").select().where("item", "=", doc?.id)
         for (const priceList of priceLists.docs) {
-            // if product_name and uom are not match with product, update the price list
-            if (priceList.product_name !== doc.product_name || priceList.uom !== doc.uom) {
+            // if item_name and uom are not match with item, update the price list
+            if (priceList.item_name !== doc.item_name || priceList.uom !== doc.uom) {
                 await $zodula.doctype("Price").update(priceList.id, {
-                    product_name: doc.product_name,
+                    item_name: doc.item_name,
+                    item_image: doc.item_image,
                     uom: doc.uom
                 } as any);
             }

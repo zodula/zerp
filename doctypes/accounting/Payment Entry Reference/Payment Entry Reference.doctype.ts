@@ -3,7 +3,7 @@ export default $doctype({
         type: "Reference",
         label: "Reference Type",
         reference: "Doctype",
-        filters: JSON.stringify([["name", "IN", ["Sales Invoice", "Purchase Invoice", "Delivery Note"]]]),
+        filters: JSON.stringify([["name", "IN", ["Sales Invoice", "Purchase Invoice", "Delivery Note", "Employee Advance", "Expense Claim", "Salary Slip"]]]),
         required: 1,
         in_list_view: 0
     },

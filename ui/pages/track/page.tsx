@@ -62,8 +62,8 @@ export default function OrgTrackPage() {
           </button>
         </form>
         <p className="zd:mt-6 zd:text-sm zd:text-center">
-          <Link to={`/contact`} className="zd:text-muted-foreground hover:zd:text-foreground">
-            ← Contact
+          <Link to={`/about-us`} className="zd:text-muted-foreground hover:zd:text-foreground">
+            ← About Us
           </Link>
         </p>
       </div>

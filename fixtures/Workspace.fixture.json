@@ -1,11 +1,1751 @@
 [
   {
-    "id": "cd4837d9c8865893",
-    "name": "Sales Invoice",
+    "id": "ws_zerp_accounting",
+    "name": "Accounting",
     "idx": 0,
     "workspace_parent": null,
-    "icon": "List",
+    "icon": "Calculator",
+    "url": null,
     "app": "zerp",
-    "is_system": 0
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "System Admin"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_expense",
+    "name": "Expense",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_accounting",
+    "icon": "Receipt",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_expense_expense_claim",
+    "name": "Expense Claim",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_accounting_expense",
+    "icon": "Receipt",
+    "url": "/desk/doctypes/Expense Claim/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_expense_expense_claim_type",
+    "name": "Expense Claim Type",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_accounting_expense",
+    "icon": "Receipt",
+    "url": "/desk/doctypes/Expense Claim Type/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_journal",
+    "name": "Journal",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_accounting",
+    "icon": "Calculator",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_journal_general_ledger",
+    "name": "General Ledger",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_accounting_journal",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/General Ledger/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_journal_journal_entry",
+    "name": "Journal Entry",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_accounting_journal",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Journal Entry/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_payments",
+    "name": "Payments",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_accounting",
+    "icon": "Calculator",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_payments_payment_entry",
+    "name": "Payment Entry",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_accounting_payments",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Payment Entry/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_payments_payment_entry_request",
+    "name": "Payment Entry Request",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_accounting_payments",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Payment Entry Request/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_purchases",
+    "name": "Purchases",
+    "idx": 30,
+    "workspace_parent": "ws_zerp_accounting",
+    "icon": "ShoppingCart",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_purchases_purchase_invoice",
+    "name": "Purchase Invoice",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_accounting_purchases",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Purchase Invoice/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_sales",
+    "name": "Sales",
+    "idx": 40,
+    "workspace_parent": "ws_zerp_accounting",
+    "icon": "TrendingUp",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_sales_price",
+    "name": "Price",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_accounting_sales",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Price/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_sales_quotation",
+    "name": "Quotation",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_accounting_sales",
+    "icon": "FileText",
+    "url": "/desk/doctypes/Quotation/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_sales_sales_invoice",
+    "name": "Sales Invoice",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_accounting_sales",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Sales Invoice/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_sales_sales_receipt",
+    "name": "Sales Receipt",
+    "idx": 30,
+    "workspace_parent": "ws_zerp_accounting_sales",
+    "icon": "Receipt",
+    "url": "/desk/doctypes/Sales Receipt/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup",
+    "name": "Setup",
+    "idx": 50,
+    "workspace_parent": "ws_zerp_accounting",
+    "icon": "Settings",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "System Admin"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_account",
+    "name": "Account",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "List",
+    "url": "/desk/doctypes/Account/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_address",
+    "name": "Address",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "MapPinned",
+    "url": "/desk/doctypes/Address/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_bank",
+    "name": "Bank",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "Landmark",
+    "url": "/desk/doctypes/Bank/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_contact",
+    "name": "Contact",
+    "idx": 30,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "MapPinned",
+    "url": "/desk/doctypes/Contact/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_customer",
+    "name": "Customer",
+    "idx": 40,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "TrendingUp",
+    "url": "/desk/doctypes/Customer/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_erp_setting",
+    "name": "ERP Setting",
+    "idx": 50,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "Settings",
+    "url": "/desk/doctypes/ERP Setting/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "System Admin"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_fiscal_year",
+    "name": "Fiscal Year",
+    "idx": 60,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Fiscal Year/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_price_project",
+    "name": "Price Project",
+    "idx": 70,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Price Project/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_supplier",
+    "name": "Supplier",
+    "idx": 80,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "ShoppingCart",
+    "url": "/desk/doctypes/Supplier/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_setup_uom",
+    "name": "UOM",
+    "idx": 90,
+    "workspace_parent": "ws_zerp_accounting_setup",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/UOM/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_vat",
+    "name": "Vat",
+    "idx": 60,
+    "workspace_parent": "ws_zerp_accounting",
+    "icon": "Calculator",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_accounting_vat_vat_template",
+    "name": "VAT Template",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_accounting_vat",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/VAT Template/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms",
+    "name": "HR",
+    "idx": 10,
+    "workspace_parent": null,
+    "icon": "Users",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_attendance",
+    "name": "Attendance",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_hrms",
+    "icon": "Users",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_attendance_attendance",
+    "name": "Attendance",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_hrms_attendance",
+    "icon": "Users",
+    "url": "/desk/doctypes/Attendance/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_attendance_overtime_application",
+    "name": "Overtime Application",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_hrms_attendance",
+    "icon": "Wallet",
+    "url": "/desk/doctypes/Overtime Application/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_attendance_work_shift",
+    "name": "Work Shift",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_hrms_attendance",
+    "icon": "List",
+    "url": "/desk/doctypes/Work Shift/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_employee",
+    "name": "Employee",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_hrms",
+    "icon": "Users",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_employee_employee",
+    "name": "Employee",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_hrms_employee",
+    "icon": "Users",
+    "url": "/desk/doctypes/Employee/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_employee_employee_checkin",
+    "name": "Employee Checkin",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_hrms_employee",
+    "icon": "Users",
+    "url": "/desk/doctypes/Employee Checkin/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_employee_employee_face_data",
+    "name": "Employee Face Data",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_hrms_employee",
+    "icon": "Users",
+    "url": "/desk/doctypes/Employee Face Data/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_employee_employee_kiosk",
+    "name": "Employee Kiosk",
+    "idx": 30,
+    "workspace_parent": "ws_zerp_hrms_employee",
+    "icon": "Users",
+    "url": "/desk/doctypes/Employee Kiosk/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_leave",
+    "name": "Leave",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_hrms",
+    "icon": "Users",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_leave_leave_allocation",
+    "name": "Leave Allocation",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_hrms_leave",
+    "icon": "Users",
+    "url": "/desk/doctypes/Leave Allocation/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_leave_leave_allocation_entry",
+    "name": "Leave Allocation Entry",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_hrms_leave",
+    "icon": "Users",
+    "url": "/desk/doctypes/Leave Allocation Entry/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_leave_leave_application",
+    "name": "Leave Application",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_hrms_leave",
+    "icon": "Users",
+    "url": "/desk/doctypes/Leave Application/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_leave_leave_period",
+    "name": "Leave Period",
+    "idx": 30,
+    "workspace_parent": "ws_zerp_hrms_leave",
+    "icon": "Users",
+    "url": "/desk/doctypes/Leave Period/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_leave_leave_policy",
+    "name": "Leave Policy",
+    "idx": 40,
+    "workspace_parent": "ws_zerp_hrms_leave",
+    "icon": "Users",
+    "url": "/desk/doctypes/Leave Policy/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_leave_leave_type",
+    "name": "Leave Type",
+    "idx": 50,
+    "workspace_parent": "ws_zerp_hrms_leave",
+    "icon": "Users",
+    "url": "/desk/doctypes/Leave Type/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_setup",
+    "name": "Setup",
+    "idx": 30,
+    "workspace_parent": "ws_zerp_hrms",
+    "icon": "Settings",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_setup_branch",
+    "name": "Branch",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_hrms_setup",
+    "icon": "Users",
+    "url": "/desk/doctypes/Branch/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_setup_department",
+    "name": "Department",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_hrms_setup",
+    "icon": "Users",
+    "url": "/desk/doctypes/Department/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_setup_designation",
+    "name": "Designation",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_hrms_setup",
+    "icon": "Users",
+    "url": "/desk/doctypes/Designation/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_hrms_setup_holiday",
+    "name": "Holiday",
+    "idx": 30,
+    "workspace_parent": "ws_zerp_hrms_setup",
+    "icon": "Users",
+    "url": "/desk/doctypes/Holiday/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll",
+    "name": "Payroll",
+    "idx": 20,
+    "workspace_parent": null,
+    "icon": "Wallet",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll_advance",
+    "name": "Advance",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_payroll",
+    "icon": "Wallet",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll_advance_employee_advance",
+    "name": "Employee Advance",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_payroll_advance",
+    "icon": "Users",
+    "url": "/desk/doctypes/Employee Advance/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll_salary",
+    "name": "Salary",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_payroll",
+    "icon": "Wallet",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll_salary_additional_salary",
+    "name": "Additional Salary",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_payroll_salary",
+    "icon": "Wallet",
+    "url": "/desk/doctypes/Additional Salary/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll_salary_payroll_entry",
+    "name": "Payroll Entry",
+    "idx": 5,
+    "workspace_parent": "ws_zerp_payroll_salary",
+    "icon": "Wallet",
+    "url": "/desk/doctypes/Payroll Entry/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll_salary_salary_slip",
+    "name": "Salary Slip",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_payroll_salary",
+    "icon": "Wallet",
+    "url": "/desk/doctypes/Salary Slip/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "HR Manager"
+      },
+      {
+        "role": "HR User"
+      },
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll_setup",
+    "name": "Setup",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_payroll",
+    "icon": "Settings",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_payroll_setup_payroll_setting",
+    "name": "Payroll Setting",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_payroll_setup",
+    "icon": "Wallet",
+    "url": "/desk/doctypes/Payroll Setting/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Payroll Manager"
+      },
+      {
+        "role": "Payroll User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_stock",
+    "name": "Stock",
+    "idx": 30,
+    "workspace_parent": null,
+    "icon": "Package",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_stock_items",
+    "name": "Items",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_stock",
+    "icon": "Package",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_stock_items_item",
+    "name": "Item",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_stock_items",
+    "icon": "Package",
+    "url": "/desk/doctypes/Item/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_stock_items_item_category",
+    "name": "Item Category",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_stock_items",
+    "icon": "Package",
+    "url": "/desk/doctypes/Item Category/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_stock_warehouse",
+    "name": "Warehouse",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_stock",
+    "icon": "Package",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_stock_warehouse_warehouse",
+    "name": "Warehouse",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_stock_warehouse",
+    "icon": "Package",
+    "url": "/desk/doctypes/Warehouse/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms",
+    "name": "TMS",
+    "idx": 40,
+    "workspace_parent": null,
+    "icon": "Truck",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_delivery",
+    "name": "Delivery",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_tms",
+    "icon": "Truck",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_delivery_delivery_note",
+    "name": "Delivery Note",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_tms_delivery",
+    "icon": "Truck",
+    "url": "/desk/doctypes/Delivery Note/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_delivery_delivery_price_calculation_table",
+    "name": "Delivery Price Calculation Table",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_tms_delivery",
+    "icon": "Calculator",
+    "url": "/desk/doctypes/Delivery Price Calculation Table/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_delivery_delivery_trip",
+    "name": "Delivery Trip",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_tms_delivery",
+    "icon": "Truck",
+    "url": "/desk/doctypes/Delivery Trip/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_installation",
+    "name": "Installation",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_tms",
+    "icon": "Truck",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_installation_installation_note",
+    "name": "Installation Note",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_tms_installation",
+    "icon": "Truck",
+    "url": "/desk/doctypes/Installation Note/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_master",
+    "name": "Master",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_tms",
+    "icon": "Database",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_master_driver",
+    "name": "Driver",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_tms_master",
+    "icon": "Truck",
+    "url": "/desk/doctypes/Driver/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_master_freight_expense_type",
+    "name": "Freight Expense Type",
+    "idx": 10,
+    "workspace_parent": "ws_zerp_tms_master",
+    "icon": "Receipt",
+    "url": "/desk/doctypes/Freight Expense Type/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_tms_master_vehicle",
+    "name": "Vehicle",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_tms_master",
+    "icon": "Truck",
+    "url": "/desk/doctypes/Vehicle/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
   }
 ]

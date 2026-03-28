@@ -2,15 +2,6 @@ import { ZodulaDoctypeHelper } from "@/zodula/server/zodula/doc/helper";
 import { loader } from "@/zodula/server/loader";
 
 export default $doctype<"Payment Entry">({
-    naming_series: {
-        type: "Select",
-        label: "Naming Series",
-        options: "\nRV-{YYYY}-{MM}-{DD}-{#####}\nPV-{YYYY}-{MM}-{DD}-{#####}\nTV-{YYYY}-{MM}-{DD}-{#####}",
-        required: 0,
-        readonly: 1,
-        hidden: 1,
-        in_list_view: 0
-    },
     payment_type: {
         type: "Select",
         label: "Payment Type",
@@ -124,6 +115,15 @@ export default $doctype<"Payment Entry">({
         required: 0,
         in_list_view: 0
     },
+    from_request: {
+        type: "Reference",
+        label: "From Request",
+        reference: "Payment Entry Request",
+        required: 0,
+        in_list_view: 0,
+        readonly: 1,
+        depends_on: "!!doc.form_request"
+    },
     references: {
         type: "Reference Table",
         label: "References",
@@ -154,9 +154,9 @@ export default $doctype<"Payment Entry">({
     }
 }, {
     label: "Payment Entry",
-    naming_series: "field:naming_series",
     is_submittable: 1,
     track_changes: 1,
+    naming_series: "PE-{YYYY}-{MM}-{DD}-{#####}",
     search_fields: "party\npayment_type\nreference_no",
     tabs: JSON.stringify([
         {
@@ -195,6 +195,9 @@ export default $doctype<"Payment Entry">({
                     { type: "field", value: "reference_no", align: "left" },
                     { type: "field", value: "reference_date", align: "left" }
                 ],
+                [
+                    { type: "field", value: "from_request", align: "left" }
+                ],
                 { type: "section", value: "Allocations", align: "left" },
                 [{ type: "field", value: "references", align: "left" }],
                 { type: "section", value: "Signatures", align: "left" },
@@ -208,16 +211,6 @@ export default $doctype<"Payment Entry">({
     ])
 })
     .on("before_change", async ({ doc }) => {
-        // Sync naming_series from payment_type (Receive=RV, Pay=PV, Transfer=TV)
-        const seriesByType: Record<string, string> = {
-            Receive: "RV-{YYYY}-{MM}-{DD}-{#####}",
-            Pay: "PV-{YYYY}-{MM}-{DD}-{#####}",
-            Transfer: "TV-{YYYY}-{MM}-{DD}-{#####}"
-        };
-        const series = doc.payment_type ? seriesByType[doc.payment_type as string] : undefined;
-        if (series) {
-            (doc as { naming_series?: string }).naming_series = series;
-        }
 
         // Validate document using validateDoc function
         const doctypeSchema = loader.from("doctype").get("Payment Entry").schema;
@@ -228,8 +221,7 @@ export default $doctype<"Payment Entry">({
         let totalAllocated = 0;
         if (doc.references && Array.isArray(doc.references)) {
             for (const ref of doc.references) {
-                const allocateAmount = parseFloat(String((ref as any).allocate_amount || 0)) || 0;
-                totalAllocated += allocateAmount;
+                totalAllocated += await getReferenceSignedAllocation(doc.payment_type as any, ref as any);
             }
         }
         docAny.total_allocated = totalAllocated;
@@ -246,9 +238,12 @@ export default $doctype<"Payment Entry">({
     .on("before_save", async ({ doc }) => {
         const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
         const docAny = doc as any;
-        const totalAllocated = Array.isArray(docAny.references)
-            ? docAny.references.reduce((s: number, r: any) => s + num(r?.allocate_amount), 0)
-            : 0;
+        let totalAllocated = 0;
+        if (Array.isArray(docAny.references)) {
+            for (const ref of docAny.references) {
+                totalAllocated += await getReferenceSignedAllocation(doc.payment_type as any, ref as any);
+            }
+        }
         const unallocatedAmount = num(docAny.unallocated_amount);
         const whtRate = num(docAny.wht_rate);
         const totalAmount = totalAllocated + unallocatedAmount;
@@ -313,13 +308,13 @@ export default $doctype<"Payment Entry">({
             } as any);
         }
 
-        // Manage payment status for each referenced invoice document
+        // Manage payment status for each referenced document
         if (doc.references && Array.isArray(doc.references)) {
             const invoiceMap = new Map<string, Set<string>>();
             for (const ref of doc.references) {
                 const refType = (ref as any).reference_type;
                 const invoiceId = (ref as any).reference_id;
-                if (refType && invoiceId && (refType === "Sales Invoice" || refType === "Purchase Invoice")) {
+                if (refType && invoiceId && (refType === "Sales Invoice" || refType === "Purchase Invoice" || refType === "Employee Advance" || refType === "Expense Claim" || refType === "Salary Slip")) {
                     if (!invoiceMap.has(refType)) {
                         invoiceMap.set(refType, new Set());
                     }
@@ -329,7 +324,7 @@ export default $doctype<"Payment Entry">({
             // Update payment status for each referenced document
             for (const [dt, docIds] of invoiceMap.entries()) {
                 for (const docId of docIds) {
-                    await updatePaymentStatusForReference(dt as "Sales Invoice" | "Purchase Invoice", docId);
+                    await updatePaymentStatusForReference(dt as "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim" | "Salary Slip", docId);
                 }
             }
         }
@@ -347,34 +342,40 @@ export default $doctype<"Payment Entry">({
             await $zodula.doctype("General Ledger").delete(glEntry.id);
         }
 
-        // Recalculate payment_status for each referenced invoice (cancelled PE no longer counts as submitted)
+        // Recalculate payment_status for each referenced document (cancelled PE no longer counts as submitted)
         if (doc.references && Array.isArray(doc.references)) {
             for (const ref of doc.references) {
                 const refType = (ref as any).reference_type;
                 const referenceId = (ref as any).reference_id;
-                if (referenceId && refType && (refType === "Sales Invoice" || refType === "Purchase Invoice")) {
-                    await updatePaymentStatusForReference(refType as "Sales Invoice" | "Purchase Invoice", referenceId);
+                if (referenceId && refType && (refType === "Sales Invoice" || refType === "Purchase Invoice" || refType === "Employee Advance" || refType === "Expense Claim" || refType === "Salary Slip")) {
+                    await updatePaymentStatusForReference(refType as "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim" | "Salary Slip", referenceId);
                 }
             }
         }
     });
 
 /**
- * Updates the payment status of a reference document (Sales Invoice or Purchase Invoice)
+ * Updates the payment status of a reference document.
  * based on all submitted payment entries that reference it.
  */
 async function updatePaymentStatusForReference(
-    doctype: "Sales Invoice" | "Purchase Invoice",
+    doctype: "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim" | "Salary Slip",
     docId: string
 ) {
-    const doc = await $zodula.doctype(doctype).get(docId);
+    const doc = await $zodula.doctype(doctype as any).get(docId);
     if (!doc) {
         throw new Error(`${doctype} ${docId} not found`);
     }
 
-    const totalAmount = parseFloat(String((doc as any).grand_total || 0)) || 0;
+    const totalAmountRaw =
+        doctype === "Employee Advance" || doctype === "Expense Claim"
+            ? parseFloat(String((doc as any).amount || 0)) || 0
+            : doctype === "Salary Slip"
+            ? parseFloat(String((doc as any).net_pay || 0)) || 0
+            : parseFloat(String((doc as any).grand_total || 0)) || 0;
+    const totalAmount = Math.abs(totalAmountRaw);
     if (totalAmount === 0) {
-        await $zodula.doctype(doctype).update(docId, {
+        await $zodula.doctype(doctype as any).update(docId, {
             payment_status: "Paid"
         } as any);
         return;
@@ -391,7 +392,7 @@ async function updatePaymentStatusForReference(
         if (paymentEntryId && refType === doctype) {
             const paymentEntry = await $zodula.doctype("Payment Entry").get(paymentEntryId);
             if (paymentEntry && paymentEntry.doc_status === "Submitted") {
-                const allocatedAmount = parseFloat(String((ref as any).allocate_amount || 0)) || 0;
+                const allocatedAmount = Math.abs(parseFloat(String((ref as any).allocate_amount || 0)) || 0);
                 totalAllocated += allocatedAmount;
             }
         }
@@ -405,7 +406,23 @@ async function updatePaymentStatusForReference(
         paymentStatus = "Partially Paid";
     }
 
-    await $zodula.doctype(doctype).update(docId, {
+    await $zodula.doctype(doctype as any).update(docId, {
         payment_status: paymentStatus
     } as any);
+}
+
+async function getReferenceSignedAllocation(
+    paymentType: string | undefined,
+    ref: { reference_type?: string; reference_id?: string; allocate_amount?: number }
+) {
+    const allocateAmount = Math.abs(parseFloat(String(ref?.allocate_amount || 0)) || 0);
+    if (allocateAmount === 0) return 0;
+    const refType = String(ref?.reference_type ?? "");
+    const refId = String(ref?.reference_id ?? "");
+    if (refType !== "Sales Invoice" || !refId) return allocateAmount;
+    const salesInvoice = await $zodula.doctype("Sales Invoice").get(refId);
+    if (!salesInvoice) return allocateAmount;
+    const isCreditNote = Number((salesInvoice as any).is_credit_note ?? 0) === 1;
+    if (!isCreditNote) return allocateAmount;
+    return String(paymentType ?? "") === "Receive" ? -allocateAmount : allocateAmount;
 }

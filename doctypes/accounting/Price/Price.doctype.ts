@@ -11,14 +11,14 @@ export default $doctype({
         label: "Is Selling",
         default: "0",
         readonly: 1,
-        description: "When enabled, this price is used for selling products.",
+        description: "When enabled, this price is used for selling items.",
     },
     is_buying: {
         type: "Check",
         label: "Is Buying",
         default: "0",
         readonly: 1,
-        description: "When enabled, this price is used for buying products.",
+        description: "When enabled, this price is used for buying items.",
     },
     customer: {
         type: "Reference",
@@ -46,19 +46,25 @@ export default $doctype({
         readonly: 1,
         fetch_from: "supplier.name"
     },
-    product: {
+    item: {
         type: "Reference",
-        label: "Product",
-        reference: "Product",
+        label: "Item",
+        reference: "Item",
         required: 1,
         in_list_view: 1
     },
-    product_name: {
+    item_name: {
         type: "Text",
-        label: "Product Name",
+        label: "Item Name",
         in_list_view: 1,
         readonly: 1,
-        fetch_from: "product.product_name"
+        fetch_from: "item.item_name"
+    },
+    item_image: {
+        type: "Image Preview",
+        label: "Item Image",
+        readonly: 1,
+        fetch_from: "item.item_image"
     },
     price: {
         type: "Float",
@@ -73,7 +79,7 @@ export default $doctype({
         required: 1,
         in_list_view: 1,
         readonly: 1,
-        fetch_from: "product.uom"
+        fetch_from: "item.uom"
     },
     from_date: {
         type: "Date",
@@ -88,7 +94,7 @@ export default $doctype({
 }, {
     label: "Price",
     naming_series: "PL-{YYYY}-{MM}-{########}",
-    search_fields: "product_name\nuom\nprice\nfrom_date\nuntil_date",
+    search_fields: "item_name\nuom\nprice\nfrom_date\nuntil_date",
     tabs: JSON.stringify([
         {
             type: "Tab",
@@ -108,10 +114,10 @@ export default $doctype({
                     { type: "field", value: "customer_name", align: "left" },
                     { type: "field", value: "supplier_name", align: "left" }
                 ],
-                { type: "section", value: "Product & Price", align: "left" },
+                { type: "section", value: "Item & Price", align: "left" },
                 [
-                    { type: "field", value: "product", align: "left" },
-                    { type: "field", value: "product_name", align: "left" },
+                    { type: "field", value: "item", align: "left" },
+                    { type: "field", value: "item_name", align: "left" },
                     { type: "field", value: "uom", align: "left" }
                 ],
                 [
@@ -138,7 +144,7 @@ export default $doctype({
             .where("price_project", "=", doc.price_project ?? "")
             .where("customer", "=", doc.customer ?? "")
             .where("supplier", "=", doc.supplier ?? "")
-            .where("product", "=", doc.product ?? "")
+            .where("item", "=", doc.item ?? "")
             .where("uom", "=", doc.uom ?? "");
         const overlappingIds: string[] = [];
         for (const other of others ?? []) {

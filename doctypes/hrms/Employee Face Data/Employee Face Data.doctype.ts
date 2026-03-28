@@ -84,6 +84,7 @@ export default $doctype<"Employee Face Data">({
 
         const prevImg = old?.employee_image;
         const sameImage = String(prevImg || "") === String(url);
+        console.log("sameImage", sameImage);
         if (sameImage && doc.face_descriptor) return;
 
         const absPath = zodulaFileUrlToAbsolutePath(url);

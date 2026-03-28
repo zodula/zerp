@@ -1,25 +1,25 @@
 export default $doctype<"Delivery Note Item">({
-    product: {
+    item: {
         type: "Reference",
-        label: "Product",
-        reference: "Product",
+        label: "Item",
+        reference: "Item",
         required: 1,
         in_list_view: 1,
         no_print: 1
     },
-    product_name: {
+    item_name: {
         type: "Text",
-        label: "Product Name",
+        label: "Item Name",
         required: 1,
         in_list_view: 1,
         readonly: 1,
     },
-    product_image: {
+    item_image: {
         type: "Image Preview",
-        label: "Product Image",
+        label: "Item Image",
         readonly: 1, 
     },
-    product_description: {
+    item_description: {
         type: "Text",
         label: "Item Description"
     },
@@ -92,7 +92,7 @@ export default $doctype<"Delivery Note Item">({
 }, {
     label: "Delivery Note Item",
     is_child_doctype: 1,
-    search_fields: "product_name\nproduct_description",
+    search_fields: "item_name\nitem_description",
     tabs: JSON.stringify([
         {
             type: "Tab",
@@ -101,9 +101,9 @@ export default $doctype<"Delivery Note Item">({
                 { type: "section", value: "Item Information", align: "left" },
                 [
                     { type: "field", value: "delivery_note", align: "left" },
-                    { type: "field", value: "product", align: "left" },
-                    { type: "field", value: "product_name", align: "left" },
-                    { type: "field", value: "product_description", align: "left" }
+                    { type: "field", value: "item", align: "left" },
+                    { type: "field", value: "item_name", align: "left" },
+                    { type: "field", value: "item_description", align: "left" }
                 ],
                 { type: "section", value: "Quantity & Pricing", align: "left" },
                 [

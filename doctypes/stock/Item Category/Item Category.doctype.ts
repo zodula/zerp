@@ -5,7 +5,7 @@ export default $doctype({
         required: 1
     }
 }, {
-    label: "Product Category",
+    label: "Item Category",
     search_fields: "name",
     display_field: "name",
     naming_series: "{{name}}",

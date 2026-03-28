@@ -1,43 +1,50 @@
 import { zodula } from "@/zodula/client";
 import { useZui } from "@/zodula/ui";
+import {
+    PARTY_BY_PAYMENT,
+    PAYMENT_ENTRY_ACCOUNT_FILTERS,
+    REFERENCE_TYPES_BY_PARTY,
+    REFERENCE_TYPE_PARTY_FIELD,
+    REFERENCE_TYPE_TOTAL_AMOUNT_FIELD,
+} from "@/zerp/src/shared/payment_entry";
 
 const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
 
-const PARTY_BY_PAYMENT: Record<string, string[]> = {
-    Receive: ["Customer", "Employee"],
-    Pay: ["Supplier"],
-    Transfer: [],
-};
-const REFERENCE_TYPES_BY_PARTY: Record<string, string[]> = {
-    Customer: ["Sales Invoice", "Delivery Note"],
-    Employee: [],
-    Supplier: ["Purchase Invoice"],
-};
-
-/** Field on each reference type doctype that holds grand total (used to set remaining_amount). */
-const REFERENCE_TYPE_TOTAL_AMOUNT_FIELD: Record<string, string> = {
-    "Sales Invoice": "grand_total",
-    "Purchase Invoice": "grand_total",
-    "Delivery Note": "grand_total",
-};
-
-/** Field on each reference type doctype that links to party (customer/supplier); used to filter reference_id. */
-const REFERENCE_TYPE_PARTY_FIELD: Record<string, string> = {
-    "Sales Invoice": "customer",
-    "Purchase Invoice": "supplier",
-    "Delivery Note": "customer",
-};
-
-const NOT_GROUP = ["is_group", "!=", 1];
-const FILTERS = {
-    bankCash: JSON.stringify([["account_type", "IN", ["Bank", "Cash"]], NOT_GROUP]),
-    receivable: JSON.stringify([["account_type", "IN", ["Receivable"]], NOT_GROUP]),
-    payable: JSON.stringify([["account_type", "IN", ["Payable"]], NOT_GROUP]),
-    notGroup: JSON.stringify([NOT_GROUP, ["account_type", "IN", ["Bank", "Cash"]]]),
-};
-
 export default function PaymentEntryScripts() {
     useZui((zui) => {
+        const lastReferenceByRow = new Map<number, { reference_type?: string; reference_id?: string }>();
+        const salesInvoiceCache = new Map<string, any>();
+
+        async function rememberAndRepairReferences(frm: any) {
+            const rows = (frm.get_value("references") ?? []) as any[];
+            for (let i = 0; i < rows.length; i++) {
+                const typeVal = String(frm.get_value(`references.${i}.reference_type`) ?? "").trim();
+                const idVal = String(frm.get_value(`references.${i}.reference_id`) ?? "").trim();
+                const known = lastReferenceByRow.get(i) ?? {};
+                if (typeVal || idVal) {
+                    lastReferenceByRow.set(i, {
+                        reference_type: typeVal || known.reference_type || "",
+                        reference_id: idVal || known.reference_id || "",
+                    });
+                    continue;
+                }
+                if (known.reference_type) {
+                    await frm.set_value(`references.${i}.reference_type`, known.reference_type);
+                }
+                if (known.reference_id) {
+                    await frm.set_value(`references.${i}.reference_id`, known.reference_id);
+                }
+            }
+        }
+
+        function inferEmployeeReferenceType(referenceId: string) {
+            if (!referenceId) return "";
+            if (referenceId.startsWith("EXC-")) return "Expense Claim";
+            if (referenceId.startsWith("EA-")) return "Employee Advance";
+            if (referenceId.startsWith("SL-")) return "Salary Slip";
+            return "";
+        }
+
         async function setPartyFields(frm: any) {
             const paymentType = String(frm.get_value("payment_type") ?? "").trim();
             const partyTypes = PARTY_BY_PAYMENT[paymentType] ?? [];
@@ -92,16 +99,17 @@ export default function PaymentEntryScripts() {
 
         async function setAccountFieldProperties(frm: any) {
             const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+            const partyType = String(frm.get_value("party_type") ?? "").trim();
             if (paymentType === "Receive") {
-                await frm.set_df_property("account_paid_to", "filters", FILTERS.bankCash);
+                await frm.set_df_property("account_paid_to", "filters", PAYMENT_ENTRY_ACCOUNT_FILTERS.bankCash);
                 await frm.set_df_property("account_paid_to", "required", 1);
-                await frm.set_df_property("account_paid_from", "filters", FILTERS.receivable);
+                await frm.set_df_property("account_paid_from", "filters", PAYMENT_ENTRY_ACCOUNT_FILTERS.receivable);
             } else if (paymentType === "Pay") {
-                await frm.set_df_property("account_paid_from", "filters", FILTERS.bankCash);
+                await frm.set_df_property("account_paid_from", "filters", PAYMENT_ENTRY_ACCOUNT_FILTERS.bankCash);
                 await frm.set_df_property("account_paid_from", "required", 1);
-                await frm.set_df_property("account_paid_to", "filters", FILTERS.payable);
+                await frm.set_df_property("account_paid_to", "filters", partyType === "Customer" ? PAYMENT_ENTRY_ACCOUNT_FILTERS.receivable : PAYMENT_ENTRY_ACCOUNT_FILTERS.payable);
             } else {
-                await frm.set_df_property("account_paid_to", "filters", FILTERS.notGroup);
+                await frm.set_df_property("account_paid_to", "filters", PAYMENT_ENTRY_ACCOUNT_FILTERS.notGroupBankCash);
             }
             await frm.set_df_property("account_paid_from", "required", 1);
             await frm.set_df_property("account_paid_to", "required", 1);
@@ -109,8 +117,9 @@ export default function PaymentEntryScripts() {
 
         async function setAccountFieldDefaultValues(frm: any) {
             const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+            const partyType = String(frm.get_value("party_type") ?? "").trim();
             const res = await zodula.doc.select_docs("Account" as any, {
-                filters: [["account_type", "=", paymentType === "Receive" ? "Receivable" : "Payable"], ["is_group", "!=", 1]],
+                filters: [["account_type", "=", paymentType === "Receive" ? "Receivable" : (partyType === "Customer" ? "Receivable" : "Payable")], ["is_group", "!=", 1]],
                 limit: 1,
                 sort: "account_code",
                 order: "asc",
@@ -128,12 +137,43 @@ export default function PaymentEntryScripts() {
             }
         }
 
+        async function getSalesInvoice(refId: string) {
+            if (salesInvoiceCache.has(refId)) return salesInvoiceCache.get(refId);
+            const doc = await zodula.doc.get_doc("Sales Invoice" as any, refId);
+            salesInvoiceCache.set(refId, doc);
+            return doc;
+        }
+
+        async function getSignedAllocation(frm: any, row: any) {
+            const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+            const refType = String(row?.reference_type ?? "").trim();
+            const refId = String(row?.reference_id ?? "").trim();
+            const allocateAmount = Math.abs(num(row?.allocate_amount));
+            if (!allocateAmount) return 0;
+            if (refType !== "Sales Invoice" || !refId) return allocateAmount;
+            const salesInvoice = await getSalesInvoice(refId);
+            const isCreditNote = Number((salesInvoice as any)?.is_credit_note ?? 0) === 1;
+            if (!isCreditNote) return allocateAmount;
+            return paymentType === "Receive" ? -allocateAmount : allocateAmount;
+        }
+
+        async function syncTotalAllocated(frm: any) {
+            const refs = (frm.get_value("references") ?? []) as any[];
+            let totalAllocated = 0;
+            for (const row of refs) {
+                totalAllocated += await getSignedAllocation(frm, row);
+            }
+            frm.set_value("total_allocated", totalAllocated);
+        }
+
         zui.form.on("Payment Entry" as any, {
             on_render: async (frm: any) => {
+                await rememberAndRepairReferences(frm);
                 await setReferenceTypeFilter(frm);
                 await setReferenceIdFiltersForParty(frm);
                 await setAccountFieldProperties(frm);
                 await setAccountFieldDefaultValues(frm);
+                await syncTotalAllocated(frm);
             },
             payment_type: async (frm: any) => {
                 await frm.set_value("party_type", "");
@@ -149,6 +189,8 @@ export default function PaymentEntryScripts() {
             party_type: async (frm: any) => {
                 frm.clear_table?.("references");
                 await setReferenceTypeFilter(frm);
+                await setAccountFieldProperties(frm);
+                await setAccountFieldDefaultValues(frm);
                 frm.set_value("total_allocated", 0);
             },
             party: async (frm: any) => {
@@ -157,23 +199,36 @@ export default function PaymentEntryScripts() {
                 frm.set_value("total_allocated", 0);
             },
             references: (frm: any) => {
-                const refs = (frm.get_value("references") ?? []) as any[];
-                const totalAllocated = refs.reduce((sum, r) => sum + num(r?.allocate_amount), 0);
-                frm.set_value("total_allocated", totalAllocated);
+                void syncTotalAllocated(frm);
             },
             "references.reference_type": async (frm: any) => {
+                await rememberAndRepairReferences(frm);
                 await setReferenceIdFiltersForParty(frm);
             },
             "references.reference_id": async (frm: any) => {
+                await rememberAndRepairReferences(frm);
                 const idx = frm.idx ?? 0;
-                const refType = frm.get_value(`references.${idx}.reference_type`);
-                const refId = frm.get_value(`references.${idx}.reference_id`);
-                if (!refId || !refType) {
+                let refType = String(frm.get_value(`references.${idx}.reference_type`) ?? "").trim();
+                const refId = String(frm.get_value(`references.${idx}.reference_id`) ?? "").trim();
+                if (!refId) {
                     frm.set_value(`references.${idx}.outstanding_amount`, 0);
                     frm.set_value(`references.${idx}.allocate_amount`, 0);
                     const refs = (frm.get_value("references") ?? []) as any[];
                     const totalAllocated = refs.reduce((sum, r) => sum + num(r?.allocate_amount), 0);
                     frm.set_value("total_allocated", totalAllocated);
+                    return;
+                }
+                if (!refType) {
+                    const partyType = String(frm.get_value("party_type") ?? "").trim();
+                    if (partyType === "Employee") {
+                        const inferredType = inferEmployeeReferenceType(refId);
+                        if (inferredType) {
+                            await frm.set_value(`references.${idx}.reference_type`, inferredType);
+                            refType = inferredType;
+                        }
+                    }
+                }
+                if (!refType) {
                     return;
                 }
 
@@ -182,7 +237,7 @@ export default function PaymentEntryScripts() {
 
                 const baseDoc = (await zodula.doc.get_doc(refType as any, refId)) as any;
                 if (!baseDoc) return;
-                const totalAmount = num(baseDoc[totalField]);
+                const totalAmount = Math.abs(num(baseDoc[totalField]));
 
                 const refsRes = await zodula.doc.select_docs("Payment Entry Reference" as any, {
                     filters: [
@@ -200,7 +255,7 @@ export default function PaymentEntryScripts() {
                     if (!paymentEntryId) continue;
                     const pe = (await zodula.doc.get_doc("Payment Entry" as any, paymentEntryId)) as any;
                     if (pe?.doc_status === "Submitted") {
-                        totalAllocatedFromOtherEntries += num((r as any).allocate_amount);
+                        totalAllocatedFromOtherEntries += Math.abs(num((r as any).allocate_amount));
                     }
                 }
 
@@ -208,19 +263,14 @@ export default function PaymentEntryScripts() {
                 frm.set_value(`references.${idx}.outstanding_amount`, remaining);
                 frm.set_value(`references.${idx}.allocate_amount`, remaining);
 
-                const refs = (frm.get_value("references") ?? []) as any[];
-                const totalAllocated = refs.reduce((sum, r) => sum + num(r?.allocate_amount), 0);
-                frm.set_value("total_allocated", totalAllocated);
+                await syncTotalAllocated(frm);
+                await rememberAndRepairReferences(frm);
             },
             "references.allocate_amount": (frm: any) => {
-                const refs = (frm.get_value("references") ?? []) as any[];
-                const totalAllocated = refs.reduce((sum, r) => sum + num(r?.allocate_amount), 0);
-                frm.set_value("total_allocated", totalAllocated);
+                void syncTotalAllocated(frm);
             },
             "references.idx": (frm: any) => {
-                const refs = (frm.get_value("references") ?? []) as any[];
-                const totalAllocated = refs.reduce((sum, r) => sum + num(r?.allocate_amount), 0);
-                frm.set_value("total_allocated", totalAllocated);
+                void syncTotalAllocated(frm);
             },
             unallocated_amount: (frm: any) => {
                 const totalAllocated = num(frm.get_value("total_allocated"));
@@ -238,7 +288,6 @@ export default function PaymentEntryScripts() {
                 frm.set_value("wht_amount", (totalAmount * whtRate) / 100);
             },
             total_amount: (frm: any) => {
-                console.log("total_amount");
                 const totalAmount = num(frm.get_value("total_amount"));
                 const whtRate = num(frm.get_value("wht_rate"));
                 const whtAmount = (totalAmount * whtRate) / 100;

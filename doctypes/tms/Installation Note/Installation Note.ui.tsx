@@ -17,8 +17,8 @@ export default function InstallationNoteScripts() {
                 const items = (dn?.delivery_note_items ?? []) as any[];
                 for (let i = 0; i < items.length; i++) {
                     const row = items[i];
-                    await frm.set_value(`installation_note_items.${i}.product`, row?.product ?? "");
-                    await frm.set_value(`installation_note_items.${i}.product_name`, row?.product_name ?? "");
+                    await frm.set_value(`installation_note_items.${i}.item`, row?.item ?? "");
+                    await frm.set_value(`installation_note_items.${i}.item_name`, row?.item_name ?? "");
                     await frm.set_value(`installation_note_items.${i}.quantity`, num(row?.quantity));
                     await frm.set_value(`installation_note_items.${i}.uom`, row?.uom ?? "");
                 }

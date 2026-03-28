@@ -4,5 +4,65 @@
     "name": "Employee Kiosk",
     "description": "Role for kiosk users performing employee check-in.",
     "is_system": 0
+  },
+  {
+    "id": "Accounting Manager",
+    "name": "Accounting Manager",
+    "description": "Manager role for Accounting doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "Accounting User",
+    "name": "Accounting User",
+    "description": "User role for Accounting doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "HR Manager",
+    "name": "HR Manager",
+    "description": "Manager role for HR doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "HR User",
+    "name": "HR User",
+    "description": "User role for HR doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "Payroll Manager",
+    "name": "Payroll Manager",
+    "description": "Manager role for Payroll doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "Payroll User",
+    "name": "Payroll User",
+    "description": "User role for Payroll doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "Stock Manager",
+    "name": "Stock Manager",
+    "description": "Manager role for Stock doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "Stock User",
+    "name": "Stock User",
+    "description": "User role for Stock doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "TMS Manager",
+    "name": "TMS Manager",
+    "description": "Manager role for TMS doctypes.",
+    "is_system": 0
+  },
+  {
+    "id": "TMS User",
+    "name": "TMS User",
+    "description": "User role for TMS doctypes.",
+    "is_system": 0
   }
 ]

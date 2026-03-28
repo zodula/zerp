@@ -41,13 +41,13 @@ export default $doctype({
         readonly: 1,
         in_list_view: 1,
     },
-    product: {
+    item: {
         type: "Reference",
-        label: "Product",
-        reference: "Product",
+        label: "Item",
+        reference: "Item",
         required: 0,
         readonly: 1,
-        fetch_from: "expense_type.product",
+        fetch_from: "expense_type.item",
         no_print: 1,
     },
 }, {
@@ -68,9 +68,9 @@ export default $doctype({
                     { type: "field", value: "rate", align: "left" },
                     { type: "field", value: "amount", align: "left" },
                 ],
-                { type: "section", value: "Product (from Expense Type)", align: "left" },
+                { type: "section", value: "Item (from Expense Type)", align: "left" },
                 [
-                    { type: "field", value: "product", align: "left" },
+                    { type: "field", value: "item", align: "left" },
                     { type: "field", value: "uom", align: "left" },
                 ],
             ],

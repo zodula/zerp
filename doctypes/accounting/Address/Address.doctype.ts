@@ -69,7 +69,7 @@ export default $doctype<"Address">({
     },
 }, {
     label: "Address",
-    naming_series: "{{name}}",
+    naming_series: "ADDR-{YYYY}-{MM}-{DD}-{#####}",
     search_fields: "address_type\ncity\nprovince\ninline_address",
     is_quick_entry: 1,
     tabs: JSON.stringify([

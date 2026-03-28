@@ -96,6 +96,11 @@ export default $doctype<"Leave Application">({
     const employee_doc = await $zodula.doctype("Employee").get(doc.employee);
     doc.approver = employee_doc.attendance_approver;
     doc.employee_name = employee_doc.full_name;
+    await validateLeaveDatesAgainstHolidayAndWorkShift(
+        employee_doc as unknown as Record<string, unknown>,
+        doc.from_date as string | undefined | null,
+        doc.to_date as string | undefined | null
+    );
 
     const approver_id = (await ($zodula.session.user())).id;
     if (doc?.status !== old?.status && doc?.status === "Approved" && doc.approver !== approver_id) {
@@ -127,6 +132,54 @@ export default $doctype<"Leave Application">({
     // When a document is cancelled, mark it Rejected (since "Cancelled" is not a status option).
     await $zodula.doctype("Leave Application").update(doc.id, { status: "Rejected" } as any);
 });
+
+const dayPrefixByWeekday: Record<number, string> = {
+    0: "sun",
+    1: "mon",
+    2: "tue",
+    3: "wed",
+    4: "thu",
+    5: "fri",
+    6: "sat",
+};
+
+async function validateLeaveDatesAgainstHolidayAndWorkShift(
+    employeeDoc: Record<string, unknown>,
+    fromDateRaw: string | undefined | null,
+    toDateRaw: string | undefined | null
+) {
+    const fromDate = normalizeDateString(fromDateRaw);
+    const toDate = normalizeDateString(toDateRaw);
+    if (!fromDate || !toDate) return;
+
+    const dateStrings = listDateStringsInRange(fromDate, toDate);
+    if (!dateStrings.length) return;
+
+    const { docs: holidays } = await $zodula.doctype("Holiday")
+        .select()
+        .where("date", ">=", fromDate)
+        .where("date", "<=", toDate);
+    const holidaySet = new Set((holidays || []).map((holiday) => normalizeDateString((holiday as { date?: string }).date ?? null)));
+    const holidayOverlaps = dateStrings.filter((dateString) => holidaySet.has(dateString));
+    if (holidayOverlaps.length) {
+        throw new Error(`Leave dates overlap holiday: ${holidayOverlaps.join(", ")}`);
+    }
+
+    const workShiftId = employeeDoc.work_shift as string | undefined | null;
+    if (!workShiftId) return;
+    const workShiftDoc = await $zodula.doctype("Work Shift").get(workShiftId);
+
+    const dayOffOverlaps: string[] = [];
+    for (const dateString of dateStrings) {
+        const dayOfWeek = new Date(`${dateString}T00:00:00`).getDay();
+        const dayPrefix = dayPrefixByWeekday[dayOfWeek] || "sun";
+        const isDayOff = Number((workShiftDoc as unknown as Record<string, unknown>)[`${dayPrefix}_is_day_off`] ?? 0) === 1;
+        if (isDayOff) dayOffOverlaps.push(dateString);
+    }
+    if (dayOffOverlaps.length) {
+        throw new Error(`Leave dates overlap work shift day off: ${dayOffOverlaps.join(", ")}`);
+    }
+}
 
 /** Normalize date string to yyyy-MM-dd for consistent comparison and queries */
 function normalizeDateString(dateValue: string | undefined | null): string | null {

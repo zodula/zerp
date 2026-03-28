@@ -9,10 +9,12 @@ export default $doctype({
         type: "Text",
         label: "Phone",
         in_list_view: 1,
+        in_quick_entry: 1,
     },
     license_number: {
         type: "Text",
         label: "License Number",
+        in_quick_entry: 1,
     },
     transporter: {
         type: "Reference",
@@ -20,22 +22,18 @@ export default $doctype({
         reference: "Supplier",
         required: 0,
         in_list_view: 1,
+        in_quick_entry: 1,
     },
     address: {
         type: "Text",
         label: "Address",
-    },
-    status: {
-        type: "Select",
-        label: "Status",
-        options: "Active\nInactive",
-        default: "Active",
-        in_list_view: 1,
+        in_quick_entry: 1,
     },
 }, {
     label: "Driver",
-    naming_series: "DRV-{#####}",
+    naming_series: "{{name}}",
     search_fields: "name\nphone\nlicense_number\ntransporter",
+    is_quick_entry: 1,
     tabs: JSON.stringify([
         {
             type: "Tab",

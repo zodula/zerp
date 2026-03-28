@@ -56,6 +56,7 @@ export default $doctype<"General Ledger">({
 }, {
     label: "General Ledger",
     search_fields: "account\nreference_doctype\nreference_id\ndescription",
+    is_system_generated: 1,
     tabs: JSON.stringify([
         {
             type: "Tab", 

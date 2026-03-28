@@ -5,28 +5,32 @@ export default $doctype<"Delivery Note">(
       label: "Customer",
       reference: "Customer",
       required: 1,
-      no_print: 1,
     },
     customer_tax_id: {
       type: "Text",
       label: "Customer Tax ID",
       required: 0,
-      readonly: 1,
       no_print: 1,
+      readonly: 1,
     },
     customer_phone: {
       type: "Text",
       label: "Customer Phone",
       required: 0,
       readonly: 1,
-      no_print: 1,
     },
     customer_address: {
       type: "Text",
       label: "Customer Address",
       required: 0,
       readonly: 1,
-      no_print: 1,
+    },
+    quotation: {
+      type: "Reference",
+      label: "Quotation",
+      reference: "Quotation",
+      required: 0,
+      readonly: 1,
     },
     ignore_price_project: {
       type: "Check",
@@ -40,7 +44,6 @@ export default $doctype<"Delivery Note">(
       label: "Price Project",
       reference: "Price Project",
       required: 0,
-      no_print: 1,
       filters: JSON.stringify([["is_selling", "=", 1]]),
       depends_on: "!doc.ignore_price_project",
     },
@@ -86,8 +89,6 @@ export default $doctype<"Delivery Note">(
       default: "To Bill",
       required: 1,
       readonly: 1,
-      no_print: 1,
-      hidden: 1,
     },
     apply_vat_template: {
       type: "Reference",
@@ -117,13 +118,6 @@ export default $doctype<"Delivery Note">(
       required: 0,
       height: 200, // 200px
     },
-    billing_inline_address: {
-      type: "Text",
-      label: "Billing Inline Address",
-      required: 0,
-      readonly: 1,
-      fetch_from: "billing_address.inline_address",
-    },
     billing_address: {
       type: "Reference",
       label: "Billing Address",
@@ -132,6 +126,20 @@ export default $doctype<"Delivery Note">(
       no_print: 1,
       filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"], ["address_type", "=", "Billing"]]),
     },
+    billing_address_name: {
+      type: "Text",
+      label: "Billing Address Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.name",
+    },
+    billing_inline_address: {
+      type: "Text",
+      label: "Billing Inline Address",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.inline_address",
+    },
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
@@ -139,6 +147,13 @@ export default $doctype<"Delivery Note">(
       required: 1,
       no_print: 1,
       filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"], ["address_type", "=", "Shipping"]]),
+    },
+    shipping_address_name: {
+      type: "Text",
+      label: "Shipping Address Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "shipping_address.name",
     },
     shipping_inline_address: {
       type: "Text",
@@ -154,6 +169,13 @@ export default $doctype<"Delivery Note">(
       required: 0,
       no_print: 1,
     },
+    billing_contact_name: {
+      type: "Text",
+      label: "Billing Contact Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_contact.name",
+    },
     billing_contact_inline: {
       type: "Text",
       label: "Billing Contact Inline",
@@ -167,7 +189,14 @@ export default $doctype<"Delivery Note">(
       reference: "Contact",
       required: 0,
       no_print: 1,
-      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
+      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"], ["address_type", "=", "Shipping"]]),
+    },
+    shipping_contact_name: {
+      type: "Text",
+      label: "Shipping Contact Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "shipping_contact.name",
     },
     shipping_contact_inline: {
       type: "Text",
@@ -184,6 +213,13 @@ export default $doctype<"Delivery Note">(
       no_print: 0,
       filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"], ["address_type", "=", "Sender"]]),
     },
+    sender_address_name: {
+      type: "Text",
+      label: "Sender Address Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "sender_address.name",
+    },
     sender_inline_address: {
       type: "Text",
       label: "Sender Inline Address",
@@ -197,7 +233,14 @@ export default $doctype<"Delivery Note">(
       reference: "Contact",
       required: 0,
       no_print: 0,
-      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
+      filters: JSON.stringify([["link_type", "=", "Customer"], ["address_type", "=", "Sender"], ["link_id", "=", "{{customer}}"]]),
+    },
+    sender_contact_name: {
+      type: "Text",
+      label: "Sender Contact Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "sender_contact.name",
     },
     sender_contact_inline: {
       type: "Text",
@@ -206,13 +249,38 @@ export default $doctype<"Delivery Note">(
       readonly: 1,
       fetch_from: "sender_contact.inline_contact",
     },
-    to_warehouse: {
+    target_warehouse: {
       type: "Reference",
-      label: "To Warehouse",
+      label: "Target Warehouse",
       reference: "Warehouse",
       required: 0,
       no_print: 0,
       readonly: 1,
+    },
+    driver: {
+      type: "Reference",
+      label: "Driver",
+      reference: "Driver",
+      required: 0,
+      readonly: 1,
+      no_print: 0,
+    },
+    vehicle: {
+      type: "Reference",
+      label: "Vehicle",
+      reference: "Vehicle",
+      required: 0,
+      readonly: 1,
+      no_print: 0,
+    },
+    transporter: {
+      type: "Reference",
+      label: "Transporter (Driver's Supplier)",
+      reference: "Supplier",
+      required: 0,
+      readonly: 1,
+      no_print: 0,
+      fetch_from: "driver.transporter",
     },
     installation_percentage: {
       type: "Float",
@@ -226,10 +294,11 @@ export default $doctype<"Delivery Note">(
   },
   {
     label: "Delivery Note",
-    naming_series: "DO-{YYYY}-{MM}-{DD}-{#####}",
+    naming_series: "DN-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
     comments_enabled: 1,
+    default_show_id_qrcode: 1,
     search_fields: "customer",
     tabs: JSON.stringify([
       {
@@ -240,6 +309,7 @@ export default $doctype<"Delivery Note">(
           [
             { type: "field", value: "customer", align: "left" },
             { type: "field", value: "posting_date", align: "left" },
+            { type: "field", value: "payment_status", align: "left" },
             { type: "field", value: "ignore_price_project", align: "left" },
             { type: "field", value: "price_project", align: "left" },
           ],
@@ -252,19 +322,23 @@ export default $doctype<"Delivery Note">(
           { type: "section", value: "Sender", align: "left" },
           [
             { type: "field", value: "sender_address", align: "left" },
+            { type: "field", value: "sender_address_name", align: "left" },
             { type: "field", value: "sender_inline_address", align: "left" },
           ],
           [
             { type: "field", value: "sender_contact", align: "left" },
+            { type: "field", value: "sender_contact_name", align: "left" },
             { type: "field", value: "sender_contact_inline", align: "left" },
           ],
           { type: "section", value: "Shipping", align: "left" },
           [
             { type: "field", value: "shipping_address", align: "left" },
+            { type: "field", value: "shipping_address_name", align: "left" },
             { type: "field", value: "shipping_inline_address", align: "left" },
           ],
           [
             { type: "field", value: "shipping_contact", align: "left" },
+            { type: "field", value: "shipping_contact_name", align: "left" },
             { type: "field", value: "shipping_contact_inline", align: "left" },
           ],
           { type: "section", value: "Items", align: "left" },
@@ -278,13 +352,31 @@ export default $doctype<"Delivery Note">(
           { type: "section", value: "VAT Configuration", align: "left" },
           [
             { type: "field", value: "apply_vat_template", align: "left" },
+          ],
+          { type: "section", value: "Tax and Totals", align: "left" },
+          [
+            { type: "empty" },
+            { type: "empty" },
+            { type: "field", value: "net_total", align: "left" },
+          ],
+          [
+            { type: "empty" },
+            { type: "empty" },
             { type: "field", value: "vat_type", align: "left" },
+          ],
+          [
+            { type: "empty" },
+            { type: "empty" },
             { type: "field", value: "vat_rate", align: "left" },
           ],
-          { type: "section", value: "Totals", align: "left" },
           [
-            { type: "field", value: "net_total", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
             { type: "field", value: "total_taxes_and_charges", align: "left" },
+          ],
+          [
+            { type: "empty" },
+            { type: "empty" },
             { type: "field", value: "grand_total", align: "left" },
           ],
         ],
@@ -296,11 +388,23 @@ export default $doctype<"Delivery Note">(
           { type: "section", value: "Billing Address", align: "left" },
           [
             { type: "field", value: "billing_address", align: "left" },
-            { type: "field", value: "billing_contact", align: "left" },
+            { type: "field", value: "billing_address_name", align: "left" },
+            { type: "field", value: "billing_inline_address", align: "left" },
           ],
           [
-            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "field", value: "billing_contact", align: "left" },
+            { type: "field", value: "billing_contact_name", align: "left" },
             { type: "field", value: "billing_contact_inline", align: "left" },
+          ],
+        ],
+      },
+      {
+        type: "Tab",
+        label: "References",
+        layout: [
+          { type: "section", value: "References", align: "left" },
+          [
+            { type: "field", value: "quotation", align: "left" },
           ],
         ],
       },
@@ -314,7 +418,18 @@ export default $doctype<"Delivery Note">(
           ],
           { type: "section", value: "Trip Information", align: "left" },
           [
-            { type: "field", value: "to_warehouse", align: "left" },
+            { type: "field", value: "source_warehouse", align: "left" },
+            { type: "field", value: "target_warehouse", align: "left" },
+          ],
+          [
+            { type: "field", value: "driver", align: "left" },
+            { type: "field", value: "vehicle", align: "left" },
+            { type: "field", value: "transporter", align: "left" },
+          ],
+          [
+            { type: "field", value: "driver_name", align: "left" },
+            { type: "field", value: "vehicle_plate", align: "left" },
+            { type: "field", value: "transporter_name", align: "left" },
           ]
         ],
       }
@@ -351,7 +466,7 @@ export default $doctype<"Delivery Note">(
   })
   .on("before_save", async ({ doc }) => {
     if (doc.source_warehouse) {
-      doc.to_warehouse = doc.source_warehouse;
+      (doc as any).target_warehouse = doc.source_warehouse;
     }
   })
   .on("after_submit", async ({ doc }) => {
@@ -370,11 +485,11 @@ export default $doctype<"Delivery Note">(
     const untilDate = $zodula.date.format($zodula.date.add(baseDate, days, "days"), "date");
     const items = doc.delivery_note_items as any[] | undefined;
     if (!Array.isArray(items)) return;
-    for (const item of items) {
-      const product = item?.product;
-      const uom = item?.uom;
-      const unitPrice = item?.unit_price != null ? parseFloat(String(item.unit_price)) : NaN;
-      if (!product || !uom || Number.isNaN(unitPrice)) continue;
+    for (const row of items) {
+      const itemId = row?.item;
+      const uom = row?.uom;
+      const unitPrice = row?.unit_price != null ? parseFloat(String(row.unit_price)) : NaN;
+      if (!itemId || !uom || Number.isNaN(unitPrice)) continue;
       const { docs } = await $zodula.doctype("Price")
         .select()
         .where("price_project", "=", priceProject)
@@ -382,15 +497,15 @@ export default $doctype<"Delivery Note">(
         .where("is_selling", "=", 1)
         .where("from_date", "<=", baseDate)
         .where("until_date", ">=", baseDate)
-        .where("product", "=", product)
+        .where("item", "=", itemId)
         .limit(1);
       if (docs.length === 0) {
         await $zodula.doctype("Price").insert({
           price_project: priceProject,
           is_selling: 1,
           customer,
-          product,
-          product_name: item?.product_name ?? "",
+          item: itemId,
+          item_name: row?.item_name ?? "",
           price: unitPrice,
           uom,
           from_date: baseDate,

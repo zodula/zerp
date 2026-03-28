@@ -270,66 +270,52 @@ export default $doctype<"Work Shift">({
             { type: "section", value: "Days", align: "left" },
             [
                 { type: "field", value: "mon_start_time", align: "left" },
+                { type: "field", value: "mon_break_start", align: "left" },
+                { type: "field", value: "mon_break_end", align: "left" },
                 { type: "field", value: "mon_end_time", align: "left" },
                 { type: "field", value: "mon_is_day_off", align: "left" },
             ],
             [
-                { type: "field", value: "mon_break_start", align: "left" },
-                { type: "field", value: "mon_break_end", align: "left" },
-            ],
-            [
                 { type: "field", value: "tue_start_time", align: "left" },
+                { type: "field", value: "tue_break_start", align: "left" },
+                { type: "field", value: "tue_break_end", align: "left" },
                 { type: "field", value: "tue_end_time", align: "left" },
                 { type: "field", value: "tue_is_day_off", align: "left" },
             ],
             [
-                { type: "field", value: "tue_break_start", align: "left" },
-                { type: "field", value: "tue_break_end", align: "left" },
-            ],
-            [
                 { type: "field", value: "wed_start_time", align: "left" },
+                { type: "field", value: "wed_break_start", align: "left" },
+                { type: "field", value: "wed_break_end", align: "left" },
                 { type: "field", value: "wed_end_time", align: "left" },
                 { type: "field", value: "wed_is_day_off", align: "left" },
             ],
             [
-                { type: "field", value: "wed_break_start", align: "left" },
-                { type: "field", value: "wed_break_end", align: "left" },
-            ],
-            [
                 { type: "field", value: "thu_start_time", align: "left" },
+                { type: "field", value: "thu_break_start", align: "left" },
+                { type: "field", value: "thu_break_end", align: "left" },
                 { type: "field", value: "thu_end_time", align: "left" },
                 { type: "field", value: "thu_is_day_off", align: "left" },
             ],
             [
-                { type: "field", value: "thu_break_start", align: "left" },
-                { type: "field", value: "thu_break_end", align: "left" },
-            ],
-            [
                 { type: "field", value: "fri_start_time", align: "left" },
+                { type: "field", value: "fri_break_start", align: "left" },
+                { type: "field", value: "fri_break_end", align: "left" },
                 { type: "field", value: "fri_end_time", align: "left" },
                 { type: "field", value: "fri_is_day_off", align: "left" },
             ],
             [
-                { type: "field", value: "fri_break_start", align: "left" },
-                { type: "field", value: "fri_break_end", align: "left" },
-            ],
-            [
                 { type: "field", value: "sat_start_time", align: "left" },
+                { type: "field", value: "sat_break_start", align: "left" },
+                { type: "field", value: "sat_break_end", align: "left" },
                 { type: "field", value: "sat_end_time", align: "left" },
                 { type: "field", value: "sat_is_day_off", align: "left" },
             ],
             [
-                { type: "field", value: "sat_break_start", align: "left" },
-                { type: "field", value: "sat_break_end", align: "left" },
-            ],
-            [
                 { type: "field", value: "sun_start_time", align: "left" },
-                { type: "field", value: "sun_end_time", align: "left" },
-                { type: "field", value: "sun_is_day_off", align: "left" },
-            ],
-            [
                 { type: "field", value: "sun_break_start", align: "left" },
                 { type: "field", value: "sun_break_end", align: "left" },
+                { type: "field", value: "sun_end_time", align: "left" },
+                { type: "field", value: "sun_is_day_off", align: "left" },
             ],
             { type: "section", value: "Checkin Rules", align: "left" },
             [

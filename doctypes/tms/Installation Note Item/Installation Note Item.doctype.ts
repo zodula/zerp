@@ -1,14 +1,14 @@
 export default $doctype<"Installation Note Item">({
-    product: {
+    item: {
         type: "Reference",
-        label: "Product",
-        reference: "Product",
+        label: "Item",
+        reference: "Item",
         required: 1,
         in_list_view: 1,
     },
-    product_name: {
+    item_name: {
         type: "Text",
-        label: "Product Name",
+        label: "Item Name",
         required: 1,
         in_list_view: 1,
         readonly: 1,
@@ -30,7 +30,7 @@ export default $doctype<"Installation Note Item">({
 }, {
     label: "Installation Note Item",
     is_child_doctype: 1,
-    search_fields: "product_name",
+    search_fields: "item_name",
     tabs: JSON.stringify([
         {
             type: "Tab",
@@ -39,8 +39,8 @@ export default $doctype<"Installation Note Item">({
                 { type: "section", value: "Item", align: "left" },
                 [
                     { type: "field", value: "installation_note", align: "left" },
-                    { type: "field", value: "product", align: "left" },
-                    { type: "field", value: "product_name", align: "left" },
+                    { type: "field", value: "item", align: "left" },
+                    { type: "field", value: "item_name", align: "left" },
                     { type: "field", value: "quantity", align: "left" },
                     { type: "field", value: "uom", align: "left" },
                 ],

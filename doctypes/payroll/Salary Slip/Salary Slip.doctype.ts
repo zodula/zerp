@@ -11,6 +11,22 @@ export default $doctype<"Salary Slip">({
         label: "Employee Name",
         readonly: 1,
     },
+    payroll_entry: {
+        type: "Reference",
+        label: "Payroll Entry",
+        reference: "Payroll Entry",
+        required: 0,
+        readonly: 1,
+    },
+    payment_status: {
+        type: "Select",
+        label: "Payment Status",
+        options: "Unpaid\nPartially Paid\nPaid",
+        default: "Unpaid",
+        required: 1,
+        readonly: 1,
+        in_list_view: 1,
+    },
     posting_date: {
         type: "Date",
         label: "Posting Date",
@@ -105,6 +121,10 @@ export default $doctype<"Salary Slip">({
                 [
                     { type: "field", value: "employee", align: "left" },
                     { type: "field", value: "posting_date", align: "left" },
+                ],
+                [
+                    { type: "field", value: "payroll_entry", align: "left" },
+                    { type: "field", value: "payment_status", align: "left" },
                 ],
                 { type: "section", value: "Payroll", align: "left" },
                 [
@@ -209,6 +229,7 @@ export default $doctype<"Salary Slip">({
         let deduction_absent = 0;
         let deduction_leave_without_pay = 0;
         let deduction_late = 0;
+        let deduction_advance = 0;
         let deduction_social_security = 0;
         let deduction_other = 0;
         const employee_doc = await $zodula.doctype("Employee").get(doc.employee);
@@ -281,9 +302,11 @@ export default $doctype<"Salary Slip">({
         doc.earnings = [];
         doc.deductions = [];
         const { docs: additional_salaries } = await $zodula.doctype("Additional Salary").select().where("employee", "=", doc.employee).where("payroll_date", ">=", doc.start_date).where("payroll_date", "<=", doc.end_date).where("doc_status", "=", "Submitted");
+        const { docs: employee_advances } = await ($zodula.doctype("Employee Advance" as any) as any).select().where("employee", "=", doc.employee).where("payroll_date", ">=", doc.start_date).where("payroll_date", "<=", doc.end_date).where("doc_status", "=", "Submitted").where("payment_status", "=", "Paid");
         const { docs: overtime_applications } = await $zodula.doctype("Overtime Application").select().where("employee", "=", doc.employee).where("overtime_date", ">=", doc.start_date).where("overtime_date", "<=", doc.end_date).where("doc_status", "=", "Submitted");
         const additional_earning_note_lines: string[] = [];
         const additional_deduction_note_lines: string[] = [];
+        const advance_note_lines: string[] = [];
         for (const earning of earning_components) {
             switch (earning) {
                 case "Base Salary":
@@ -389,6 +412,26 @@ export default $doctype<"Salary Slip">({
                         amount: deduction_social_security,
                     } as any);
                     break;
+                case "Advance":
+                    deduction_advance += employee_advances.reduce((acc: number, advance: any) => {
+                        const amount = parseFloat(String((advance as any).amount ?? 0)) || 0;
+                        if (amount > 0) {
+                            advance_note_lines.push(`- ${advance.payroll_date}: ${(advance as any).id} +${amount}`);
+                        }
+                        return acc + amount;
+                    }, 0);
+                    for (const additional_salary of additional_salaries) {
+                        const deduction_component = (additional_salary as any).deduction_component;
+                        if (deduction_component === deduction && additional_salary.component_type === "Deduction") {
+                            deduction_advance += additional_salary.amount;
+                            additional_deduction_note_lines.push(`- ${additional_salary.payroll_date}: ${deduction} +${additional_salary.amount}`);
+                        }
+                    }
+                    doc.deductions.push({
+                        component_type: deduction,
+                        amount: deduction_advance,
+                    } as any);
+                    break;
                 default:
                     deduction_other += 0;
                     for (const additional_salary of additional_salaries) {
@@ -437,6 +480,12 @@ export default $doctype<"Salary Slip">({
             calculation_note_sections.push(
                 "Additional Salary (Deduction):",
                 additional_deduction_note_lines.join("\n")
+            );
+        }
+        if (advance_note_lines.length) {
+            calculation_note_sections.push(
+                "Employee Advance Deduction:",
+                advance_note_lines.join("\n")
             );
         }
         calculation_note_sections.unshift(

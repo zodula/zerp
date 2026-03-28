@@ -2,6 +2,7 @@ import { zodula } from "@/zodula/client";
 import { useZui } from "@/zodula/ui";
 
 const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
+const round2 = (v: number) => Math.round(v * 100) / 100;
 
 function applyCustomerLinkFilters(frm: any) {
     const customer = frm.get_value("customer");
@@ -54,12 +55,12 @@ export default function DeliveryOrderScripts() {
 
             if (vatRate > 0) {
                 if (vatType === "Excluded") {
-                    vatAmount = (net * vatRate) / 100;
-                    grandTotal = net + vatAmount;
+                    vatAmount = round2((net * vatRate) / 100);
+                    grandTotal = round2(net + vatAmount);
                 } else {
                     // VAT is included in the net_total, so extract the VAT portion.
                     const denom = 100 + vatRate;
-                    vatAmount = denom !== 0 ? (net * vatRate) / denom : 0;
+                    vatAmount = round2(denom !== 0 ? (net * vatRate) / denom : 0);
                     grandTotal = net;
                 }
             }
@@ -107,14 +108,14 @@ export default function DeliveryOrderScripts() {
             "delivery_note_items.idx": async (frm: any) => {
                 applyDocTotals(frm);
             },
-            "delivery_note_items.product": async (frm: any) => {
+            "delivery_note_items.item": async (frm: any) => {
                 const idx = frm.idx ?? 0;
-                const pid = frm.doc?.delivery_note_items?.[idx]?.product;
+                const pid = frm.doc?.delivery_note_items?.[idx]?.item;
                 if (!pid) {
                     frm.set_value(`delivery_note_items.${idx}.uom`, "");
-                    frm.set_value(`delivery_note_items.${idx}.product_name`, "");
-                    frm.set_value(`delivery_note_items.${idx}.product_description`, "");
-                    frm.set_value(`delivery_note_items.${idx}.product_image`, "");
+                    frm.set_value(`delivery_note_items.${idx}.item_name`, "");
+                    frm.set_value(`delivery_note_items.${idx}.item_description`, "");
+                    frm.set_value(`delivery_note_items.${idx}.item_image`, "");
                     frm.set_value(`delivery_note_items.${idx}.length`, 0);
                     frm.set_value(`delivery_note_items.${idx}.width`, 0);
                     frm.set_value(`delivery_note_items.${idx}.height`, 0);
@@ -125,7 +126,7 @@ export default function DeliveryOrderScripts() {
                     frm.set_value(`delivery_note_items.${idx}.unit_price`, 0);
                     return;
                 }
-                const p = await zodula.doc.get_doc("Product", pid) as any;
+                const p = await zodula.doc.get_doc("Item", pid) as any;
                 if (!p) return;
                 const length = num(p.length);
                 const width = num(p.width);
@@ -133,11 +134,11 @@ export default function DeliveryOrderScripts() {
                 const weight = num(p.weight);
                 const volume = num(p.volume);
                 const q = num(frm.get_value(`delivery_note_items.${idx}.quantity`));
-                const productUom = p.uom ?? "";
-                frm.set_value(`delivery_note_items.${idx}.uom`, productUom);
-                frm.set_value(`delivery_note_items.${idx}.product_name`, p.product_name ?? "");
-                frm.set_value(`delivery_note_items.${idx}.product_description`, p.product_description ?? "");
-                frm.set_value(`delivery_note_items.${idx}.product_image`, p.product_image ?? "");
+                const itemUom = p.uom ?? "";
+                frm.set_value(`delivery_note_items.${idx}.uom`, itemUom);
+                frm.set_value(`delivery_note_items.${idx}.item_name`, p.item_name ?? "");
+                frm.set_value(`delivery_note_items.${idx}.item_description`, p.item_description ?? "");
+                frm.set_value(`delivery_note_items.${idx}.item_image`, p.item_image ?? "");
                 frm.set_value(`delivery_note_items.${idx}.length`, length);
                 frm.set_value(`delivery_note_items.${idx}.width`, width);
                 frm.set_value(`delivery_note_items.${idx}.height`, height);
@@ -146,14 +147,14 @@ export default function DeliveryOrderScripts() {
                 frm.set_value(`delivery_note_items.${idx}.volume_total`, volume * q);
                 frm.set_value(`delivery_note_items.${idx}.weight_total`, weight * q);
                 const skipPrice = Number((frm as any).get_value("ignore_price_project")) === 1;
-                if (productUom && !skipPrice) {
+                if (itemUom && !skipPrice) {
                     const priceProject = frm.get_value("price_project");
                     const customer = frm.get_value("customer");
                     if (priceProject && customer) {
                         const today = frm.get_value("posting_date") || zodula.date.today();
                         const res = await zodula.doc.select_docs("Price" as any, {
                             limit: 1, sort: "until_date", order: "asc",
-                            filters: [["product", "=", pid], ["price_project", "=", priceProject], ["customer", "=", customer], ["uom", "=", productUom], ["from_date", "<=", today], ["until_date", ">=", today]],
+                            filters: [["item", "=", pid], ["price_project", "=", priceProject], ["customer", "=", customer], ["uom", "=", itemUom], ["from_date", "<=", today], ["until_date", ">=", today]],
                         });
                         const pl = (res?.docs ?? [])[0] as any;
                         if (pl) {
@@ -183,32 +184,34 @@ export default function DeliveryOrderScripts() {
             const defaultFilters: [string, string, any][] = [];
             if (customer) defaultFilters.push(["customer", "=", customer]);
             if (price_project) defaultFilters.push(["price_project", "=", price_project]);
-            defaultFilters.push(["product_name", "LIKE", "%%"]);
+            defaultFilters.push(["item_name", "LIKE", "%%"]);
             defaultFilters.push(["from_date", "<=", posting_date]);
             defaultFilters.push(["until_date", ">=", posting_date]);
             const plId = await zui.open_singleselect_dialog({
                 doctype: "Price" as any,
                 defaultFilters: defaultFilters as any,
                 standard_filter_fields: ["customer", "price_project", "uom", "from_date", "until_date"],
-                columns: ["product_name", "customer_name", "price", "uom", "from_date", "until_date"],
-            }, { title: "Select Price", maxWidth: 1024 });
+                columns: ["item_image", "item_name", "uom", "price", "from_date", "until_date", "customer_name"],
+                sort: "item_name",
+                order: "asc",
+            }, { title: "Select Price", maxWidth: 1600 });
             if (plId) {
                 const priceId = typeof plId === "string" ? plId : (plId as any)?.id;
                 if (!priceId) return;
                 const pl = await zodula.doc.get_doc("Price" as any, priceId) as any;
-                if (pl?.product) {
+                if (pl?.item) {
                     const items = (frm.get_value("delivery_note_items") ?? []) as any[];
                     const idx = items.length;
-                    const p = await zodula.doc.get_doc("Product", pl.product) as any;
+                    const p = await zodula.doc.get_doc("Item", pl.item) as any;
                     const dims = p ? { length: num(p.length), width: num(p.width), height: num(p.height), weight: num(p.weight) } : { length: 0, width: 0, height: 0, weight: 0 };
                     const price = num(pl.price);
                     const uom = pl.uom ?? "";
-                    await frm.set_value(`delivery_note_items.${idx}.product`, pl.product);
+                    await frm.set_value(`delivery_note_items.${idx}.item`, pl.item);
                     await frm.set_value(`delivery_note_items.${idx}.quantity`, 1);
                     await frm.set_value(`delivery_note_items.${idx}.uom`, uom);
                 }
             }
-        }, { condition: (ctx) => Number((ctx as any).get_value?.("ignore_price_project")) !== 1 && !!(ctx.get_value("customer") && ctx.get_value("price_project")) && ctx.doc?.doc_status === "Draft" });
+        }, { condition: (ctx) => Number((ctx as any).get_value?.("ignore_price_project")) !== 1 && !!(ctx.get_value("customer") && ctx.get_value("price_project")) && ctx.doc?.doc_status === "Draft" || !ctx.doc?.doc_status });
 
         !!enableWeightCalc && zui.form.set_field_button("Delivery Note", "delivery_note_items", "Calculate Price By Weight", async (frm) => {
             if (frm.get_value("doc_status") === "Submitted") { zui.alert("Cannot calculate price for submitted document."); return; }
@@ -226,7 +229,7 @@ export default function DeliveryOrderScripts() {
                 if (num(row?.total_price) > 0) return;
                 const q = num(row?.quantity), wt = num(row?.weight), vol = num(row?.volume) || num(row?.length) * num(row?.width) * num(row?.height);
                 if (!wt && !vol) {
-                    noWeightNoVolume.push({ idx: i + 1, label: String(row?.product_name || row?.product || "Item").trim() || `Row ${i + 1}` });
+                    noWeightNoVolume.push({ idx: i + 1, label: String(row?.item_name || row?.item || "Item").trim() || `Row ${i + 1}` });
                     return;
                 }
                 let eff = wt;
@@ -243,86 +246,42 @@ export default function DeliveryOrderScripts() {
 
         zui.form.set_secondary_button("Delivery Note", "Create Sales Invoice", async (frm) => {
             const prefill: Record<string, any> = {
-                ignore_price_project: Number((frm as any).get_value("ignore_price_project")) === 1 ? 1 : 0,
+                ignore_price_project: 1,
                 delivery_note: frm.get_value("id") ?? frm?.doc?.id,
                 customer: frm.get_value("customer"),
-                customer_tax_id: frm.get_value("customer_tax_id"),
-                customer_phone: frm.get_value("customer_phone"),
-                customer_address: frm.get_value("customer_address"),
-                posting_date: frm.get_value("posting_date"),
                 price_project: frm.get_value("price_project"),
-                apply_vat_template: (frm as any).get_value("apply_vat_template"),
-                vat_type: (frm as any).get_value("vat_type"),
-                vat_rate: (frm as any).get_value("vat_rate"),
-                net_total: frm.get_value("net_total"),
-                total_taxes_and_charges: frm.get_value("total_taxes_and_charges"),
-                grand_total: frm.get_value("grand_total"),
                 billing_address: frm.get_value("billing_address"),
-                billing_inline_address: frm.get_value("billing_inline_address"),
                 billing_contact: frm.get_value("billing_contact"),
-                billing_contact_inline: frm.get_value("billing_contact_inline"),
                 shipping_address: frm.get_value("shipping_address"),
-                shipping_inline_address: frm.get_value("shipping_inline_address"),
                 shipping_contact: frm.get_value("shipping_contact"),
-                shipping_contact_inline: frm.get_value("shipping_contact_inline"),
             };
 
-            let useDefaultProduct = false;
+            let useDefaultItem = false;
             try {
                 const erp = await zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any) as any;
-                if (erp?.default_delivery_sales_product) {
-                    const sales_product = await zodula.doc.get_doc("Product", erp.default_delivery_sales_product) as any;
-                    prefill["sales_invoice_items.0.product"] = sales_product?.id ?? "";
-                    prefill["sales_invoice_items.0.product_name"] = sales_product?.product_name ?? "";
-                    prefill["sales_invoice_items.0.uom"] = "";
-                    prefill["sales_invoice_items.0.product_description"] = sales_product?.product_description ?? "";
-                    prefill["sales_invoice_items.0.product_image"] = sales_product?.product_image ?? "";
-                    prefill["sales_invoice_items.0.uom"] = sales_product?.uom ?? "";
-                    prefill["sales_invoice_items.0.length"] = sales_product?.length ?? 0;
-                    prefill["sales_invoice_items.0.width"] = sales_product?.width ?? 0;
-                    prefill["sales_invoice_items.0.height"] = sales_product?.height ?? 0;
-                    prefill["sales_invoice_items.0.weight"] = sales_product?.weight ?? 0;
-                    const volume = (sales_product?.length ?? 0) * (sales_product?.width ?? 0) * (sales_product?.height ?? 0);
-                    prefill["sales_invoice_items.0.volume"] = volume;
-                    prefill["sales_invoice_items.0.volume_total"] = volume;
-                    prefill["sales_invoice_items.0.weight_total"] = (sales_product?.weight ?? 0) * 1;
+                if (erp?.default_delivery_sales_item) {
+                    const sales_item = await zodula.doc.get_doc("Item", erp.default_delivery_sales_item) as any;
+                    prefill["sales_invoice_items.0.item"] = sales_item?.id ?? "";
                     prefill["sales_invoice_items.0.quantity"] = 1;
                     prefill["sales_invoice_items.0.unit_price"] = frm.get_value("net_total") ?? 0;
-                    prefill["sales_invoice_items.0.total_price"] = frm.get_value("net_total") ?? 0;
-
-                    // parent fields
-                    prefill["net_total"] = frm.get_value("net_total") ?? 0;
-                    prefill["grand_total"] = frm.get_value("grand_total") ?? 0;
-                    useDefaultProduct = true;
+                    useDefaultItem = true;
                 }
             } catch {
 
             }
 
-            if (!useDefaultProduct) {
+            if (!useDefaultItem) {
                 const items = (frm.get_value("delivery_note_items") ?? []) as any[];
                 items.forEach((item, i) => {
                     const base = `sales_invoice_items.${i}.`;
-                    prefill[`${base}product`] = item.product ?? "";
-                    prefill[`${base}product_name`] = item.product_name ?? "";
-                    prefill[`${base}product_description`] = item.product_description ?? "";
-                    prefill[`${base}product_image`] = item.product_image ?? "";
+                    prefill[`${base}item`] = item.item ?? "";
                     prefill[`${base}quantity`] = item.quantity ?? 0;
-                    prefill[`${base}uom`] = item.uom ?? "";
                     prefill[`${base}unit_price`] = item.unit_price ?? 0;
-                    prefill[`${base}total_price`] = item.total_price ?? 0;
-                    prefill[`${base}length`] = item.length ?? 0;
-                    prefill[`${base}width`] = item.width ?? 0;
-                    prefill[`${base}height`] = item.height ?? 0;
-                    prefill[`${base}weight`] = item.weight ?? 0;
-                    prefill[`${base}volume`] = item.volume ?? 0;
-                    prefill[`${base}volume_total`] = item.volume_total ?? 0;
-                    prefill[`${base}weight_total`] = item.weight_total ?? 0;
                 });
             }
 
             zui.router?.push(`/desk/doctypes/Sales Invoice/form`, { state: { prefill } });
-        }, { icon: "FileText", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" });
+        }, { icon: "FileText", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" || ctx.doc?.payment_status === "To Bill" });
 
         zui.form.set_secondary_button("Delivery Note", "Create Installation Note", async (frm) => {
             const now = new Date();
@@ -336,10 +295,8 @@ export default function DeliveryOrderScripts() {
             const items = (frm.get_value("delivery_note_items") ?? []) as any[];
             items.forEach((item, i) => {
                 const base = `installation_note_items.${i}.`;
-                prefill[`${base}product`] = item.product ?? "";
-                prefill[`${base}product_name`] = item.product_name ?? "";
+                prefill[`${base}item`] = item.item ?? "";
                 prefill[`${base}quantity`] = item.quantity ?? 0;
-                prefill[`${base}uom`] = item.uom ?? "";
             });
             zui.router?.push(`/desk/doctypes/Installation Note/form`, { state: { prefill } });
         }, { icon: "Wrench", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && ctx?.doc?.installation_percentage < 100 });

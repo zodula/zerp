@@ -5,10 +5,10 @@ export default $doctype({
         required: 1,
         in_list_view: 1,
     },
-    product: {
+    item: {
         type: "Reference",
-        label: "Product",
-        reference: "Product",
+        label: "Item",
+        reference: "Item",
         required: 1,
         in_list_view: 1,
     },
@@ -23,7 +23,7 @@ export default $doctype({
     label: "Freight Expense Type",
     naming_series: "{{expense_type_name}}",
     display_field: "expense_type_name",
-    search_fields: "expense_type_name\nproduct",
+    search_fields: "expense_type_name\nitem",
     tabs: JSON.stringify([
         {
             type: "Tab",
@@ -32,7 +32,7 @@ export default $doctype({
                 { type: "section", value: "Expense Type", align: "left" },
                 [
                     { type: "field", value: "expense_type_name", align: "left" },
-                    { type: "field", value: "product", align: "left" },
+                    { type: "field", value: "item", align: "left" },
                     { type: "field", value: "uom", align: "left" },
                 ],
             ],

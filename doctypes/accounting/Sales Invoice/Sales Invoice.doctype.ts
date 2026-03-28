@@ -5,35 +5,37 @@ export default $doctype<"Sales Invoice">(
       label: "Customer",
       reference: "Customer",
       required: 1,
-      no_print: 1,
     },
     customer_tax_id: {
       type: "Text",
       label: "Customer Tax ID",
       required: 0,
       readonly: 1,
-      no_print: 1,
     },
     customer_phone: {
       type: "Text",
       label: "Customer Phone",
       required: 0,
       readonly: 1,
-      no_print: 1,
     },
     customer_address: {
       type: "Text",
       label: "Customer Address",
       required: 0,
       readonly: 1,
-      no_print: 1,
     },
     delivery_note: {
       type: "Reference",
       label: "Delivery Note",
       reference: "Delivery Note",
       required: 0,
-      no_print: 1,
+      readonly: 1,
+    },
+    quotation: {
+      type: "Reference",
+      label: "Quotation",
+      reference: "Quotation",
+      required: 0,
       readonly: 1,
     },
     ignore_price_project: {
@@ -47,10 +49,10 @@ export default $doctype<"Sales Invoice">(
       type: "Reference",
       label: "Price Project",
       reference: "Price Project",
-      required: 0,
-      no_print: 1,
+      required: 1,
       filters: JSON.stringify([["is_selling", "=", 1]]),
-      depends_on: "!doc.ignore_price_project",
+      depends_on: "doc.ignore_price_project != 1",
+      required_on: "doc.ignore_price_project != 1",
     },
     posting_date: {
       type: "Date",
@@ -65,6 +67,27 @@ export default $doctype<"Sales Invoice">(
       required: 1,
       in_list_view: 1,
       no_print: 1,
+    },
+    is_credit_note: {
+      type: "Check",
+      label: "Is Credit Note",
+      default: "0",
+      in_list_view: 1,
+    },
+    return_against_sales_invoice: {
+      type: "Reference",
+      label: "Return Against Sales Invoice",
+      reference: "Sales Invoice",
+      required: 0,
+      depends_on: "doc.is_credit_note == 1",
+      required_on: "doc.is_credit_note == 1",
+      filters: JSON.stringify([["doc_status", "=", "Submitted"], ["is_credit_note", "!=", 1]]),
+    },
+    credit_note_reason: {
+      type: "Text",
+      label: "Credit Note Reason",
+      required: 0,
+      depends_on: "doc.is_credit_note == 1",
     },
     net_total: {
       type: "Currency",
@@ -95,6 +118,7 @@ export default $doctype<"Sales Invoice">(
       required: 1,
       readonly: 1,
       no_print: 1,
+      hidden: 1,
     },
     apply_vat_template: {
       type: "Reference",
@@ -124,13 +148,6 @@ export default $doctype<"Sales Invoice">(
       required: 0,
       height: 200,
     },
-    billing_inline_address: {
-      type: "Text",
-      label: "Billing Inline Address",
-      required: 0,
-      readonly: 1,
-      fetch_from: "billing_address.inline_address",
-    },
     billing_address: {
       type: "Reference",
       label: "Billing Address",
@@ -139,6 +156,20 @@ export default $doctype<"Sales Invoice">(
       no_print: 1,
       filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
     },
+    billing_address_name: {
+      type: "Text",
+      label: "Billing Address Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.name",
+    },
+    billing_inline_address: {
+      type: "Text",
+      label: "Billing Inline Address",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.inline_address",
+    },
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
@@ -146,6 +177,13 @@ export default $doctype<"Sales Invoice">(
       required: 0,
       no_print: 1,
       filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
+    },
+    shipping_address_name: {
+      type: "Text",
+      label: "Shipping Address Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "shipping_address.name",
     },
     shipping_inline_address: {
       type: "Text",
@@ -162,6 +200,13 @@ export default $doctype<"Sales Invoice">(
       no_print: 1,
       filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
     },
+    billing_contact_name: {
+      type: "Text",
+      label: "Billing Contact Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_contact.name",
+    },
     billing_contact_inline: {
       type: "Text",
       label: "Billing Contact Inline",
@@ -176,6 +221,13 @@ export default $doctype<"Sales Invoice">(
       required: 0,
       no_print: 1,
       filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
+    },
+    shipping_contact_name: {
+      type: "Text",
+      label: "Shipping Contact Name",
+      required: 0,
+      readonly: 1,
+      fetch_from: "shipping_contact.name",
     },
     shipping_contact_inline: {
       type: "Text",
@@ -210,6 +262,13 @@ export default $doctype<"Sales Invoice">(
             { type: "field", value: "ignore_price_project", align: "left" },
             { type: "field", value: "price_project", align: "left" },
           ],
+          [
+            { type: "field", value: "is_credit_note", align: "left" },
+            { type: "field", value: "return_against_sales_invoice", align: "left" },
+          ],
+          [
+            { type: "field", value: "credit_note_reason", align: "left" },
+          ],
           { type: "section", value: "Customer Information", align: "left" },
           [
             { type: "field", value: "customer_tax_id", align: "left" },
@@ -223,13 +282,31 @@ export default $doctype<"Sales Invoice">(
           { type: "section", value: "VAT Configuration", align: "left" },
           [
             { type: "field", value: "apply_vat_template", align: "left" },
+          ],
+          { type: "section", value: "Tax and Totals", align: "left" },
+          [
+            { type: "empty" },
+            { type: "empty" },
+            { type: "field", value: "net_total", align: "left" },
+          ],
+          [
+            { type: "empty" },
+            { type: "empty" },
             { type: "field", value: "vat_type", align: "left" },
+          ],
+          [
+            { type: "empty" },
+            { type: "empty" },
             { type: "field", value: "vat_rate", align: "left" },
           ],
-          { type: "section", value: "Totals", align: "left" },
           [
-            { type: "field", value: "net_total", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
             { type: "field", value: "total_taxes_and_charges", align: "left" },
+          ],
+          [
+            { type: "empty" },
+            { type: "empty" },
             { type: "field", value: "grand_total", align: "left" },
           ],
         ],
@@ -241,19 +318,23 @@ export default $doctype<"Sales Invoice">(
           { type: "section", value: "Billing Address", align: "left" },
           [
             { type: "field", value: "billing_address", align: "left" },
-            { type: "field", value: "billing_contact", align: "left" },
+            { type: "field", value: "billing_address_name", align: "left" },
+            { type: "field", value: "billing_inline_address", align: "left" },
           ],
           [
-            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "field", value: "billing_contact", align: "left" },
+            { type: "field", value: "billing_contact_name", align: "left" },
             { type: "field", value: "billing_contact_inline", align: "left" },
           ],
           { type: "section", value: "Shipping Address", align: "left" },
           [
             { type: "field", value: "shipping_address", align: "left" },
-            { type: "field", value: "shipping_contact", align: "left" },
+            { type: "field", value: "shipping_address_name", align: "left" },
+            { type: "field", value: "shipping_inline_address", align: "left" },
           ],
           [
-            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "field", value: "shipping_contact", align: "left" },
+            { type: "field", value: "shipping_contact_name", align: "left" },
             { type: "field", value: "shipping_contact_inline", align: "left" },
           ],
         ],
@@ -264,6 +345,7 @@ export default $doctype<"Sales Invoice">(
         layout: [
           { type: "section", value: "References", align: "left" },
           [
+            { type: "field", value: "quotation", align: "left" },
             { type: "field", value: "delivery_note", align: "left" },
           ],
         ],
@@ -271,10 +353,31 @@ export default $doctype<"Sales Invoice">(
     ]),
   }
 )
+  .on("before_save", async ({ doc }) => {
+    const docAny = doc as any;
+    const isCreditNote = Number(docAny.is_credit_note) === 1;
+    if (!isCreditNote) return;
+    const againstId = String(docAny.return_against_sales_invoice ?? "").trim();
+    if (!againstId) {
+      throw new Error("Return Against Sales Invoice is required for Credit Note.");
+    }
+    const against = await $zodula.doctype("Sales Invoice").get(againstId);
+    if (!against) {
+      throw new Error(`Sales Invoice ${againstId} not found.`);
+    }
+    if (Number((against as any).is_credit_note) === 1) {
+      throw new Error("Credit Note cannot return against another Credit Note.");
+    }
+    if (String((against as any).customer ?? "") !== String(doc.customer ?? "")) {
+      throw new Error("Credit Note customer must match Return Against Sales Invoice customer.");
+    }
+  })
   .on("before_change", async ({ doc }) => {
     const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
     const items = doc.sales_invoice_items as any[] | undefined;
-    const net = Array.isArray(items) ? items.reduce((sum, r) => sum + num(r?.total_price), 0) : 0;
+    const netRaw = Array.isArray(items) ? items.reduce((sum, r) => sum + num(r?.total_price), 0) : 0;
+    const isCreditNote = Number((doc as any).is_credit_note ?? 0) === 1;
+    const net = isCreditNote ? -Math.abs(netRaw) : Math.abs(netRaw);
     doc.net_total = net;
 
     const docAny = doc as any;
@@ -298,9 +401,13 @@ export default $doctype<"Sales Invoice">(
 
     docAny.total_taxes_and_charges = vatAmount;
     docAny.grand_total = grandTotal;
+    if (!docAny.payment_status || docAny.payment_status === "To Bill") {
+      docAny.payment_status = "Unpaid";
+    }
   })
   .on("after_submit", async ({ doc }) => {
     if (!doc.id) return;
+    if (Number((doc as any).is_credit_note) === 1) return;
     if (Number((doc as any).ignore_price_project) === 1) return;
     const erp = await $zodula.doctype("ERP Setting").select().limit(1).then(r => r.docs[0]);
     const isSavePrice = erp?.is_save_price === 1;
@@ -316,16 +423,16 @@ export default $doctype<"Sales Invoice">(
     const items = doc.sales_invoice_items as any[] | undefined;
     if (!Array.isArray(items)) return;
     for (const item of items) {
-      const product = item?.product;
+      const itemId = item?.item;
       const uom = item?.uom;
       const unitPrice = item?.unit_price != null ? parseFloat(String(item.unit_price)) : NaN;
-      if (!product || !uom || Number.isNaN(unitPrice)) continue;
+      if (!item || !uom || Number.isNaN(unitPrice)) continue;
       const { docs } = await $zodula.doctype("Price")
         .select()
         .where("price_project", "=", priceProject)
         .where("customer", "=", customer)
         .where("is_selling", "=", 1)
-        .where("product", "=", product)
+        .where("item", "=", itemId)
         .where("uom", "=", uom)
         .limit(1);
       if (docs.length === 0) {
@@ -333,8 +440,8 @@ export default $doctype<"Sales Invoice">(
           price_project: priceProject,
           is_selling: 1,
           customer,
-          product,
-          product_name: item?.product_name ?? "",
+          item: itemId,
+          item_name: item?.item_name ?? "",
           price: unitPrice,
           uom,
           from_date: baseDate,

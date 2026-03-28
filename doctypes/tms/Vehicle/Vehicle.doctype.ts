@@ -3,26 +3,24 @@ export default $doctype({
         type: "Text",
         label: "Plate Number",
         in_list_view: 1,
+        required: 1,
+        in_quick_entry: 1,
     },
     vehicle_type: {
         type: "Text",
         label: "Vehicle Type",
+        in_quick_entry: 1,
     },
     capacity: {
         type: "Text",
         label: "Capacity (e.g. weight/volume)",
-    },
-    status: {
-        type: "Select",
-        label: "Status",
-        options: "Active\nInactive\nMaintenance",
-        default: "Active",
-        in_list_view: 1,
+        in_quick_entry: 1,
     },
 }, {
     label: "Vehicle",
-    naming_series: "VEH-{#####}",
+    naming_series: "{{plate_number}}",
     search_fields: "plate_number",
+    is_quick_entry: 1,
     tabs: JSON.stringify([
         {
             type: "Tab",

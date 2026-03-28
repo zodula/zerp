@@ -14,10 +14,10 @@ export default $doctype<"ERP Setting">(
       description: "Number of days for saved price validity (used when Save Price to Price is on).",
       depends_on: "doc.is_save_price",
     },
-    default_delivery_sales_product: {
+    default_delivery_sales_item: {
       type: "Reference",
-      label: "Default Delivery Sales Product",
-      reference: "Product",
+      label: "Default Delivery Sales Item",
+      reference: "Item",
       required: 0,
       in_list_view: 1,
     },
@@ -90,7 +90,7 @@ export default $doctype<"ERP Setting">(
         type: "Tab",
         label: "Delivery",
         layout: [
-          [{ type: "field", value: "default_delivery_sales_product", align: "left" }],
+          [{ type: "field", value: "default_delivery_sales_item", align: "left" }],
           [{ type: "field", value: "enable_delivery_order_weight_calculation", align: "left" }],
         ],
       },

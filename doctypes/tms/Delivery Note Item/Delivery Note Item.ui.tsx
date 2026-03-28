@@ -2,7 +2,7 @@ import { useZui } from "@/zodula/ui";
 
 /**
  * Form scripts for Delivery Note Item (child of Delivery Note).
- * Price is auto-fetched from Price when product is selected (in Delivery Note.ui.tsx).
+ * Price is auto-fetched from Price when item is selected (in Delivery Note.ui.tsx).
  * total_price = quantity * unit_price when quantity or unit_price changes.
  */
 export default function DeliveryOrderItemScripts() {

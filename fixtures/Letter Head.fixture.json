@@ -1,11 +1,16 @@
 [
   {
-    "id": "Default Company Letter Head",
-    "name": "Default Company Letter Head",
-    "html_content": null,
-    "html_footer_content": null,
-    "css_content": null,
+    "id": "Organization Letter Head",
+    "name": "Organization Letter Head",
     "repeat_every_page": 1,
-    "css_extra": null
+    "html_footer_content": "",
+    "html_content": "{% set org = org or await zodula.doctype(\"Organization\").get(\"Organization\").bypass(true) %}<div class='lh-organization' style='display:flex;align-items:flex-start;gap:16px;border-bottom:1px solid #e0e0e0;padding-bottom:14px;'>{% if org.logo %}<div style='flex-shrink:0;'><img src='{% if (org.logo).startsWith(\"http://\") || (org.logo).startsWith(\"https://\") || (org.logo).startsWith(\"data:\") %}{{ org.logo }}{% else %}{{ publicAppBase }}{% if (org.logo).startsWith(\"/\") %}{{ org.logo }}{% else %}/{{ org.logo }}{% endif %}{% endif %}' alt='' style='max-height:80px;max-width:180px;object-fit:contain;' /></div>{% endif %}<div style='flex:1;min-width:0;'><div style='font-size:17px;font-weight:700;color:#111;'>{{ org.organization_name or org.abbr or zodula.translate(\"Organization\") }}</div>{% if org.tax_id %}<div style='font-size:11px;color:#555;margin-top:2px;'>{{ zodula.translate(\"Tax ID\") }}: {{ org.tax_id }}</div>{% endif %}{% if org.address %}<div style='font-size:11px;color:#333;margin-top:6px;white-space:pre-wrap;line-height:1.4;'>{{ org.address }}</div>{% endif %}<div style='font-size:11px;color:#555;margin-top:6px;'>{% if org.phone %}<span>{{ zodula.translate(\"Tel\") }}: {{ org.phone }}</span>{% endif %}{% if org.email %}<span>{% if org.phone %} · {% endif %}{{ org.email }}</span>{% endif %}{% if org.website %}<span>{% if org.phone or org.email %} · {% endif %}{{ org.website }}</span>{% endif %}</div></div></div>"
+  },
+  {
+    "id": "Compact Organization Letter Head",
+    "name": "Compact Organization Letter Head",
+    "repeat_every_page": 1,
+    "html_footer_content": "",
+    "html_content": "{% set org = org or await zodula.doctype(\"Organization\").get(\"Organization\").bypass(true) %}<div class='lh-organization-compact' style='display:flex;align-items:center;gap:10px;border-bottom:1px solid #ddd;padding-bottom:8px;'>{% if org.logo %}<img src='{% if (org.logo).startsWith(\"http://\") || (org.logo).startsWith(\"https://\") || (org.logo).startsWith(\"data:\") %}{{ org.logo }}{% else %}{{ publicAppBase }}{% if (org.logo).startsWith(\"/\") %}{{ org.logo }}{% else %}/{{ org.logo }}{% endif %}{% endif %}' alt='' style='height:40px;max-width:120px;object-fit:contain;flex-shrink:0;' />{% endif %}<div style='flex:1;min-width:0;'><div style='font-size:13px;font-weight:700;color:#111;line-height:1.2;'>{{ org.organization_name or org.abbr or zodula.translate(\"Organization\") }}</div><div style='font-size:10px;color:#555;margin-top:2px;line-height:1.3;'>{% if org.phone %}{{ org.phone }}{% endif %}{% if org.email %}{% if org.phone %} · {% endif %}{{ org.email }}{% endif %}</div></div></div>"
   }
 ]

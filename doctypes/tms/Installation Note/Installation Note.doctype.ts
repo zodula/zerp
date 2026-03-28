@@ -89,10 +89,10 @@ export default $doctype<"Installation Note">(
     if (!deliveryNoteId) throw new Error("Delivery Note is required");
     const dn = await $zodula.doctype("Delivery Note").get(deliveryNoteId);
     const dnItems = (dn as any).delivery_note_items as any[] | undefined;
-    const allowedProducts = new Set<string>();
+    const allowedItems = new Set<string>();
     if (Array.isArray(dnItems)) {
       for (const row of dnItems) {
-        if (row?.product) allowedProducts.add(String(row.product));
+        if (row?.item) allowedItems.add(String(row.item));
       }
     }
     const items = doc.installation_note_items as any[] | undefined;
@@ -100,10 +100,10 @@ export default $doctype<"Installation Note">(
       throw new Error("At least one Installation Note Item is required");
     }
     for (const row of items) {
-      const product = row?.product;
-      if (!product) throw new Error("Each item must have a Product");
-      if (!allowedProducts.has(String(product))) {
-        throw new Error(`Product ${product} is not in the selected Delivery Note`);
+      const item = row?.item;
+      if (!item) throw new Error("Each item must have a Item");
+      if (!allowedItems.has(String(item))) {
+        throw new Error(`Item ${item} is not in the selected Delivery Note`);
       }
     }
   })

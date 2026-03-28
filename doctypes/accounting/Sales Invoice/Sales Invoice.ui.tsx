@@ -2,6 +2,7 @@ import { zodula } from "@/zodula/client";
 import { useZui } from "@/zodula/ui";
 
 const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
+const round2 = (v: number) => Math.round(v * 100) / 100;
 
 function applyCustomerLinkFilters(frm: any) {
     const customer = frm.get_value("customer");
@@ -41,7 +42,9 @@ export default function SalesInvoiceScripts() {
     useZui(async (zui) => {
         const applyDocTotals = (frm: any) => {
             const items = (frm.get_value("sales_invoice_items") ?? []) as any[];
-            const net = items.reduce((sum, r) => sum + num(r?.total_price), 0);
+            const rawNet = items.reduce((sum, r) => sum + num(r?.total_price), 0);
+            const isCreditNote = Number(frm.get_value("is_credit_note") ?? 0) === 1;
+            const net = isCreditNote ? -Math.abs(rawNet) : Math.abs(rawNet);
             const currentNet = num(frm.get_value("net_total"));
             if (Math.abs(currentNet - net) > 0.0001) (frm as any).set_value("net_total", net);
 
@@ -53,12 +56,12 @@ export default function SalesInvoiceScripts() {
 
             if (vatRate > 0) {
                 if (vatType === "Excluded") {
-                    vatAmount = (net * vatRate) / 100;
-                    grandTotal = net + vatAmount;
+                    vatAmount = round2((net * vatRate) / 100);
+                    grandTotal = round2(net + vatAmount);
                 } else {
                     // VAT is included in net_total, extract VAT portion.
                     const denom = 100 + vatRate;
-                    vatAmount = denom !== 0 ? (net * vatRate) / denom : 0;
+                    vatAmount = round2(denom !== 0 ? (net * vatRate) / denom : 0);
                     grandTotal = net;
                 }
             }
@@ -101,9 +104,11 @@ export default function SalesInvoiceScripts() {
                 await applyVatTemplateToForm(frm, frm.get_value("apply_vat_template"));
                 applyDocTotals(frm);
             },
+            is_credit_note: (frm: any) => applyDocTotals(frm),
             vat_type: (frm: any) => applyDocTotals(frm),
             vat_rate: (frm: any) => applyDocTotals(frm),
             customer: async (frm: any) => {
+                console.log("customer", frm.get_value("customer"));
                 applyCustomerLinkFilters(frm);
                 const c = frm.get_value("customer") ? await zodula.doc.get_doc("Customer", frm.get_value("customer")) : null;
                 const vals = c ? [c.tax_id ?? "", c.phone ?? "", c.address ?? ""] : ["", "", ""];
@@ -112,14 +117,14 @@ export default function SalesInvoiceScripts() {
                 const days = c?.credit_days != null ? num(c.credit_days) : 1;
                 frm.set_value("due_date", zodula.date.format(zodula.date.add(base, days, "days"), "date"));
             },
-            "sales_invoice_items.product": async (frm: any) => {
+            "sales_invoice_items.item": async (frm: any) => {
                 const idx = frm.idx ?? 0;
-                const pid = frm.doc?.sales_invoice_items?.[idx]?.product;
+                const pid = frm.doc?.sales_invoice_items?.[idx]?.item;
                 if (!pid) {
                     frm.set_value(`sales_invoice_items.${idx}.uom`, "");
-                    frm.set_value(`sales_invoice_items.${idx}.product_name`, "");
-                    frm.set_value(`sales_invoice_items.${idx}.product_description`, "");
-                    frm.set_value(`sales_invoice_items.${idx}.product_image`, "");
+                    frm.set_value(`sales_invoice_items.${idx}.item_name`, "");
+                    frm.set_value(`sales_invoice_items.${idx}.item_description`, "");
+                    frm.set_value(`sales_invoice_items.${idx}.item_image`, "");
                     frm.set_value(`sales_invoice_items.${idx}.length`, 0);
                     frm.set_value(`sales_invoice_items.${idx}.width`, 0);
                     frm.set_value(`sales_invoice_items.${idx}.height`, 0);
@@ -131,7 +136,7 @@ export default function SalesInvoiceScripts() {
                     applyDocTotals(frm);
                     return;
                 }
-                const p = await zodula.doc.get_doc("Product", pid) as any;
+                const p = await zodula.doc.get_doc("Item", pid) as any;
                 if (!p) return;
                 const length = num(p.length);
                 const width = num(p.width);
@@ -139,11 +144,11 @@ export default function SalesInvoiceScripts() {
                 const weight = num(p.weight);
                 const volume = num(p.volume);
                 const q = num(frm.get_value(`sales_invoice_items.${idx}.quantity`));
-                const productUom = p.uom ?? "";
-                frm.set_value(`sales_invoice_items.${idx}.uom`, productUom);
-                frm.set_value(`sales_invoice_items.${idx}.product_name`, p.product_name ?? "");
-                frm.set_value(`sales_invoice_items.${idx}.product_description`, p.product_description ?? "");
-                frm.set_value(`sales_invoice_items.${idx}.product_image`, p.product_image ?? "");
+                const itemUom = p.uom ?? "";
+                frm.set_value(`sales_invoice_items.${idx}.uom`, itemUom);
+                frm.set_value(`sales_invoice_items.${idx}.item_name`, p.item_name ?? "");
+                frm.set_value(`sales_invoice_items.${idx}.item_description`, p.item_description ?? "");
+                frm.set_value(`sales_invoice_items.${idx}.item_image`, p.item_image ?? "");
                 frm.set_value(`sales_invoice_items.${idx}.length`, length);
                 frm.set_value(`sales_invoice_items.${idx}.width`, width);
                 frm.set_value(`sales_invoice_items.${idx}.height`, height);
@@ -154,12 +159,12 @@ export default function SalesInvoiceScripts() {
                 const priceProject = frm.get_value("price_project");
                 const customer = frm.get_value("customer");
                 const skipPrice = Number((frm as any).get_value("ignore_price_project")) === 1;
-                if (productUom && !skipPrice) {
+                if (itemUom && !skipPrice) {
                     if (priceProject && customer) {
                         const today = frm.get_value("posting_date") || zodula.date.today();
                         const res = await zodula.doc.select_docs("Price" as any, {
                             limit: 1, sort: "until_date", order: "asc",
-                            filters: [["product", "=", pid], ["price_project", "=", priceProject], ["customer", "=", customer], ["uom", "=", productUom], ["from_date", "<=", today], ["until_date", ">=", today]],
+                            filters: [["item", "=", pid], ["price_project", "=", priceProject], ["customer", "=", customer], ["uom", "=", itemUom], ["from_date", "<=", today], ["until_date", ">=", today]],
                         });
                         const pl = (res?.docs ?? [])[0] as any;
                         if (pl) {
@@ -191,14 +196,80 @@ export default function SalesInvoiceScripts() {
             "sales_invoice_items.total_price": (frm: any) => applyDocTotals(frm),
         } as any);
 
+        zui.form.set_secondary_button("Sales Invoice", "Create Sales Receipt", async (frm) => {
+            const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
+            if (!invoiceId || String(invoiceId).startsWith("temp-")) {
+                zui.toast.error("Save the Sales Invoice first.");
+                return;
+            }
+            const ok = await zui.confirm({
+                title: "Create Sales Receipt",
+                message: "Create a Sales Receipt from this invoice and open it?",
+            });
+            if (!ok) return;
+            try {
+                const created = await zodula.doc.create_doc("Sales Receipt" as any, {
+                    from_sales_invoice: invoiceId,
+                    customer: frm.get_value("customer"),
+                    posting_date: frm.get_value("posting_date") || zodula.date.today(),
+                } as any);
+                const id = (created as any)?.id;
+                if (!id) {
+                    zui.toast.error("Sales Receipt was created but has no id.");
+                    return;
+                }
+                zui.toast.success("Sales Receipt created.");
+                zui.router?.push(`/desk/doctypes/Sales Receipt/form/${encodeURIComponent(String(id))}`);
+            } catch (e: any) {
+                zui.toast.error(e?.message ?? "Failed to create Sales Receipt.");
+            }
+        }, { icon: "FileText", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) !== 1 && ctx?.doc?.payment_status === "Paid" });
+
         zui.form.set_secondary_button("Sales Invoice", "Create Payment Entry", async (frm) => {
             const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
             const totalAmount = num(frm.get_value("grand_total"));
+            const isCreditNote = Number((frm?.doc as any)?.is_credit_note ?? 0) === 1;
+            const prefill: Record<string, any> = {
+                payment_type: isCreditNote ? "Receive" : "Receive",
+                posting_date: frm.get_value("posting_date") || zodula.date.today(),
+                party_type: "Customer",
+                party: frm.get_value("customer"),
+                paid_amount: Math.abs(totalAmount),
+                to_paid_amount: Math.abs(totalAmount),
+                "references.0.reference_type": "Sales Invoice",
+                "references.0.reference_id": invoiceId,
+                "references.0.outstanding_amount": Math.abs(totalAmount),
+                "references.0.allocate_amount": Math.abs(totalAmount),
+            };
+            zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill } });
+        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) !== 1 });
+
+        zui.form.set_secondary_button("Sales Invoice", "Create Credit Note", async (frm) => {
+            const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
+            const prefill: Record<string, any> = {
+                customer: frm.get_value("customer"),
+                posting_date: zodula.date.today(),
+                due_date: zodula.date.today(),
+                is_credit_note: 1,
+                return_against_sales_invoice: invoiceId,
+                ignore_price_project: frm.get_value("ignore_price_project") ?? 0,
+                price_project: frm.get_value("price_project") ?? "",
+                apply_vat_template: frm.get_value("apply_vat_template") ?? "",
+                vat_type: frm.get_value("vat_type") ?? "Excluded",
+                vat_rate: frm.get_value("vat_rate") ?? 0,
+            };
+            zui.router?.push(`/desk/doctypes/Sales Invoice/form`, { state: { prefill } });
+        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) !== 1 });
+
+        zui.form.set_secondary_button("Sales Invoice", "Apply Credit Note", async (frm) => {
+            const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
+            const totalAmount = Math.abs(num(frm.get_value("grand_total")));
             const prefill: Record<string, any> = {
                 payment_type: "Receive",
                 posting_date: frm.get_value("posting_date") || zodula.date.today(),
                 party_type: "Customer",
                 party: frm.get_value("customer"),
+                paid_amount: totalAmount,
                 to_paid_amount: totalAmount,
                 "references.0.reference_type": "Sales Invoice",
                 "references.0.reference_id": invoiceId,
@@ -206,7 +277,25 @@ export default function SalesInvoiceScripts() {
                 "references.0.allocate_amount": totalAmount,
             };
             zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill } });
-        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" });
+        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) === 1 });
+
+        zui.form.set_secondary_button("Sales Invoice", "Refund Credit Note", async (frm) => {
+            const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
+            const totalAmount = Math.abs(num(frm.get_value("grand_total")));
+            const prefill: Record<string, any> = {
+                payment_type: "Pay",
+                posting_date: frm.get_value("posting_date") || zodula.date.today(),
+                party_type: "Customer",
+                party: frm.get_value("customer"),
+                paid_amount: totalAmount,
+                to_paid_amount: totalAmount,
+                "references.0.reference_type": "Sales Invoice",
+                "references.0.reference_id": invoiceId,
+                "references.0.outstanding_amount": totalAmount,
+                "references.0.allocate_amount": totalAmount,
+            };
+            zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill } });
+        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) === 1 });
     }, []);
     return <></>;
 }

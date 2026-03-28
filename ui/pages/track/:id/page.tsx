@@ -239,8 +239,8 @@ export default function OrgTrackIdPage() {
             Track another order
           </Link>
           {" · "}
-          <Link to={`/contact`} className="zd:text-muted-foreground hover:zd:text-foreground">
-            Contact
+          <Link to={`/about-us`} className="zd:text-muted-foreground hover:zd:text-foreground">
+            About Us
           </Link>
         </p>
       </div>

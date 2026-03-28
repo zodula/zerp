@@ -8,40 +8,40 @@ function uniqueSuffix() {
   return `${Date.now()}-${i}`;
 }
 
-async function createCustomerAndProduct(suffix: string) {
+async function createCustomerAndItem(suffix: string) {
   const customerName = `Test Customer ${suffix}`;
   const uomName = `UOM ${suffix}`;
-  const productCategoryName = `Category ${suffix}`;
-  const productName = `Product ${suffix}`;
+  const itemCategoryName = `Category ${suffix}`;
+  const itemName = `Item ${suffix}`;
 
   await $zodula.doctype("Customer").insert({ name: customerName }).bypass(true);
   await $zodula.doctype("UOM").insert({ name: uomName }).bypass(true);
   await $zodula
-    .doctype("Product Category")
-    .insert({ name: productCategoryName })
+    .doctype("Item Category")
+    .insert({ name: itemCategoryName })
     .bypass(true);
 
-  const product = await $zodula
-    .doctype("Product")
+  const item = await $zodula
+    .doctype("Item")
     .insert({
-      product_name: productName,
-      product_category: productCategoryName,
+      item_name: itemName,
+      item_category: itemCategoryName,
       uom: uomName,
     } as any)
     .bypass(true);
 
-  return { customerName, uomName, productName, productCategoryName, product };
+  return { customerName, uomName, itemName, itemCategoryName, item };
 }
 
 async function createSalesInvoice(args: {
   customerName: string;
   uomName: string;
-  productId: string;
-  productName: string;
+  itemId: string;
+  itemName: string;
 }) {
-  const { customerName, uomName, productId, productName } = args;
+  const { customerName, uomName, itemId, itemName } = args;
 
-  // `product_name` is required on Sales Invoice Item and must be present
+  // `item_name` is required on Sales Invoice Item and must be present
   // because Payment Entry updates the Sales Invoice and rewrites child rows.
   const invoice = await $zodula.doctype("Sales Invoice").insert({
     customer: customerName,
@@ -49,8 +49,8 @@ async function createSalesInvoice(args: {
     due_date: "2026-03-19",
     sales_invoice_items: [
       {
-        product: productId,
-        product_name: productName,
+        item: itemId,
+        item_name: itemName,
         uom: uomName,
         quantity: 1,
         unit_price: 100,
@@ -94,15 +94,15 @@ async function getAccountBalance(accountId: string) {
 
 test("Payment Entry General Ledger: account_paid_from (Receive)", async () => {
   const suffix = uniqueSuffix();
-  const { customerName, uomName, productName, product } = await createCustomerAndProduct(
+  const { customerName, uomName, itemName, item } = await createCustomerAndItem(
     suffix
   );
 
   const invoice = await createSalesInvoice({
     customerName,
     uomName,
-    productId: product.id,
-    productName,
+    itemId: item.id,
+    itemName,
   });
 
   const accountFrom = await createAccount({
@@ -149,15 +149,15 @@ test("Payment Entry General Ledger: account_paid_from (Receive)", async () => {
 
 test("Payment Entry General Ledger: account_paid_to (Receive)", async () => {
   const suffix = uniqueSuffix();
-  const { customerName, uomName, productName, product } = await createCustomerAndProduct(
+  const { customerName, uomName, itemName, item } = await createCustomerAndItem(
     suffix
   );
 
   const invoice = await createSalesInvoice({
     customerName,
     uomName,
-    productId: product.id,
-    productName,
+    itemId: item.id,
+    itemName,
   });
 
   const accountTo = await createAccount({
@@ -204,15 +204,15 @@ test("Payment Entry General Ledger: account_paid_to (Receive)", async () => {
 
 test("Payment Entry General Ledger: both accounts (Receive)", async () => {
   const suffix = uniqueSuffix();
-  const { customerName, uomName, productName, product } = await createCustomerAndProduct(
+  const { customerName, uomName, itemName, item } = await createCustomerAndItem(
     suffix
   );
 
   const invoice = await createSalesInvoice({
     customerName,
     uomName,
-    productId: product.id,
-    productName,
+    itemId: item.id,
+    itemName,
   });
 
   const accountFrom = await createAccount({
@@ -310,6 +310,37 @@ test("Payment Entry: no references, unallocated drives total and GL", async () =
   expect(gl.length).toBe(1);
   expect(Number((gl[0] as any).credit_amount)).toBe(80);
 
+  await $zodula.doctype("Payment Entry").cancel(pe.id).bypass(true);
+});
+
+test("Payment Entry: Pay flow supports Customer party (credit note refund)", async () => {
+  const suffix = uniqueSuffix();
+  const customerName = `Test Customer ${suffix}`;
+  await $zodula.doctype("Customer").insert({ name: customerName }).bypass(true);
+
+  const accountFrom = await createAccount({
+    code: `AF-${suffix}`,
+    name: `Account From ${suffix}`,
+    rootType: "Asset",
+  });
+
+  const pe = await $zodula.doctype("Payment Entry").insert({
+    payment_type: "Pay",
+    posting_date: "2026-03-22",
+    party_type: "Customer",
+    party: customerName,
+    unallocated_amount: 50,
+    paid_amount: 50,
+    to_paid_amount: 50,
+    payment_method: "Cash",
+    account_paid_from: accountFrom.id,
+    references: [],
+  } as any).bypass(true);
+
+  await $zodula.doctype("Payment Entry").submit(pe.id).bypass(true);
+  const gl = await getGLRowsForPaymentEntry(pe.id);
+  expect(gl.length).toBe(1);
+  expect(Number((gl[0] as any).credit_amount)).toBe(50);
   await $zodula.doctype("Payment Entry").cancel(pe.id).bypass(true);
 });
 

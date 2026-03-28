@@ -9,9 +9,9 @@ function calcVolume(frm: any) {
     frm.set_value("volume", volume);
 }
 
-export default function ProductScripts() {
+export default function ItemScripts() {
     useZui((zui) => {
-        zui.form.on("Product", {
+        zui.form.on("Item", {
             on_render(frm) {
                 calcVolume(frm);
             },
