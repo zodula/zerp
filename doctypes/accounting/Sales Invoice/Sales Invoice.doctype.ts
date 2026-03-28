@@ -1,3 +1,8 @@
+import {
+  deleteGlForReference,
+  postSalesInvoiceGl,
+} from "@/zerp/src/shared/gl_posting";
+
 export default $doctype<"Sales Invoice">(
   {
     customer: {
@@ -238,7 +243,7 @@ export default $doctype<"Sales Invoice">(
     },
   },
   {
-    label: "Sales Invoice",
+    label: "Sales Invoice / Tax Invoice",
     naming_series: "SINV-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
@@ -407,6 +412,7 @@ export default $doctype<"Sales Invoice">(
   })
   .on("after_submit", async ({ doc }) => {
     if (!doc.id) return;
+    await postSalesInvoiceGl(doc as unknown as Record<string, unknown>);
     if (Number((doc as any).is_credit_note) === 1) return;
     if (Number((doc as any).ignore_price_project) === 1) return;
     const erp = await $zodula.doctype("ERP Setting").select().limit(1).then(r => r.docs[0]);
@@ -449,4 +455,7 @@ export default $doctype<"Sales Invoice">(
         });
       }
     }
+  })
+  .on("after_cancel", async ({ doc }) => {
+    await deleteGlForReference("Sales Invoice", doc.id);
   });

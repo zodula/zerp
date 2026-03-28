@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { zodula } from "@/zodula/client";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/zodula/ui/components/ui/dialog";
 import { Button } from "@/zodula/ui/components/ui/button";
-import { Input } from "@/zodula/ui/components/ui/input";
+import { FormControl } from "@/zodula/ui/components/ui/form-control";
 import { toast } from "@/zodula/ui/components/ui/toast";
 import { TreeView, type TreeNode } from "@/zodula/ui/components/list/TreeView";
 import { useAuth } from "@/zodula/ui/hooks/use-auth";
@@ -195,6 +195,14 @@ export default function SetupWizard({
     };
   }, [open, org]);
 
+  const onStep1FieldChange = useCallback((fieldKey: string, value: unknown) => {
+    setForm((p) => ({ ...p, [fieldKey]: value ?? "" }));
+  }, []);
+
+  const onPriceListFieldChange = useCallback((fieldKey: string, value: unknown) => {
+    setPriceLists((p) => ({ ...p, [fieldKey]: value ?? "" }));
+  }, []);
+
   const toggleNode = useCallback(
     (node: StandardAccount, nextChecked: boolean) => {
       const next = new Set(selectedAccountCodes);
@@ -272,55 +280,52 @@ export default function SetupWizard({
               <div className="zd:space-y-4">
                 <div className="zd:text-sm zd:text-muted-foreground">Set organization essential information.</div>
                 <div className="zd:grid zd:grid-cols-1 md:zd:grid-cols-2 zd:gap-3">
-                  <div className="zd:space-y-1.5">
-                    <div className="zd:text-xs zd:font-medium">Organization Name</div>
-                    <Input
-                      value={form.organization_name}
-                      onChange={(e) => setForm((p) => ({ ...p, organization_name: e.target.value }))}
-                      placeholder="Your organization name"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="zd:space-y-1.5">
-                    <div className="zd:text-xs zd:font-medium">Abbreviation</div>
-                    <Input
-                      value={form.abbr}
-                      onChange={(e) => setForm((p) => ({ ...p, abbr: e.target.value }))}
-                      placeholder="ABBR"
-                    />
-                  </div>
-                  <div className="zd:space-y-1.5">
-                    <div className="zd:text-xs zd:font-medium">Currency</div>
-                    <Input
-                      value={form.currency}
-                      onChange={(e) => setForm((p) => ({ ...p, currency: e.target.value }))}
-                      placeholder="฿"
-                    />
-                  </div>
-                  <div className="zd:space-y-1.5">
-                    <div className="zd:text-xs zd:font-medium">Fiscal Year Name</div>
-                    <Input
-                      value={form.fiscal_year_name}
-                      onChange={(e) => setForm((p) => ({ ...p, fiscal_year_name: e.target.value }))}
-                      placeholder="2026"
-                    />
-                  </div>
-                  <div className="zd:space-y-1.5">
-                    <div className="zd:text-xs zd:font-medium">Fiscal Year Start Date</div>
-                    <Input
-                      type="date"
-                      value={form.fiscal_year_start_date}
-                      onChange={(e) => setForm((p) => ({ ...p, fiscal_year_start_date: e.target.value }))}
-                    />
-                  </div>
-                  <div className="zd:space-y-1.5">
-                    <div className="zd:text-xs zd:font-medium">Fiscal Year End Date</div>
-                    <Input
-                      type="date"
-                      value={form.fiscal_year_end_date}
-                      onChange={(e) => setForm((p) => ({ ...p, fiscal_year_end_date: e.target.value }))}
-                    />
-                  </div>
+                  <FormControl
+                    label="Organization Name"
+                    fieldKey="organization_name"
+                    field={{ type: "Text", label: "Organization Name" }}
+                    value={form.organization_name}
+                    onChange={onStep1FieldChange}
+                    placeholder="Your organization name"
+                  />
+                  <FormControl
+                    label="Abbreviation"
+                    fieldKey="abbr"
+                    field={{ type: "Text", label: "Abbreviation" }}
+                    value={form.abbr}
+                    onChange={onStep1FieldChange}
+                    placeholder="ABBR"
+                  />
+                  <FormControl
+                    label="Currency"
+                    fieldKey="currency"
+                    field={{ type: "Text", label: "Currency" }}
+                    value={form.currency}
+                    onChange={onStep1FieldChange}
+                    placeholder="฿"
+                  />
+                  <FormControl
+                    label="Fiscal Year Name"
+                    fieldKey="fiscal_year_name"
+                    field={{ type: "Text", label: "Fiscal Year Name" }}
+                    value={form.fiscal_year_name}
+                    onChange={onStep1FieldChange}
+                    placeholder="2026"
+                  />
+                  <FormControl
+                    label="Fiscal Year Start Date"
+                    fieldKey="fiscal_year_start_date"
+                    field={{ type: "Date", label: "Fiscal Year Start Date" }}
+                    value={form.fiscal_year_start_date}
+                    onChange={onStep1FieldChange}
+                  />
+                  <FormControl
+                    label="Fiscal Year End Date"
+                    fieldKey="fiscal_year_end_date"
+                    field={{ type: "Date", label: "Fiscal Year End Date" }}
+                    value={form.fiscal_year_end_date}
+                    onChange={onStep1FieldChange}
+                  />
                 </div>
                 {String(form.fiscal_year_start_date ?? "").slice(0, 10) >
                   String(form.fiscal_year_end_date ?? "").slice(0, 10) && (
@@ -401,23 +406,22 @@ export default function SetupWizard({
               <div className="zd:space-y-4">
                 <div className="zd:text-sm zd:text-muted-foreground">Name the standard price lists.</div>
                 <div className="zd:grid zd:grid-cols-1 md:zd:grid-cols-2 zd:gap-3">
-                  <div className="zd:space-y-1.5">
-                    <div className="zd:text-xs zd:font-medium">Standard Selling Price List</div>
-                    <Input
-                      value={priceLists.selling}
-                      onChange={(e) => setPriceLists((p) => ({ ...p, selling: e.target.value }))}
-                      placeholder="Standard Selling"
-                      autoFocus
-                    />
-                  </div>
-                  <div className="zd:space-y-1.5">
-                    <div className="zd:text-xs zd:font-medium">Standard Buying Price List</div>
-                    <Input
-                      value={priceLists.buying}
-                      onChange={(e) => setPriceLists((p) => ({ ...p, buying: e.target.value }))}
-                      placeholder="Standard Buying"
-                    />
-                  </div>
+                  <FormControl
+                    label="Standard Selling Price List"
+                    fieldKey="selling"
+                    field={{ type: "Text", label: "Standard Selling Price List" }}
+                    value={priceLists.selling}
+                    onChange={onPriceListFieldChange}
+                    placeholder="Standard Selling"
+                  />
+                  <FormControl
+                    label="Standard Buying Price List"
+                    fieldKey="buying"
+                    field={{ type: "Text", label: "Standard Buying Price List" }}
+                    value={priceLists.buying}
+                    onChange={onPriceListFieldChange}
+                    placeholder="Standard Buying"
+                  />
                 </div>
                 {!canNextPriceLists && (
                   <div className="zd:text-xs zd:text-muted-foreground">

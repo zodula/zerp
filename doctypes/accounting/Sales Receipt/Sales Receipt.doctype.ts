@@ -53,6 +53,7 @@ export default $doctype<"Sales Receipt">(
       required: 1,
       in_list_view: 1,
       default: "TODAY()",
+      readonly: 1,
     },
     net_total: {
       type: "Currency",
@@ -92,6 +93,7 @@ export default $doctype<"Sales Receipt">(
       reference: "Sales Receipt Item",
       required: 0,
       height: 200,
+      readonly: 1,
     },
     billing_address: {
       type: "Reference",
@@ -189,6 +191,7 @@ export default $doctype<"Sales Receipt">(
       type: "Text",
       label: "Remarks",
       required: 0,
+      readonly: 1,
     },
   },
   {

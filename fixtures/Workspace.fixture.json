@@ -340,7 +340,7 @@
   },
   {
     "id": "ws_zerp_accounting_sales_sales_invoice",
-    "name": "Sales Invoice",
+    "name": "Sales Invoice / Tax Invoice",
     "idx": 20,
     "workspace_parent": "ws_zerp_accounting_sales",
     "icon": "Calculator",

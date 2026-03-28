@@ -32,7 +32,11 @@ type AccountDetailType =
   | "Stock Adjustment"
   | "Stock Received But Not Billed"
   | "Service Received But Not Billed"
-  | "Tax"
+  | "Tax Payable"
+  | "VAT Output"
+  | "VAT Input"
+  | "WHT Payable"
+  | "WHT Receivable"
   | "Temporary";
 
 const STANDARD_ACCOUNTS: Array<{
@@ -43,45 +47,47 @@ const STANDARD_ACCOUNTS: Array<{
   parent_code?: string;
 }> = [
   { account_code: "1000", account_name: "Application of Funds (Assets)", root_type: "Asset" },
-  { account_code: "1100-1600", account_name: "Current Assets", root_type: "Asset", account_type: "Current Asset", parent_code: "1000" },
-  { account_code: "1100", account_name: "Cash In Hand", root_type: "Asset", account_type: "Cash", parent_code: "1100-1600" },
+  { account_code: "1090", account_name: "Current Assets", root_type: "Asset", account_type: "Current Asset", parent_code: "1000" },
+  { account_code: "1100", account_name: "Cash In Hand", root_type: "Asset", account_type: "Cash", parent_code: "1090" },
   { account_code: "1110", account_name: "Cash", root_type: "Asset", account_type: "Cash", parent_code: "1100" },
-  { account_code: "1200", account_name: "Bank Accounts", root_type: "Asset", account_type: "Bank", parent_code: "1100-1600" },
-  { account_code: "1300", account_name: "Accounts Receivable", root_type: "Asset", parent_code: "1100-1600" },
+  { account_code: "1200", account_name: "Bank Accounts", root_type: "Asset", account_type: "Bank", parent_code: "1090" },
+  { account_code: "1300", account_name: "Accounts Receivable", root_type: "Asset", account_type: "Receivable", parent_code: "1090" },
   { account_code: "1310", account_name: "Debtors", root_type: "Asset", account_type: "Receivable", parent_code: "1300" },
-  { account_code: "1400", account_name: "Stock Assets", root_type: "Asset", account_type: "Stock", parent_code: "1100-1600" },
+  { account_code: "1400", account_name: "Inventory", root_type: "Asset", account_type: "Stock", parent_code: "1090" },
   { account_code: "1410", account_name: "Stock In Hand", root_type: "Asset", account_type: "Stock", parent_code: "1400" },
-  { account_code: "1500", account_name: "Tax Assets", root_type: "Asset", parent_code: "1100-1600" },
-  { account_code: "1510", account_name: "Input VAT", root_type: "Asset", account_type: "Tax", parent_code: "1500" },
-  { account_code: "1600", account_name: "Loans and Advances (Assets)", root_type: "Asset", parent_code: "1100-1600" },
+  { account_code: "1500", account_name: "Tax Assets", root_type: "Asset", parent_code: "1090" },
+  { account_code: "1520", account_name: "WHT Receivable", root_type: "Asset", account_type: "WHT Receivable", parent_code: "1500" },
+  { account_code: "1600", account_name: "Loans and Advances (Assets)", root_type: "Asset", parent_code: "1090" },
   { account_code: "1610", account_name: "Employee Advances", root_type: "Asset", parent_code: "1600" },
-  { account_code: "1650", account_name: "Securities and Deposits", root_type: "Asset", parent_code: "1100-1600" },
+  { account_code: "1650", account_name: "Securities and Deposits", root_type: "Asset", parent_code: "1090" },
   { account_code: "1651", account_name: "Earnest Money", root_type: "Asset", parent_code: "1650" },
   { account_code: "1700", account_name: "Fixed Assets", root_type: "Asset", parent_code: "1000" },
-  { account_code: "1710", account_name: "Capital Equipments", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
-  { account_code: "1720", account_name: "Electronic Equipments", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
-  { account_code: "1730", account_name: "Furnitures and Fixtures", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
-  { account_code: "1740", account_name: "Office Equipments", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
-  { account_code: "1750", account_name: "Plants and Machineries", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
+  { account_code: "1710", account_name: "Capital Equipment", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
+  { account_code: "1720", account_name: "Electronic Equipment", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
+  { account_code: "1730", account_name: "Furniture and Fixtures", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
+  { account_code: "1740", account_name: "Office Equipment", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
+  { account_code: "1750", account_name: "Plant and Machinery", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
   { account_code: "1760", account_name: "Buildings", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
-  { account_code: "1770", account_name: "Softwares", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
+  { account_code: "1770", account_name: "Software", root_type: "Asset", account_type: "Fixed Asset", parent_code: "1700" },
   { account_code: "1780", account_name: "Accumulated Depreciation", root_type: "Asset", account_type: "Accumulated Depreciation", parent_code: "1700" },
   { account_code: "1790", account_name: "CWIP Account", root_type: "Asset", account_type: "Capital Work in Progress", parent_code: "1700" },
   { account_code: "1800", account_name: "Investments", root_type: "Asset", parent_code: "1000" },
   { account_code: "1900", account_name: "Temporary Accounts", root_type: "Asset", parent_code: "1000" },
   { account_code: "1910", account_name: "Temporary Opening", root_type: "Asset", account_type: "Temporary", parent_code: "1900" },
   { account_code: "2000", account_name: "Source of Funds (Liabilities)", root_type: "Liability" },
-  { account_code: "2100-2400", account_name: "Current Liabilities", root_type: "Liability", account_type: "Current Liability", parent_code: "2000" },
-  { account_code: "2100", account_name: "Accounts Payable", root_type: "Liability", parent_code: "2100-2400" },
+  { account_code: "2050", account_name: "Current Liabilities", root_type: "Liability", account_type: "Current Liability", parent_code: "2000" },
+  { account_code: "2100", account_name: "Accounts Payable", root_type: "Liability", parent_code: "2050" },
   { account_code: "2110", account_name: "Creditors", root_type: "Liability", account_type: "Payable", parent_code: "2100" },
   { account_code: "2120", account_name: "Payroll Payable", root_type: "Liability", parent_code: "2100" },
-  { account_code: "2200", account_name: "Stock Liabilities", root_type: "Liability", parent_code: "2100-2400" },
+  { account_code: "2200", account_name: "Stock Liabilities", root_type: "Liability", parent_code: "2050" },
   { account_code: "2210", account_name: "Stock Received But Not Billed", root_type: "Liability", account_type: "Stock Received But Not Billed", parent_code: "2200" },
   { account_code: "2211", account_name: "Asset Received But Not Billed", root_type: "Liability", account_type: "Asset Received But Not Billed", parent_code: "2200" },
-  { account_code: "2300", account_name: "Duties and Taxes", root_type: "Liability", account_type: "Tax", parent_code: "2100-2400" },
-  { account_code: "2310", account_name: "Output VAT", root_type: "Liability", account_type: "Tax", parent_code: "2300" },
-  { account_code: "2320", account_name: "Withholding Tax Payable", root_type: "Liability", account_type: "Tax", parent_code: "2300" },
-  { account_code: "2400", account_name: "Loans (Liabilities)", root_type: "Liability", parent_code: "2100-2400" },
+  { account_code: "2300", account_name: "Duties and Taxes", root_type: "Liability", account_type: "Tax Payable", parent_code: "2050" },
+  { account_code: "2330", account_name: "VAT", root_type: "Liability", account_type: "Tax Payable", parent_code: "2300" },
+  { account_code: "2310", account_name: "Output VAT", root_type: "Liability", account_type: "VAT Output", parent_code: "2330" },
+  { account_code: "2340", account_name: "Input VAT", root_type: "Liability", account_type: "VAT Input", parent_code: "2330" },
+  { account_code: "2320", account_name: "WHT Payable", root_type: "Liability", account_type: "WHT Payable", parent_code: "2300" },
+  { account_code: "2400", account_name: "Loans (Liabilities)", root_type: "Liability", parent_code: "2000" },
   { account_code: "2410", account_name: "Secured Loans", root_type: "Liability", parent_code: "2400" },
   { account_code: "2420", account_name: "Unsecured Loans", root_type: "Liability", parent_code: "2400" },
   { account_code: "2430", account_name: "Bank Overdraft Account", root_type: "Liability", parent_code: "2400" },
@@ -95,12 +101,13 @@ const STANDARD_ACCOUNTS: Array<{
   { account_code: "4110", account_name: "Sales", root_type: "Income", account_type: "Direct Income", parent_code: "4100" },
   { account_code: "4120", account_name: "Service", root_type: "Income", account_type: "Direct Income", parent_code: "4100" },
   { account_code: "4200", account_name: "Indirect Income", root_type: "Income", account_type: "Indirect Income", parent_code: "4000" },
+  { account_code: "4210", account_name: "Exchange Gain", root_type: "Income", account_type: "Indirect Income", parent_code: "4200" },
+  { account_code: "4211", account_name: "Gain on Asset Disposal", root_type: "Income", account_type: "Indirect Income", parent_code: "4200" },
   { account_code: "5000", account_name: "Expenses", root_type: "Expense", account_type: "Expense Account" },
   { account_code: "5100", account_name: "Direct Expenses", root_type: "Expense", account_type: "Direct Expense", parent_code: "5000" },
   { account_code: "5110", account_name: "Stock Expenses", root_type: "Expense", parent_code: "5100" },
   { account_code: "5111", account_name: "Cost of Goods Sold", root_type: "Expense", account_type: "Cost of Goods Sold", parent_code: "5110" },
   { account_code: "5112", account_name: "Expenses Included In Asset Valuation", root_type: "Expense", account_type: "Expenses Included In Asset Valuation", parent_code: "5110" },
-  { account_code: "5118", account_name: "Expenses Included In Valuation", root_type: "Expense", account_type: "Expenses Included In Valuation", parent_code: "5110" },
   { account_code: "5119", account_name: "Stock Adjustment", root_type: "Expense", account_type: "Stock Adjustment", parent_code: "5110" },
   { account_code: "5200", account_name: "Indirect Expenses", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5000" },
   { account_code: "5201", account_name: "Administrative Expenses", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5200" },
@@ -121,14 +128,14 @@ const STANDARD_ACCOUNTS: Array<{
   { account_code: "5216", account_name: "Travel Expenses", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5200" },
   { account_code: "5217", account_name: "Utility Expenses", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5200" },
   { account_code: "5218", account_name: "Write Off", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5200" },
-  { account_code: "5219", account_name: "Exchange Gain/Loss", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5200" },
-  { account_code: "5220", account_name: "Gain/Loss on Asset Disposal", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5200" },
+  { account_code: "5219", account_name: "Exchange Loss", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5200" },
+  { account_code: "5220", account_name: "Loss on Asset Disposal", root_type: "Expense", account_type: "Indirect Expense", parent_code: "5200" },
   { account_code: "5221", account_name: "Miscellaneous Expenses", root_type: "Expense", account_type: "Chargeable", parent_code: "5200" },
 ];
 
 const GROUP_ACCOUNT_CODES = new Set<string>([
   "1000",
-  "1100-1600",
+  "1090",
   "1100",
   "1200",
   "1300",
@@ -140,10 +147,11 @@ const GROUP_ACCOUNT_CODES = new Set<string>([
   "1800",
   "1900",
   "2000",
-  "2100-2400",
+  "2050",
   "2100",
   "2200",
   "2300",
+  "2330",
   "2400",
   "3000",
   "4000",
@@ -211,7 +219,7 @@ async function ensureStandardAccounts(selectedCodes?: string[]) {
       balance: 0,
       is_group: isGroup,
       ...(parentId ? { parent_account: parentId } : {}),
-    });
+    } as any);
     created.push(doc.id);
     codeToId.set(account.account_code, doc.id);
   }

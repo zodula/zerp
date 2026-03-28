@@ -1,3 +1,8 @@
+import {
+  deleteGlForReference,
+  postPurchaseInvoiceGl,
+} from "@/zerp/src/shared/gl_posting";
+
 export default $doctype<"Purchase Invoice">(
   {
     supplier: {
@@ -349,6 +354,7 @@ export default $doctype<"Purchase Invoice">(
   })
   .on("after_submit", async ({ doc }) => {
     if (!doc.id) return;
+    await postPurchaseInvoiceGl(doc as unknown as Record<string, unknown>);
     if (Number((doc as any).ignore_price_project) === 1) return;
     const erp = await $zodula.doctype("ERP Setting").select().limit(1).then(r => r.docs[0]);
     const isSavePrice = erp?.is_save_price === 1;
@@ -390,4 +396,7 @@ export default $doctype<"Purchase Invoice">(
         });
       }
     }
+  })
+  .on("after_cancel", async ({ doc }) => {
+    await deleteGlForReference("Purchase Invoice", doc.id);
   });

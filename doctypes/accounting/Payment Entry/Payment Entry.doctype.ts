@@ -1,5 +1,6 @@
 import { ZodulaDoctypeHelper } from "@/zodula/server/zodula/doc/helper";
 import { loader } from "@/zodula/server/loader";
+import { requireAccountByCode } from "@/zerp/src/shared/gl_posting";
 
 export default $doctype<"Payment Entry">({
     payment_type: {
@@ -276,36 +277,125 @@ export default $doctype<"Payment Entry">({
     })
     .on("after_submit", async ({ doc }) => {
         const docAny = doc as any;
-        const amount = parseFloat(String(docAny.to_paid_amount || 0)) || 0;
+        const toPaid = parseFloat(String(docAny.to_paid_amount || 0)) || 0;
+        const paidAmount = parseFloat(String(docAny.paid_amount || 0)) || 0;
+        const whtAmount = parseFloat(String(docAny.wht_amount || 0)) || 0;
         const accountPaidTo = doc.account_paid_to as string;
         const accountPaidFrom = doc.account_paid_from as string;
         const description = `Payment Entry ${doc.id}${doc.reference_no ? ` - Ref: ${doc.reference_no}` : ''}`;
+        const paymentType = String(doc.payment_type ?? "");
+        const useWht =
+            paymentType !== "Transfer" &&
+            whtAmount > 0.0001 &&
+            !!accountPaidFrom &&
+            !!accountPaidTo;
 
-        if (accountPaidFrom) {
-            await $zodula.doctype("General Ledger").insert({
-                posting_date: doc.posting_date,
-                account: accountPaidFrom,
-                debit_amount: 0,
-                credit_amount: amount,
-                reference_doctype: "Payment Entry",
-                reference_id: doc.id,
-                description: description,
-                party_type: doc.party_type,
-                party: doc.party,
-            } as any);
-        }
-        if (accountPaidTo) {
-            await $zodula.doctype("General Ledger").insert({
-                posting_date: doc.posting_date,
-                account: accountPaidTo,
-                debit_amount: amount,
-                credit_amount: 0,
-                reference_doctype: "Payment Entry",
-                reference_id: doc.id,
-                description: description,
-                party_type: doc.party_type,
-                party: doc.party,
-            } as any);
+        if (useWht) {
+            const whtReceivableId = await requireAccountByCode("1520", "WHT Receivable");
+            const whtPayableId = await requireAccountByCode("2320", "WHT Payable");
+            const whtDesc = `${description} (WHT)`;
+            if (paymentType === "Receive") {
+                await $zodula.doctype("General Ledger").insert({
+                    posting_date: doc.posting_date,
+                    account: accountPaidFrom,
+                    debit_amount: 0,
+                    credit_amount: paidAmount,
+                    reference_doctype: "Payment Entry",
+                    reference_id: doc.id,
+                    description,
+                    party_type: doc.party_type,
+                    party: doc.party,
+                } as any);
+                await $zodula.doctype("General Ledger").insert({
+                    posting_date: doc.posting_date,
+                    account: accountPaidTo,
+                    debit_amount: toPaid,
+                    credit_amount: 0,
+                    reference_doctype: "Payment Entry",
+                    reference_id: doc.id,
+                    description,
+                    party_type: doc.party_type,
+                    party: doc.party,
+                } as any);
+                await $zodula.doctype("General Ledger").insert({
+                    posting_date: doc.posting_date,
+                    account: whtReceivableId,
+                    debit_amount: whtAmount,
+                    credit_amount: 0,
+                    reference_doctype: "Payment Entry",
+                    reference_id: doc.id,
+                    description: whtDesc,
+                    party_type: doc.party_type,
+                    party: doc.party,
+                } as any);
+            } else if (paymentType === "Pay") {
+                await $zodula.doctype("General Ledger").insert({
+                    posting_date: doc.posting_date,
+                    account: accountPaidTo,
+                    debit_amount: paidAmount,
+                    credit_amount: 0,
+                    reference_doctype: "Payment Entry",
+                    reference_id: doc.id,
+                    description,
+                    party_type: doc.party_type,
+                    party: doc.party,
+                } as any);
+                await $zodula.doctype("General Ledger").insert({
+                    posting_date: doc.posting_date,
+                    account: accountPaidFrom,
+                    debit_amount: 0,
+                    credit_amount: toPaid,
+                    reference_doctype: "Payment Entry",
+                    reference_id: doc.id,
+                    description,
+                    party_type: doc.party_type,
+                    party: doc.party,
+                } as any);
+                await $zodula.doctype("General Ledger").insert({
+                    posting_date: doc.posting_date,
+                    account: whtPayableId,
+                    debit_amount: 0,
+                    credit_amount: whtAmount,
+                    reference_doctype: "Payment Entry",
+                    reference_id: doc.id,
+                    description: whtDesc,
+                    party_type: doc.party_type,
+                    party: doc.party,
+                } as any);
+            }
+        } else {
+            if (paymentType !== "Transfer" && whtAmount > 0.0001) {
+                throw new Error(
+                    "WHT posting requires both Account Paid From and Account Paid To."
+                );
+            }
+            const amount = toPaid;
+            if (accountPaidFrom) {
+                await $zodula.doctype("General Ledger").insert({
+                    posting_date: doc.posting_date,
+                    account: accountPaidFrom,
+                    debit_amount: 0,
+                    credit_amount: amount,
+                    reference_doctype: "Payment Entry",
+                    reference_id: doc.id,
+                    description: description,
+                    party_type: doc.party_type,
+                    party: doc.party,
+                } as any);
+            }
+            if (accountPaidTo) {
+                await $zodula.doctype("General Ledger").insert({
+                    posting_date: doc.posting_date,
+                    account: accountPaidTo,
+                    debit_amount: amount,
+                    credit_amount: 0,
+                    reference_doctype: "Payment Entry",
+                    reference_id: doc.id,
+                    description: description,
+                    party_type: doc.party_type,
+                    party: doc.party,
+                } as any);
+            }
         }
 
         // Manage payment status for each referenced document
