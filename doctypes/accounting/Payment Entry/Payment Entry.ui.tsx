@@ -116,23 +116,28 @@ export default function PaymentEntryScripts() {
         }
 
         async function setAccountFieldDefaultValues(frm: any) {
+            const erp = (await zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any)) as any;
             const paymentType = String(frm.get_value("payment_type") ?? "").trim();
             const partyType = String(frm.get_value("party_type") ?? "").trim();
-            const res = await zodula.doc.select_docs("Account" as any, {
-                filters: [["account_type", "=", paymentType === "Receive" ? "Receivable" : (partyType === "Customer" ? "Receivable" : "Payable")], ["is_group", "!=", 1]],
-                limit: 1,
-                sort: "account_code",
-                order: "asc",
-            });
-            if (res?.docs?.[0]?.id) {
-                if (paymentType === "Receive") {
-                    if (!frm.get_value("account_paid_from")) {
-                        await frm.set_value("account_paid_from", res.docs[0].id);
-                    }
-                } else if (paymentType === "Pay") {
-                    if (!frm.get_value("account_paid_to")) {
-                        await frm.set_value("account_paid_to", res.docs[0].id);
-                    }
+            const refs = (frm.get_value("references") ?? []) as any[];
+            const firstRefType = String(refs[0]?.reference_type ?? "").trim();
+
+            let receivable = erp?.default_receivable_account;
+            let payable = erp?.default_payable_account;
+            if (paymentType === "Pay" && partyType === "Employee") {
+                if (firstRefType === "Expense Claim") payable = erp?.default_expense_claim_account || payable;
+                else if (firstRefType === "Employee Advance") payable = erp?.default_employee_advance_account || payable;
+                else if (firstRefType === "Salary Slip") payable = erp?.default_payroll_payable_account || payable;
+            }
+
+            if (paymentType === "Receive") {
+                if (!frm.get_value("account_paid_from") && receivable) {
+                    await frm.set_value("account_paid_from", receivable);
+                }
+            } else if (paymentType === "Pay") {
+                const partyAccount = partyType === "Customer" ? receivable : payable;
+                if (!frm.get_value("account_paid_to") && partyAccount) {
+                    await frm.set_value("account_paid_to", partyAccount);
                 }
             }
         }
@@ -204,6 +209,7 @@ export default function PaymentEntryScripts() {
             "references.reference_type": async (frm: any) => {
                 await rememberAndRepairReferences(frm);
                 await setReferenceIdFiltersForParty(frm);
+                await setAccountFieldDefaultValues(frm);
             },
             "references.reference_id": async (frm: any) => {
                 await rememberAndRepairReferences(frm);
@@ -225,6 +231,7 @@ export default function PaymentEntryScripts() {
                         if (inferredType) {
                             await frm.set_value(`references.${idx}.reference_type`, inferredType);
                             refType = inferredType;
+                            await setAccountFieldDefaultValues(frm);
                         }
                     }
                 }

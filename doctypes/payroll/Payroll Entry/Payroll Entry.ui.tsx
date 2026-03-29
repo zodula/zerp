@@ -5,6 +5,16 @@ const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
 
 export default function PayrollEntryScripts() {
     useZui((zui) => {
+        zui.form.on("Payroll Entry" as any, {
+            on_render: async (frm: any) => {
+                const erp = (await zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any)) as any;
+                const defaultPayable = erp?.default_payroll_payable_account;
+                if (defaultPayable && !String(frm.get_value("payroll_payable_account") ?? "").trim()) {
+                    await frm.set_value("payroll_payable_account", defaultPayable);
+                }
+            },
+        } as any);
+
         zui.form.set_secondary_button(
             "Payroll Entry" as any,
             "Get Employee",
@@ -159,9 +169,13 @@ export default function PayrollEntryScripts() {
                     return;
                 }
                 const bank = String(frm.get_value("bank_account") ?? "").trim();
-                const payable = String(frm.get_value("salaries_payable_account") ?? "").trim();
+                let payable = String(frm.get_value("payroll_payable_account") ?? "").trim();
+                if (!payable) {
+                    const erp = (await zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any)) as any;
+                    payable = String(erp?.default_payroll_payable_account ?? "").trim();
+                }
                 if (!bank || !payable) {
-                    zui.toast.error("Set Bank Account and Salaries Payable Account on this Payroll Entry first.");
+                    zui.toast.error("Set Payment Account (Bank, Cash) and Payroll Payable (or ERP Default Payroll Payable).");
                     return;
                 }
 

@@ -40,33 +40,20 @@ export default $doctype<"Payroll Entry">({
         required: 1,
         height: 240,
     },
-    salary_expense_account: {
+    payroll_payable_account: {
         type: "Reference",
-        label: "Salary Expense Account",
+        label: "Payroll Payable Account",
         reference: "Account",
         required: 0,
         in_list_view: 0,
-    },
-    salaries_payable_account: {
-        type: "Reference",
-        label: "Salaries Payable Account",
-        reference: "Account",
-        required: 0,
-        in_list_view: 0,
-    },
-    deduction_payable_account: {
-        type: "Reference",
-        label: "Deduction Payable Account",
-        reference: "Account",
-        required: 0,
-        in_list_view: 0,
+        description: "Accrual credit and Payment Entry offset for net salaries. Falls back to ERP Setting → Payroll Payable if empty.",
     },
     bank_account: {
         type: "Reference",
-        label: "Bank Account (payment)",
+        label: "Payment Account (Bank, Cash)",
         reference: "Account",
         required: 0,
-        description: "Used when creating bank payment drafts from this payroll run.",
+        description: "Bank or cash account used when creating payment drafts from this payroll run.",
     },
     journal_entry: {
         type: "Reference",
@@ -95,18 +82,13 @@ export default $doctype<"Payroll Entry">({
                 ],
                 { type: "section", value: "Employees", align: "left" },
                 [{ type: "field", value: "employee_table", align: "left" }],
-                { type: "section", value: "Accounting (accrual)", align: "left" },
+                { type: "section", value: "Accounting", align: "left" },
                 [
-                    { type: "field", value: "salary_expense_account", align: "left" },
-                    { type: "field", value: "salaries_payable_account", align: "left" },
-                    { type: "field", value: "deduction_payable_account", align: "left" },
+                    { type: "field", value: "payroll_payable_account", align: "left" },
+                    { type: "field", value: "bank_account", align: "left" },
                 ],
                 [
                     { type: "field", value: "journal_entry", align: "left" },
-                ],
-                { type: "section", value: "Bank payment", align: "left" },
-                [
-                    { type: "field", value: "bank_account", align: "left" },
                 ],
             ],
         },
@@ -130,10 +112,16 @@ export default $doctype<"Payroll Entry">({
         const rows = (doc.employee_table ?? []) as EmployeeRow[];
         if (!rows.length) throw new Error("Add at least one employee.");
 
-        const expense = String((doc as any).salary_expense_account ?? "").trim();
-        const payable = String((doc as any).salaries_payable_account ?? "").trim();
-        if (!expense || !payable) {
-            throw new Error("Salary Expense Account and Salaries Payable Account are required to submit (accrual journal).");
+        const erp = await $zodula.doctype("ERP Setting").select().limit(1).then((r) => r.docs[0] as any);
+        const payrollSetting = await $zodula.doctype("Payroll Setting").select().limit(1).then((r) => r.docs[0] as any);
+        const expense = String(payrollSetting?.default_salary_expense_account ?? "").trim();
+        const payable =
+            String((doc as any).payroll_payable_account ?? "").trim() || String(erp?.default_payroll_payable_account ?? "").trim();
+        if (!expense) {
+            throw new Error("Set Default Salary Expense Account on Payroll Setting (accrual journal debit).");
+        }
+        if (!payable) {
+            throw new Error("Set Payroll Payable Account on this document or Default Payroll Payable in ERP Setting.");
         }
 
         let totalEarnings = 0;
@@ -155,11 +143,6 @@ export default $doctype<"Payroll Entry">({
             totalDeductions += num((slip as any).total_deductions);
         }
 
-        const dedAccount = String((doc as any).deduction_payable_account ?? "").trim();
-        if (totalDeductions > 0.01 && !dedAccount) {
-            throw new Error("Deduction Payable Account is required when there are salary deductions.");
-        }
-
         const expectedCredits = totalNet + totalDeductions;
         if (Math.abs(totalEarnings - expectedCredits) > 0.02) {
             throw new Error(
@@ -174,19 +157,17 @@ export default $doctype<"Payroll Entry">({
     .on("after_submit", async ({ doc }) => {
         const rows = (doc.employee_table ?? []) as EmployeeRow[];
         let totalEarnings = 0;
-        let totalNet = 0;
-        let totalDeductions = 0;
         for (const row of rows) {
             const slip = await $zodula.doctype("Salary Slip").get(String(row.salary_slip));
             if (!slip) continue;
             totalEarnings += num((slip as any).total_earnings);
-            totalNet += num((slip as any).net_pay);
-            totalDeductions += num((slip as any).total_deductions);
         }
 
-        const expense = String((doc as any).salary_expense_account ?? "").trim();
-        const payable = String((doc as any).salaries_payable_account ?? "").trim();
-        const dedAccount = String((doc as any).deduction_payable_account ?? "").trim();
+        const payrollSetting = await $zodula.doctype("Payroll Setting").select().limit(1).then((r) => r.docs[0] as any);
+        const erp = await $zodula.doctype("ERP Setting").select().limit(1).then((r) => r.docs[0] as any);
+        const expense = String(payrollSetting?.default_salary_expense_account ?? "").trim();
+        const payable =
+            String((doc as any).payroll_payable_account ?? "").trim() || String(erp?.default_payroll_payable_account ?? "").trim();
 
         const items: any[] = [
             {
@@ -198,18 +179,10 @@ export default $doctype<"Payroll Entry">({
             {
                 account: payable,
                 debit_amount: 0,
-                credit_amount: totalNet,
-                memo: `Net salaries payable ${doc.id}`,
+                credit_amount: totalEarnings,
+                memo: `Payroll payable ${doc.id}`,
             },
         ];
-        if (totalDeductions > 0.01 && dedAccount) {
-            items.push({
-                account: dedAccount,
-                debit_amount: 0,
-                credit_amount: totalDeductions,
-                memo: `Deductions payable ${doc.id}`,
-            });
-        }
 
         const je = await $zodula.doctype("Journal Entry").insert({
             journal_date: doc.posting_date,

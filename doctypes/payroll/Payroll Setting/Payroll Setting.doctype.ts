@@ -17,6 +17,13 @@ export default $doctype<"Payroll Setting">({
         label: "Max Social Security Deduct",
         default: "0",
     },
+    default_salary_expense_account: {
+        type: "Reference",
+        label: "Default Salary Expense Account",
+        reference: "Account",
+        required: 0,
+        description: "Debit account for Payroll Entry accrual journal (gross earnings).",
+    },
 }, {
     label: "Payroll Setting",
     is_single: 1,
