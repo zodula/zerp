@@ -10,9 +10,14 @@ export default $doctype<"Journal Entry">({
         type: "Text",
         label: "Description"
     },
+    reference_date: {
+        type: "Date",
+        label: "Reference Date"
+    },
     reference_doctype: {
-        type: "Text",
-        label: "Reference Doctype"
+        type: "Reference",
+        label: "Reference Doctype",
+        reference: "DocType",
     },
     reference_id: {
         type: "Text",
@@ -67,7 +72,7 @@ export default $doctype<"Journal Entry">({
                 { type: "section", value: "Reference", align: "left" },
                 [
                     { type: "field", value: "reference_doctype", align: "left" },
-                    { type: "field", value: "reference_id", align: "left" }
+                    { type: "field", value: "reference_id", align: "left" },
                 ]
             ]
         }
@@ -116,6 +121,9 @@ export default $doctype<"Journal Entry">({
     (doc as any).total_credit = totalCredit;
 })
 .on("after_submit", async ({ doc }) => {
+    const refDt = String((doc as any).reference_doctype ?? "").trim();
+    const refId = String((doc as any).reference_id ?? "").trim();
+
     // Create General Ledger entries for each journal entry item (aligned with General Ledger doctype)
     if (doc.journal_entry_items && Array.isArray(doc.journal_entry_items)) {
         const description = doc.description ? `Journal Entry ${doc.id} - ${doc.description}` : `Journal Entry ${doc.id}`;
@@ -140,8 +148,24 @@ export default $doctype<"Journal Entry">({
             } as any);
         }
     }
+
+    if (refDt === "Payroll Entry" && refId) {
+        const { updatePayrollEntryPaymentStatusFromPaymentJournals } = await import(
+            "@/zerp/src/shared/payroll_entry_payment"
+        );
+        await updatePayrollEntryPaymentStatusFromPaymentJournals(refId);
+    }
 })
 .on("after_cancel", async ({ doc }) => {
+    const refDt = String((doc as any).reference_doctype ?? "").trim();
+    const refId = String((doc as any).reference_id ?? "").trim();
+    if (refDt === "Payroll Entry" && refId) {
+        const { updatePayrollEntryPaymentStatusFromPaymentJournals } = await import(
+            "@/zerp/src/shared/payroll_entry_payment"
+        );
+        await updatePayrollEntryPaymentStatusFromPaymentJournals(refId);
+    }
+
     // Delete General Ledger entries for this Journal Entry (same pattern as Payment Entry)
     // after_delete on General Ledger will update account balances
     const glEntries = await $zodula.doctype("General Ledger")

@@ -4,16 +4,17 @@ import { useZui } from "@/zodula/ui";
 const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
-function applyCustomerLinkFilters(frm: any) {
-    const customer = frm.get_value("customer");
-    const f = customer ? JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", customer]]) : JSON.stringify([["link_type", "=", "Customer"]]);
-    frm.set_df_property?.("billing_address", "filters", f);
-    frm.set_df_property?.("shipping_address", "filters", f);
-    frm.set_df_property?.("sender_address", "filters", f);
-    frm.set_df_property?.("billing_contact", "filters", f);
-    frm.set_df_property?.("shipping_contact", "filters", f);
-    frm.set_df_property?.("sender_contact", "filters", f);
+function setDeliveryItemDimensionReadonlyByValue(
+    frm: any,
+    idx: number,
+    values: { length: number; width: number; height: number; weight: number }
+) {
+    frm.set_df_property?.(`delivery_note_items.${idx}.length`, "readonly", values.length === 0 ? 0 : 1);
+    frm.set_df_property?.(`delivery_note_items.${idx}.width`, "readonly", values.width === 0 ? 0 : 1);
+    frm.set_df_property?.(`delivery_note_items.${idx}.height`, "readonly", values.height === 0 ? 0 : 1);
+    frm.set_df_property?.(`delivery_note_items.${idx}.weight`, "readonly", values.weight === 0 ? 0 : 1);
 }
+
 
 async function applyVatTemplateToForm(frm: any, templateId: string | null | undefined) {
     if (!templateId) return;
@@ -73,8 +74,8 @@ export default function DeliveryOrderScripts() {
             on_format(ctx) { ctx.set_badge_config?.("doc_status", { getValue: (doc, t) => docStatusBadge(doc, t ?? zui.t) }); },
         });
 
-        zui.form.on("Delivery Note" as any, {
-            on_render(frm: any) {
+        zui.form.on("Delivery Note", {
+            on_render(frm) {
                 frm.set_badge_config?.("doc_status", { getValue: (doc: any, t: any) => docStatusBadge(doc, t ?? zui.t) });
                 zodula.doc.get_doc("ERP Setting" as any, "ERP Setting" as any).then(async (erp: any) => {
                     if (!erp) return;
@@ -94,24 +95,25 @@ export default function DeliveryOrderScripts() {
                     applyDocTotals(frm);
                 });
             },
-            customer: async (frm: any) => {
+            customer: async (frm) => {
                 const c = frm.get_value("customer") ? await zodula.doc.get_doc("Customer", frm.get_value("customer")) : null;
                 const vals = c ? [c.tax_id ?? "", c.phone ?? "", c.address ?? ""] : ["", "", ""];
                 ["customer_tax_id", "customer_phone", "customer_address"].forEach((k, i) => frm.set_value(k as any, vals[i]));
             },
-            apply_vat_template: async (frm: any) => {
+            apply_vat_template: async (frm) => {
                 await applyVatTemplateToForm(frm, frm.get_value("apply_vat_template"));
                 applyDocTotals(frm);
             },
-            vat_type: (frm: any) => applyDocTotals(frm),
-            vat_rate: (frm: any) => applyDocTotals(frm),
-            "delivery_note_items.idx": async (frm: any) => {
+            vat_type: (frm) => applyDocTotals(frm),
+            vat_rate: (frm) => applyDocTotals(frm),
+            "delivery_note_items.idx": async (frm) => {
                 applyDocTotals(frm);
             },
-            "delivery_note_items.item": async (frm: any) => {
+            "delivery_note_items.item": async (frm) => {
                 const idx = frm.idx ?? 0;
                 const pid = frm.doc?.delivery_note_items?.[idx]?.item;
                 if (!pid) {
+                    setDeliveryItemDimensionReadonlyByValue(frm, idx, { length: 0, width: 0, height: 0, weight: 0 });
                     frm.set_value(`delivery_note_items.${idx}.uom`, "");
                     frm.set_value(`delivery_note_items.${idx}.item_name`, "");
                     frm.set_value(`delivery_note_items.${idx}.item_description`, "");
@@ -133,6 +135,7 @@ export default function DeliveryOrderScripts() {
                 const height = num(p.height);
                 const weight = num(p.weight);
                 const volume = num(p.volume);
+                setDeliveryItemDimensionReadonlyByValue(frm, idx, { length, width, height, weight });
                 const q = num(frm.get_value(`delivery_note_items.${idx}.quantity`));
                 const itemUom = p.uom ?? "";
                 frm.set_value(`delivery_note_items.${idx}.uom`, itemUom);
@@ -164,18 +167,18 @@ export default function DeliveryOrderScripts() {
                     }
                 }
             },
-            "delivery_note_items.quantity": async (frm: any) => {
+            "delivery_note_items.quantity": async (frm) => {
                 const idx = frm.idx ?? 0;
                 const q = num(frm.get_value(`delivery_note_items.${idx}.quantity`));
                 frm.set_value(`delivery_note_items.${idx}.total_price`, q * num(frm.get_value(`delivery_note_items.${idx}.unit_price`)));
             },
-            "delivery_note_items.unit_price": async (frm: any) => {
+            "delivery_note_items.unit_price": async (frm) => {
                 const idx = frm.idx ?? 0;
                 const q = num(frm.get_value(`delivery_note_items.${idx}.quantity`));
                 frm.set_value(`delivery_note_items.${idx}.total_price`, q * num(frm.get_value(`delivery_note_items.${idx}.unit_price`)));
             },
-            "delivery_note_items.total_price": (frm: any) => applyDocTotals(frm),
-        } as any);
+            "delivery_note_items.total_price": (frm) => applyDocTotals(frm),
+        });
 
         zui.form.set_field_button("Delivery Note", "delivery_note_items", "Select Price", async (frm) => {
             const customer = frm.get_value("customer");
@@ -249,11 +252,10 @@ export default function DeliveryOrderScripts() {
                 ignore_price_project: 1,
                 delivery_note: frm.get_value("id") ?? frm?.doc?.id,
                 customer: frm.get_value("customer"),
+                source_warehouse: frm.get_value("source_warehouse"),
                 price_project: frm.get_value("price_project"),
                 billing_address: frm.get_value("billing_address"),
-                billing_contact: frm.get_value("billing_contact"),
                 shipping_address: frm.get_value("shipping_address"),
-                shipping_contact: frm.get_value("shipping_contact"),
             };
 
             let useDefaultItem = false;
@@ -281,7 +283,7 @@ export default function DeliveryOrderScripts() {
             }
 
             zui.router?.push(`/desk/doctypes/Sales Invoice/form`, { state: { prefill } });
-        }, { icon: "FileText", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" || ctx.doc?.payment_status === "To Bill" });
+        }, { icon: "FileText", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && ctx.doc?.payment_status === "To Bill" });
 
         zui.form.set_secondary_button("Delivery Note", "Create Installation Note", async (frm) => {
             const now = new Date();
@@ -299,7 +301,7 @@ export default function DeliveryOrderScripts() {
                 prefill[`${base}quantity`] = item.quantity ?? 0;
             });
             zui.router?.push(`/desk/doctypes/Installation Note/form`, { state: { prefill } });
-        }, { icon: "Wrench", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && ctx?.doc?.installation_percentage < 100 });
+        }, { icon: "Wrench", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && (ctx?.doc?.installation_percentage ?? 0) < 100 });
     }, []);
     return <></>;
 }

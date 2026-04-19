@@ -10,6 +10,8 @@ export default $doctype<"Salary Slip">({
         type: "Text",
         label: "Employee Name",
         readonly: 1,
+        in_list_view: 1,
+        fetch_from: "employee.full_name",
     },
     payroll_entry: {
         type: "Reference",
@@ -17,15 +19,6 @@ export default $doctype<"Salary Slip">({
         reference: "Payroll Entry",
         required: 0,
         readonly: 1,
-    },
-    payment_status: {
-        type: "Select",
-        label: "Payment Status",
-        options: "Unpaid\nPartially Paid\nPaid",
-        default: "Unpaid",
-        required: 1,
-        readonly: 1,
-        in_list_view: 1,
     },
     posting_date: {
         type: "Date",
@@ -109,8 +102,8 @@ export default $doctype<"Salary Slip">({
 }, {
     label: "Salary Slip",
     naming_series: "SL-{YYYY}-{MM}-{DD}-{#####}",
-    search_fields: "employee\nstart_date\nend_date",
-    display_field: "employee",
+    search_fields: "employee\npayroll_entry\nstart_date\nend_date",
+    display_field: "employee_name",
     is_submittable: 1,
     tabs: JSON.stringify([
         {
@@ -124,7 +117,6 @@ export default $doctype<"Salary Slip">({
                 ],
                 [
                     { type: "field", value: "payroll_entry", align: "left" },
-                    { type: "field", value: "payment_status", align: "left" },
                 ],
                 { type: "section", value: "Payroll", align: "left" },
                 [
@@ -503,4 +495,10 @@ export default $doctype<"Salary Slip">({
         // for each earning and deduction, if the amount is 0, remove the item from the list
         doc.earnings = doc.earnings.filter(earning => earning.amount > 0);
         doc.deductions = doc.deductions.filter(deduction => deduction.amount > 0);
+    })
+    .on("after_submit", async ({ doc }) => {
+        const peId = String((doc as any).payroll_entry ?? "").trim();
+        if (!peId) return;
+        const { ensurePayrollEntryAccrualJournal } = await import("@/zerp/src/shared/payroll_entry_journal");
+        await ensurePayrollEntryAccrualJournal(peId);
     });

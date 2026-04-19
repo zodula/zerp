@@ -198,8 +198,12 @@ export default function PaymentEntryRequestScripts() {
                 }
 
                 const remaining = Math.max(0, totalAmount - allocated);
-                await frm.set_value(`references.${idx}.outstanding_amount`, remaining);
-                await frm.set_value(`references.${idx}.allocate_amount`, remaining);
+                const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+                const isCn =
+                    referenceType === "Sales Invoice" && Number(baseDoc.is_credit_note ?? 0) === 1;
+                const display = isCn && paymentType === "Receive" ? -remaining : remaining;
+                await frm.set_value(`references.${idx}.outstanding_amount`, display);
+                await frm.set_value(`references.${idx}.allocate_amount`, display);
             },
             "references.allocate_amount": (frm: any) => {
                 setTotalAllocated(frm);

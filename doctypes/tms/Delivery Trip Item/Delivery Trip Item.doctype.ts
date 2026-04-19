@@ -20,6 +20,7 @@ export default $doctype({
         reference: "Address",
         required: 0,
         readonly: 1,
+        no_print: 1,
         fetch_from: "delivery_note.shipping_address",
     },
     shipping_address_name: {
@@ -28,7 +29,7 @@ export default $doctype({
         required: 0,
         in_list_view: 1,
         readonly: 1,
-        fetch_from: "delivery_note.shipping_address.inline_address",
+        fetch_from: "delivery_note.shipping_address_name",
     },
     shipping_inline_address: {
         type: "Text",

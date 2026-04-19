@@ -11,6 +11,7 @@ export default $doctype<"Employee Checkin">({
         label: "Employee Name",
         readonly: 1,
         in_list_view: 1,
+        fetch_from: "employee.full_name",
     },
     work_shift: {
         type: "Reference",

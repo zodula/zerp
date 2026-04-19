@@ -41,7 +41,6 @@ export default function PaymentEntryScripts() {
             if (!referenceId) return "";
             if (referenceId.startsWith("EXC-")) return "Expense Claim";
             if (referenceId.startsWith("EA-")) return "Employee Advance";
-            if (referenceId.startsWith("SL-")) return "Salary Slip";
             return "";
         }
 
@@ -83,8 +82,17 @@ export default function PaymentEntryScripts() {
                 await frm.set_df_property("references.-1.reference_id", "filters", JSON.stringify([["name", "IN", []]]));
                 return;
             }
-            const firstRefType = refTypes[0] ?? "";
-            const partyField = firstRefType ? REFERENCE_TYPE_PARTY_FIELD[firstRefType] : null;
+            const refsForTemplate = (frm.get_value("references") ?? []) as any[];
+            let templateRefType = "";
+            for (let i = refsForTemplate.length - 1; i >= 0; i--) {
+                const t = String(refsForTemplate[i]?.reference_type ?? "").trim();
+                if (t) {
+                    templateRefType = t;
+                    break;
+                }
+            }
+            if (!templateRefType) templateRefType = refTypes[0] ?? "";
+            const partyField = templateRefType ? REFERENCE_TYPE_PARTY_FIELD[templateRefType] : null;
             const newRowFilter = partyField ? JSON.stringify([[partyField, "=", party]]) : JSON.stringify([["name", "IN", []]]);
             await frm.set_df_property("references.-1.reference_id", "filters", newRowFilter);
 
@@ -125,9 +133,7 @@ export default function PaymentEntryScripts() {
             let receivable = erp?.default_receivable_account;
             let payable = erp?.default_payable_account;
             if (paymentType === "Pay" && partyType === "Employee") {
-                if (firstRefType === "Expense Claim") payable = erp?.default_expense_claim_account || payable;
-                else if (firstRefType === "Employee Advance") payable = erp?.default_employee_advance_account || payable;
-                else if (firstRefType === "Salary Slip") payable = erp?.default_payroll_payable_account || payable;
+                if (firstRefType === "Employee Advance") payable = erp?.default_employee_advance_account || payable;
             }
 
             if (paymentType === "Receive") {
@@ -147,6 +153,18 @@ export default function PaymentEntryScripts() {
             const doc = await zodula.doc.get_doc("Sales Invoice" as any, refId);
             salesInvoiceCache.set(refId, doc);
             return doc;
+        }
+
+        /** Positive remaining magnitude → UI value: CN on Receive shows negative; CN on Pay stays positive. */
+        function displayOutstandingForSalesInvoice(
+            baseDoc: any,
+            remainingPositive: number,
+            paymentType: string
+        ): number {
+            if (!remainingPositive) return 0;
+            const isCn = Number(baseDoc?.is_credit_note ?? 0) === 1;
+            if (!isCn) return remainingPositive;
+            return paymentType === "Receive" ? -remainingPositive : remainingPositive;
         }
 
         async function getSignedAllocation(frm: any, row: any) {
@@ -171,6 +189,29 @@ export default function PaymentEntryScripts() {
             frm.set_value("total_allocated", totalAllocated);
         }
 
+        /** Older PE rows stored positive allocate for CN; flip to negative on Receive (and Pay positive) for display. */
+        async function normalizeCreditNoteReferenceSigns(frm: any) {
+            const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+            const refs = (frm.get_value("references") ?? []) as any[];
+            for (let i = 0; i < refs.length; i++) {
+                const refType = String(frm.get_value(`references.${i}.reference_type`) ?? "").trim();
+                const refId = String(frm.get_value(`references.${i}.reference_id`) ?? "").trim();
+                if (refType !== "Sales Invoice" || !refId) continue;
+                const si = (await getSalesInvoice(refId)) as any;
+                if (!si || Number(si.is_credit_note ?? 0) !== 1) continue;
+                const a = num(frm.get_value(`references.${i}.allocate_amount`));
+                if (paymentType === "Receive" && a > 0) {
+                    const n = -Math.abs(a);
+                    await frm.set_value(`references.${i}.allocate_amount`, n);
+                    await frm.set_value(`references.${i}.outstanding_amount`, n);
+                } else if (paymentType === "Pay" && a < 0) {
+                    const p = Math.abs(a);
+                    await frm.set_value(`references.${i}.allocate_amount`, p);
+                    await frm.set_value(`references.${i}.outstanding_amount`, p);
+                }
+            }
+        }
+
         zui.form.on("Payment Entry" as any, {
             on_render: async (frm: any) => {
                 await rememberAndRepairReferences(frm);
@@ -178,6 +219,7 @@ export default function PaymentEntryScripts() {
                 await setReferenceIdFiltersForParty(frm);
                 await setAccountFieldProperties(frm);
                 await setAccountFieldDefaultValues(frm);
+                await normalizeCreditNoteReferenceSigns(frm);
                 await syncTotalAllocated(frm);
             },
             payment_type: async (frm: any) => {
@@ -219,9 +261,7 @@ export default function PaymentEntryScripts() {
                 if (!refId) {
                     frm.set_value(`references.${idx}.outstanding_amount`, 0);
                     frm.set_value(`references.${idx}.allocate_amount`, 0);
-                    const refs = (frm.get_value("references") ?? []) as any[];
-                    const totalAllocated = refs.reduce((sum, r) => sum + num(r?.allocate_amount), 0);
-                    frm.set_value("total_allocated", totalAllocated);
+                    await syncTotalAllocated(frm);
                     return;
                 }
                 if (!refType) {
@@ -267,14 +307,36 @@ export default function PaymentEntryScripts() {
                 }
 
                 const remaining = Math.max(0, totalAmount - totalAllocatedFromOtherEntries);
-                frm.set_value(`references.${idx}.outstanding_amount`, remaining);
-                frm.set_value(`references.${idx}.allocate_amount`, remaining);
+                const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+                const display = displayOutstandingForSalesInvoice(baseDoc, remaining, paymentType);
+                frm.set_value(`references.${idx}.outstanding_amount`, display);
+                frm.set_value(`references.${idx}.allocate_amount`, display);
 
                 await syncTotalAllocated(frm);
                 await rememberAndRepairReferences(frm);
             },
-            "references.allocate_amount": (frm: any) => {
-                void syncTotalAllocated(frm);
+            "references.allocate_amount": async (frm: any) => {
+                const idx = frm.idx ?? 0;
+                const refType = String(frm.get_value(`references.${idx}.reference_type`) ?? "").trim();
+                const refId = String(frm.get_value(`references.${idx}.reference_id`) ?? "").trim();
+                if (refType === "Sales Invoice" && refId) {
+                    const si = (await getSalesInvoice(refId)) as any;
+                    if (si && Number(si.is_credit_note ?? 0) === 1) {
+                        const paymentType = String(frm.get_value("payment_type") ?? "").trim();
+                        const v = num(frm.get_value(`references.${idx}.allocate_amount`));
+                        if (paymentType === "Receive" && v > 0) {
+                            await frm.set_value(`references.${idx}.allocate_amount`, -Math.abs(v));
+                            await syncTotalAllocated(frm);
+                            return;
+                        }
+                        if (paymentType === "Pay" && v < 0) {
+                            await frm.set_value(`references.${idx}.allocate_amount`, Math.abs(v));
+                            await syncTotalAllocated(frm);
+                            return;
+                        }
+                    }
+                }
+                await syncTotalAllocated(frm);
             },
             "references.idx": (frm: any) => {
                 void syncTotalAllocated(frm);

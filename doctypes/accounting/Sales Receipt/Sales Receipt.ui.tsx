@@ -6,8 +6,6 @@ function applyCustomerLinkFilters(frm: any) {
     const f = customer ? JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", customer]]) : JSON.stringify([["link_type", "=", "Customer"]]);
     frm.set_df_property?.("billing_address", "filters", f);
     frm.set_df_property?.("shipping_address", "filters", f);
-    frm.set_df_property?.("billing_contact", "filters", f);
-    frm.set_df_property?.("shipping_contact", "filters", f);
 }
 
 export default function SalesReceiptScripts() {

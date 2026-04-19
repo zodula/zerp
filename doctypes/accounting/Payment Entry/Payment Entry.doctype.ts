@@ -256,12 +256,13 @@ export default $doctype<"Payment Entry">({
         docAny.total_taxes_and_charges = whtAmount;
 
         const paidAmount = num(docAny.paid_amount);
-        const paidDiff = Math.abs(totalAmount - paidAmount);
+        const expectedPaid = totalAmount - whtAmount;
+        const paidDiff = Math.abs(expectedPaid - paidAmount);
         if (paidDiff > 0.0001) {
             throw new Error(
-                `Invalid amount balance: paid_amount must equal total_amount ` +
-                `(total_allocate + unallocate_amount). ` +
-                `Expected ${totalAmount.toFixed(4)} but got ${paidAmount.toFixed(4)}.`
+                `Invalid amount balance: paid_amount must equal total_amount - wht_amount ` +
+                `(total_allocate + unallocate_amount - wht_amount). ` +
+                `Expected ${expectedPaid.toFixed(4)} but got ${paidAmount.toFixed(4)}.`
             );
         }
 
@@ -404,7 +405,7 @@ export default $doctype<"Payment Entry">({
             for (const ref of doc.references) {
                 const refType = (ref as any).reference_type;
                 const invoiceId = (ref as any).reference_id;
-                if (refType && invoiceId && (refType === "Sales Invoice" || refType === "Purchase Invoice" || refType === "Employee Advance" || refType === "Expense Claim" || refType === "Salary Slip")) {
+                if (refType && invoiceId && (refType === "Sales Invoice" || refType === "Purchase Invoice" || refType === "Employee Advance" || refType === "Expense Claim")) {
                     if (!invoiceMap.has(refType)) {
                         invoiceMap.set(refType, new Set());
                     }
@@ -414,7 +415,7 @@ export default $doctype<"Payment Entry">({
             // Update payment status for each referenced document
             for (const [dt, docIds] of invoiceMap.entries()) {
                 for (const docId of docIds) {
-                    await updatePaymentStatusForReference(dt as "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim" | "Salary Slip", docId);
+                    await updatePaymentStatusForReference(dt as "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim", docId);
                 }
             }
         }
@@ -437,8 +438,8 @@ export default $doctype<"Payment Entry">({
             for (const ref of doc.references) {
                 const refType = (ref as any).reference_type;
                 const referenceId = (ref as any).reference_id;
-                if (referenceId && refType && (refType === "Sales Invoice" || refType === "Purchase Invoice" || refType === "Employee Advance" || refType === "Expense Claim" || refType === "Salary Slip")) {
-                    await updatePaymentStatusForReference(refType as "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim" | "Salary Slip", referenceId);
+                if (referenceId && refType && (refType === "Sales Invoice" || refType === "Purchase Invoice" || refType === "Employee Advance" || refType === "Expense Claim")) {
+                    await updatePaymentStatusForReference(refType as "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim", referenceId);
                 }
             }
         }
@@ -449,7 +450,7 @@ export default $doctype<"Payment Entry">({
  * based on all submitted payment entries that reference it.
  */
 async function updatePaymentStatusForReference(
-    doctype: "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim" | "Salary Slip",
+    doctype: "Sales Invoice" | "Purchase Invoice" | "Employee Advance" | "Expense Claim",
     docId: string
 ) {
     const doc = await $zodula.doctype(doctype as any).get(docId);
@@ -460,8 +461,6 @@ async function updatePaymentStatusForReference(
     const totalAmountRaw =
         doctype === "Employee Advance" || doctype === "Expense Claim"
             ? parseFloat(String((doc as any).amount || 0)) || 0
-            : doctype === "Salary Slip"
-            ? parseFloat(String((doc as any).net_pay || 0)) || 0
             : parseFloat(String((doc as any).grand_total || 0)) || 0;
     const totalAmount = Math.abs(totalAmountRaw);
     if (totalAmount === 0) {

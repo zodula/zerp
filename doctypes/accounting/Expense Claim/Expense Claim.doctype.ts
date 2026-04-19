@@ -1,4 +1,4 @@
-export default $doctype({
+export default $doctype<"Expense Claim">({
     employee: {
         type: "Reference",
         label: "Employee",

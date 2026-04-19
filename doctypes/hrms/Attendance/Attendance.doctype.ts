@@ -12,6 +12,7 @@ export default $doctype<"Attendance">({
         readonly: 1,
         in_list_view: 1,
         is_quick_filter: 1,
+        fetch_from: "employee.full_name",
     },
     attendance_date: {
         type: "Date",

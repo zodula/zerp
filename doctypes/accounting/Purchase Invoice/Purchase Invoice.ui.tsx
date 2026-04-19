@@ -9,8 +9,6 @@ function applySupplierLinkFilters(frm: any) {
     const f = supplier ? JSON.stringify([["link_type", "=", "Supplier"], ["link_id", "=", supplier]]) : JSON.stringify([["link_type", "=", "Supplier"]]);
     frm.set_df_property?.("billing_address", "filters", f);
     frm.set_df_property?.("shipping_address", "filters", f);
-    frm.set_df_property?.("billing_contact", "filters", f);
-    frm.set_df_property?.("shipping_contact", "filters", f);
 }
 
 async function applyVatTemplateToForm(frm: any, templateId: string | null | undefined) {
@@ -199,7 +197,6 @@ export default function PurchaseInvoiceScripts() {
                 posting_date: frm.get_value("posting_date") || zodula.date.today(),
                 party_type: "Supplier",
                 party: frm.get_value("supplier"),
-                paid_amount: Math.abs(totalAmount),
                 to_paid_amount: Math.abs(totalAmount),
                 "references.0.reference_type": "Purchase Invoice",
                 "references.0.reference_id": invoiceId,

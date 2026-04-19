@@ -82,12 +82,6 @@ export default $doctype<"ERP Setting">(
       reference: "Account",
       required: 0,
     },
-    default_expense_claim_account: {
-      type: "Reference",
-      label: "Expense Claim",
-      reference: "Account",
-      required: 0,
-    },
     default_employee_advance_account: {
       type: "Reference",
       label: "Employee Advance",
@@ -121,7 +115,6 @@ export default $doctype<"ERP Setting">(
             { type: "field", value: "default_payable_account", align: "left" },
             { type: "field", value: "default_round_off_account", align: "left" },
             { type: "field", value: "default_payroll_payable_account", align: "left" },
-            { type: "field", value: "default_expense_claim_account", align: "left" },
             { type: "field", value: "default_employee_advance_account", align: "left" },
           ],
         ],

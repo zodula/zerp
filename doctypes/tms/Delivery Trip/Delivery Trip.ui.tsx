@@ -57,9 +57,13 @@ export default function DeliveryTripScripts() {
             });
             if (!selected) return;
 
-            const ids = "ids" in selected ? selected.ids : (selected.id ? [selected.id] : []);
+            const rawIds = "ids" in selected ? selected.ids : (selected ? [selected] : []);
+            const ids = (Array.isArray(rawIds) ? rawIds : [rawIds])
+                .flatMap((value) => String(value ?? "").split(","))
+                .map((id) => id.trim())
+                .filter(Boolean);
             if (!ids.length) return;
-            await appendDeliveryNotes(frm, ids.map((id) => String(id ?? "").trim()).filter(Boolean));
+            await appendDeliveryNotes(frm, ids);
         }, { icon: "ListChecks", condition: (ctx) => (ctx?.doc?.doc_status ?? "Draft") === "Draft" });
 
         zui.form.set_secondary_button("Delivery Trip", "Create Purchase Invoice", async (frm) => {

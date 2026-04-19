@@ -17,12 +17,14 @@ export default $doctype<"Delivery Note">(
       type: "Text",
       label: "Customer Phone",
       required: 0,
+      no_print: 1,
       readonly: 1,
     },
     customer_address: {
       type: "Text",
       label: "Customer Address",
       required: 0,
+      no_print: 1,
       readonly: 1,
     },
     quotation: {
@@ -31,6 +33,8 @@ export default $doctype<"Delivery Note">(
       reference: "Quotation",
       required: 0,
       readonly: 1,
+      unique: 1,
+      filters: JSON.stringify([["doc_status", "=", "Submitted"]]),
     },
     ignore_price_project: {
       type: "Check",
@@ -58,7 +62,7 @@ export default $doctype<"Delivery Note">(
       type: "Reference",
       label: "Source Warehouse",
       reference: "Warehouse",
-      required: 0,
+      required: 1,
       in_list_view: 1,
     },
     net_total: {
@@ -140,6 +144,13 @@ export default $doctype<"Delivery Note">(
       readonly: 1,
       fetch_from: "billing_address.inline_address",
     },
+    billing_inline_contact: {
+      type: "Text",
+      label: "Billing Inline Contact",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.inline_contact",
+    },
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
@@ -162,55 +173,19 @@ export default $doctype<"Delivery Note">(
       readonly: 1,
       fetch_from: "shipping_address.inline_address",
     },
-    billing_contact: {
-      type: "Reference",
-      label: "Billing Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 1,
-    },
-    billing_contact_name: {
+    shipping_inline_contact: {
       type: "Text",
-      label: "Billing Contact Name",
+      label: "Shipping Inline Contact",
       required: 0,
       readonly: 1,
-      fetch_from: "billing_contact.name",
-    },
-    billing_contact_inline: {
-      type: "Text",
-      label: "Billing Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "billing_contact.inline_contact",
-    },
-    shipping_contact: {
-      type: "Reference",
-      label: "Shipping Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 1,
-      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"], ["address_type", "=", "Shipping"]]),
-    },
-    shipping_contact_name: {
-      type: "Text",
-      label: "Shipping Contact Name",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.name",
-    },
-    shipping_contact_inline: {
-      type: "Text",
-      label: "Shipping Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.inline_contact",
+      fetch_from: "shipping_address.inline_contact",
     },
     sender_address: {
       type: "Reference",
       label: "Sender Address",
       reference: "Address",
       required: 0,
-      no_print: 0,
+      no_print: 1,
       filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"], ["address_type", "=", "Sender"]]),
     },
     sender_address_name: {
@@ -227,34 +202,19 @@ export default $doctype<"Delivery Note">(
       readonly: 1,
       fetch_from: "sender_address.inline_address",
     },
-    sender_contact: {
-      type: "Reference",
-      label: "Sender Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 0,
-      filters: JSON.stringify([["link_type", "=", "Customer"], ["address_type", "=", "Sender"], ["link_id", "=", "{{customer}}"]]),
-    },
-    sender_contact_name: {
+    sender_inline_contact: {
       type: "Text",
-      label: "Sender Contact Name",
+      label: "Sender Inline Contact",
       required: 0,
       readonly: 1,
-      fetch_from: "sender_contact.name",
-    },
-    sender_contact_inline: {
-      type: "Text",
-      label: "Sender Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "sender_contact.inline_contact",
+      fetch_from: "sender_address.inline_contact",
     },
     target_warehouse: {
       type: "Reference",
       label: "Target Warehouse",
       reference: "Warehouse",
       required: 0,
-      no_print: 0,
+      no_print: 1,
       readonly: 1,
     },
     driver: {
@@ -263,7 +223,7 @@ export default $doctype<"Delivery Note">(
       reference: "Driver",
       required: 0,
       readonly: 1,
-      no_print: 0,
+      no_print: 1,
     },
     vehicle: {
       type: "Reference",
@@ -271,7 +231,7 @@ export default $doctype<"Delivery Note">(
       reference: "Vehicle",
       required: 0,
       readonly: 1,
-      no_print: 0,
+      no_print: 1,
     },
     transporter: {
       type: "Reference",
@@ -279,17 +239,34 @@ export default $doctype<"Delivery Note">(
       reference: "Supplier",
       required: 0,
       readonly: 1,
-      no_print: 0,
+      no_print: 1,
       fetch_from: "driver.transporter",
     },
     installation_percentage: {
       type: "Float",
       label: "Installation %",
-      required: 1,
       readonly: 1,
       default: "0",
       no_print: 1,
       in_list_view: 1,
+    },
+    installation_status: {
+      type: "Select",
+      label: "Installation Status",
+      options: "Open\nClosed",
+      default: "Open",
+      required: 0,
+      allow_on_submit: 1,
+      no_print: 1,
+      in_list_view: 1,
+    },
+    installation_close_remark: {
+      type: "Long Text",
+      label: "Installation Close Remark",
+      required: 0,
+      allow_on_submit: 1,
+      no_print: 1,
+      depends_on: "doc.installation_status == 'Closed'",
     },
   },
   {
@@ -322,24 +299,24 @@ export default $doctype<"Delivery Note">(
           { type: "section", value: "Sender", align: "left" },
           [
             { type: "field", value: "sender_address", align: "left" },
-            { type: "field", value: "sender_address_name", align: "left" },
-            { type: "field", value: "sender_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "sender_contact", align: "left" },
-            { type: "field", value: "sender_contact_name", align: "left" },
-            { type: "field", value: "sender_contact_inline", align: "left" },
+            { type: "field", value: "sender_address_name", align: "left" },
+            { type: "field", value: "sender_inline_address", align: "left" },
+            { type: "field", value: "sender_inline_contact", align: "left" },
           ],
           { type: "section", value: "Shipping", align: "left" },
           [
             { type: "field", value: "shipping_address", align: "left" },
-            { type: "field", value: "shipping_address_name", align: "left" },
-            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "shipping_contact", align: "left" },
-            { type: "field", value: "shipping_contact_name", align: "left" },
-            { type: "field", value: "shipping_contact_inline", align: "left" },
+            { type: "field", value: "shipping_address_name", align: "left" },
+            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "field", value: "shipping_inline_contact", align: "left" },
           ],
           { type: "section", value: "Items", align: "left" },
           [
@@ -388,13 +365,13 @@ export default $doctype<"Delivery Note">(
           { type: "section", value: "Billing Address", align: "left" },
           [
             { type: "field", value: "billing_address", align: "left" },
-            { type: "field", value: "billing_address_name", align: "left" },
-            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "billing_contact", align: "left" },
-            { type: "field", value: "billing_contact_name", align: "left" },
-            { type: "field", value: "billing_contact_inline", align: "left" },
+            { type: "field", value: "billing_address_name", align: "left" },
+            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "field", value: "billing_inline_contact", align: "left" },
           ],
         ],
       },
@@ -415,13 +392,14 @@ export default $doctype<"Delivery Note">(
           { type: "section", value: "Installation", align: "left" },
           [
             { type: "field", value: "installation_percentage", align: "left" },
+            { type: "field", value: "installation_status", align: "left" },
+          ],
+          [
+            { type: "field", value: "installation_close_remark", align: "left" },
           ],
           { type: "section", value: "Trip Information", align: "left" },
           [
-            { type: "field", value: "source_warehouse", align: "left" },
             { type: "field", value: "target_warehouse", align: "left" },
-          ],
-          [
             { type: "field", value: "driver", align: "left" },
             { type: "field", value: "vehicle", align: "left" },
             { type: "field", value: "transporter", align: "left" },
@@ -463,10 +441,39 @@ export default $doctype<"Delivery Note">(
 
     docAny.total_taxes_and_charges = vatAmount;
     docAny.grand_total = grandTotal;
+
+    const installPct = num(docAny.installation_percentage);
+    if (installPct >= 100) {
+      docAny.installation_status = "Closed";
+    } else if (docAny.installation_status === "Closed") {
+      const remark = String(docAny.installation_close_remark ?? "").trim();
+      if (!remark) {
+        throw new Error(
+          "Installation is Closed but Installation % is not 100. Enter Installation Close Remark."
+        );
+      }
+    }
   })
   .on("before_save", async ({ doc }) => {
     if (doc.source_warehouse) {
       (doc as any).target_warehouse = doc.source_warehouse;
+    }
+  })
+  .on("before_submit", async ({ doc }) => {
+    const qid = String((doc as any).quotation ?? "").trim();
+    if (!qid) return;
+    const q = await $zodula.doctype("Quotation").get(qid);
+    if (!q) {
+      throw new Error(`Quotation ${qid} not found.`);
+    }
+    const qAny = q as any;
+    if (String(qAny.doc_status ?? "") !== "Submitted") {
+      throw new Error("Linked Quotation must be Submitted.");
+    }
+    if (Number(qAny.is_delivery_order) !== 1) {
+      throw new Error(
+        "Delivery Note requires a Quotation with Is Delivery Order enabled."
+      );
     }
   })
   .on("after_submit", async ({ doc }) => {

@@ -1,0 +1,829 @@
+[
+  {
+    "id": "1000 - Application of Funds (Assets)",
+    "account_code": "1000",
+    "account_name": "Application of Funds (Assets)",
+    "root_type": "Asset",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1090 - Current Assets",
+    "account_code": "1090",
+    "account_name": "Current Assets",
+    "root_type": "Asset",
+    "account_type": "Current Asset",
+    "parent_account": "1000 - Application of Funds (Assets)",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1100 - Cash In Hand",
+    "account_code": "1100",
+    "account_name": "Cash In Hand",
+    "root_type": "Asset",
+    "account_type": "Cash",
+    "parent_account": "1090 - Current Assets",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1110 - Cash",
+    "account_code": "1110",
+    "account_name": "Cash",
+    "root_type": "Asset",
+    "account_type": "Cash",
+    "parent_account": "1100 - Cash In Hand",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1200 - Bank Accounts",
+    "account_code": "1200",
+    "account_name": "Bank Accounts",
+    "root_type": "Asset",
+    "account_type": "Bank",
+    "parent_account": "1090 - Current Assets",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1300 - Accounts Receivable",
+    "account_code": "1300",
+    "account_name": "Accounts Receivable",
+    "root_type": "Asset",
+    "account_type": "Receivable",
+    "parent_account": "1090 - Current Assets",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1310 - Debtors",
+    "account_code": "1310",
+    "account_name": "Debtors",
+    "root_type": "Asset",
+    "account_type": "Receivable",
+    "parent_account": "1300 - Accounts Receivable",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1400 - Inventory",
+    "account_code": "1400",
+    "account_name": "Inventory",
+    "root_type": "Asset",
+    "account_type": "Stock",
+    "parent_account": "1090 - Current Assets",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1410 - Stock In Hand",
+    "account_code": "1410",
+    "account_name": "Stock In Hand",
+    "root_type": "Asset",
+    "account_type": "Stock",
+    "parent_account": "1400 - Inventory",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1500 - Tax Assets",
+    "account_code": "1500",
+    "account_name": "Tax Assets",
+    "root_type": "Asset",
+    "parent_account": "1090 - Current Assets",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1520 - WHT Receivable",
+    "account_code": "1520",
+    "account_name": "WHT Receivable",
+    "root_type": "Asset",
+    "account_type": "WHT Receivable",
+    "parent_account": "1500 - Tax Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1600 - Loans and Advances (Assets)",
+    "account_code": "1600",
+    "account_name": "Loans and Advances (Assets)",
+    "root_type": "Asset",
+    "parent_account": "1090 - Current Assets",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1610 - Employee Advances",
+    "account_code": "1610",
+    "account_name": "Employee Advances",
+    "root_type": "Asset",
+    "parent_account": "1600 - Loans and Advances (Assets)",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1650 - Securities and Deposits",
+    "account_code": "1650",
+    "account_name": "Securities and Deposits",
+    "root_type": "Asset",
+    "parent_account": "1090 - Current Assets",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1651 - Earnest Money",
+    "account_code": "1651",
+    "account_name": "Earnest Money",
+    "root_type": "Asset",
+    "parent_account": "1650 - Securities and Deposits",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1700 - Fixed Assets",
+    "account_code": "1700",
+    "account_name": "Fixed Assets",
+    "root_type": "Asset",
+    "parent_account": "1000 - Application of Funds (Assets)",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1710 - Capital Equipment",
+    "account_code": "1710",
+    "account_name": "Capital Equipment",
+    "root_type": "Asset",
+    "account_type": "Fixed Asset",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1720 - Electronic Equipment",
+    "account_code": "1720",
+    "account_name": "Electronic Equipment",
+    "root_type": "Asset",
+    "account_type": "Fixed Asset",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1730 - Furniture and Fixtures",
+    "account_code": "1730",
+    "account_name": "Furniture and Fixtures",
+    "root_type": "Asset",
+    "account_type": "Fixed Asset",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1740 - Office Equipment",
+    "account_code": "1740",
+    "account_name": "Office Equipment",
+    "root_type": "Asset",
+    "account_type": "Fixed Asset",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1750 - Plant and Machinery",
+    "account_code": "1750",
+    "account_name": "Plant and Machinery",
+    "root_type": "Asset",
+    "account_type": "Fixed Asset",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1760 - Buildings",
+    "account_code": "1760",
+    "account_name": "Buildings",
+    "root_type": "Asset",
+    "account_type": "Fixed Asset",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1770 - Software",
+    "account_code": "1770",
+    "account_name": "Software",
+    "root_type": "Asset",
+    "account_type": "Fixed Asset",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1780 - Accumulated Depreciation",
+    "account_code": "1780",
+    "account_name": "Accumulated Depreciation",
+    "root_type": "Asset",
+    "account_type": "Accumulated Depreciation",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1790 - CWIP Account",
+    "account_code": "1790",
+    "account_name": "CWIP Account",
+    "root_type": "Asset",
+    "account_type": "Capital Work in Progress",
+    "parent_account": "1700 - Fixed Assets",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "1800 - Investments",
+    "account_code": "1800",
+    "account_name": "Investments",
+    "root_type": "Asset",
+    "parent_account": "1000 - Application of Funds (Assets)",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1900 - Temporary Accounts",
+    "account_code": "1900",
+    "account_name": "Temporary Accounts",
+    "root_type": "Asset",
+    "parent_account": "1000 - Application of Funds (Assets)",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "1910 - Temporary Opening",
+    "account_code": "1910",
+    "account_name": "Temporary Opening",
+    "root_type": "Asset",
+    "account_type": "Temporary",
+    "parent_account": "1900 - Temporary Accounts",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2000 - Source of Funds (Liabilities)",
+    "account_code": "2000",
+    "account_name": "Source of Funds (Liabilities)",
+    "root_type": "Liability",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "2050 - Current Liabilities",
+    "account_code": "2050",
+    "account_name": "Current Liabilities",
+    "root_type": "Liability",
+    "account_type": "Current Liability",
+    "parent_account": "2000 - Source of Funds (Liabilities)",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "2100 - Accounts Payable",
+    "account_code": "2100",
+    "account_name": "Accounts Payable",
+    "root_type": "Liability",
+    "parent_account": "2050 - Current Liabilities",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "2110 - Creditors",
+    "account_code": "2110",
+    "account_name": "Creditors",
+    "root_type": "Liability",
+    "account_type": "Payable",
+    "parent_account": "2100 - Accounts Payable",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2120 - Payroll Payable",
+    "account_code": "2120",
+    "account_name": "Payroll Payable",
+    "root_type": "Liability",
+    "account_type": "Payable",
+    "parent_account": "2100 - Accounts Payable",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2200 - Stock Liabilities",
+    "account_code": "2200",
+    "account_name": "Stock Liabilities",
+    "root_type": "Liability",
+    "parent_account": "2050 - Current Liabilities",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "2210 - Stock Received But Not Billed",
+    "account_code": "2210",
+    "account_name": "Stock Received But Not Billed",
+    "root_type": "Liability",
+    "account_type": "Stock Received But Not Billed",
+    "parent_account": "2200 - Stock Liabilities",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2211 - Asset Received But Not Billed",
+    "account_code": "2211",
+    "account_name": "Asset Received But Not Billed",
+    "root_type": "Liability",
+    "account_type": "Asset Received But Not Billed",
+    "parent_account": "2200 - Stock Liabilities",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2300 - Duties and Taxes",
+    "account_code": "2300",
+    "account_name": "Duties and Taxes",
+    "root_type": "Liability",
+    "account_type": "Tax Payable",
+    "parent_account": "2050 - Current Liabilities",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "2330 - VAT",
+    "account_code": "2330",
+    "account_name": "VAT",
+    "root_type": "Liability",
+    "account_type": "Tax Payable",
+    "parent_account": "2300 - Duties and Taxes",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "2310 - Output VAT",
+    "account_code": "2310",
+    "account_name": "Output VAT",
+    "root_type": "Liability",
+    "account_type": "VAT Output",
+    "parent_account": "2330 - VAT",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2340 - Input VAT",
+    "account_code": "2340",
+    "account_name": "Input VAT",
+    "root_type": "Liability",
+    "account_type": "VAT Input",
+    "parent_account": "2330 - VAT",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2320 - WHT Payable",
+    "account_code": "2320",
+    "account_name": "WHT Payable",
+    "root_type": "Liability",
+    "account_type": "WHT Payable",
+    "parent_account": "2300 - Duties and Taxes",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2400 - Loans (Liabilities)",
+    "account_code": "2400",
+    "account_name": "Loans (Liabilities)",
+    "root_type": "Liability",
+    "parent_account": "2000 - Source of Funds (Liabilities)",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "2410 - Secured Loans",
+    "account_code": "2410",
+    "account_name": "Secured Loans",
+    "root_type": "Liability",
+    "parent_account": "2400 - Loans (Liabilities)",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2420 - Unsecured Loans",
+    "account_code": "2420",
+    "account_name": "Unsecured Loans",
+    "root_type": "Liability",
+    "parent_account": "2400 - Loans (Liabilities)",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "2430 - Bank Overdraft Account",
+    "account_code": "2430",
+    "account_name": "Bank Overdraft Account",
+    "root_type": "Liability",
+    "parent_account": "2400 - Loans (Liabilities)",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "3000 - Equity",
+    "account_code": "3000",
+    "account_name": "Equity",
+    "root_type": "Equity",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "3100 - Capital Stock",
+    "account_code": "3100",
+    "account_name": "Capital Stock",
+    "root_type": "Equity",
+    "account_type": "Equity",
+    "parent_account": "3000 - Equity",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "3200 - Dividends Paid",
+    "account_code": "3200",
+    "account_name": "Dividends Paid",
+    "root_type": "Equity",
+    "account_type": "Equity",
+    "parent_account": "3000 - Equity",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "3300 - Opening Balance Equity",
+    "account_code": "3300",
+    "account_name": "Opening Balance Equity",
+    "root_type": "Equity",
+    "account_type": "Equity",
+    "parent_account": "3000 - Equity",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "3400 - Retained Earnings",
+    "account_code": "3400",
+    "account_name": "Retained Earnings",
+    "root_type": "Equity",
+    "account_type": "Equity",
+    "parent_account": "3000 - Equity",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "4000 - Income",
+    "account_code": "4000",
+    "account_name": "Income",
+    "root_type": "Income",
+    "account_type": "Income Account",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "4100 - Direct Income",
+    "account_code": "4100",
+    "account_name": "Direct Income",
+    "root_type": "Income",
+    "account_type": "Direct Income",
+    "parent_account": "4000 - Income",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "4110 - Sales",
+    "account_code": "4110",
+    "account_name": "Sales",
+    "root_type": "Income",
+    "account_type": "Direct Income",
+    "parent_account": "4100 - Direct Income",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "4120 - Service",
+    "account_code": "4120",
+    "account_name": "Service",
+    "root_type": "Income",
+    "account_type": "Direct Income",
+    "parent_account": "4100 - Direct Income",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "4200 - Indirect Income",
+    "account_code": "4200",
+    "account_name": "Indirect Income",
+    "root_type": "Income",
+    "account_type": "Indirect Income",
+    "parent_account": "4000 - Income",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "4210 - Exchange Gain",
+    "account_code": "4210",
+    "account_name": "Exchange Gain",
+    "root_type": "Income",
+    "account_type": "Indirect Income",
+    "parent_account": "4200 - Indirect Income",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "4211 - Gain on Asset Disposal",
+    "account_code": "4211",
+    "account_name": "Gain on Asset Disposal",
+    "root_type": "Income",
+    "account_type": "Indirect Income",
+    "parent_account": "4200 - Indirect Income",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5000 - Expenses",
+    "account_code": "5000",
+    "account_name": "Expenses",
+    "root_type": "Expense",
+    "account_type": "Expense Account",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "5100 - Direct Expenses",
+    "account_code": "5100",
+    "account_name": "Direct Expenses",
+    "root_type": "Expense",
+    "account_type": "Direct Expense",
+    "parent_account": "5000 - Expenses",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "5110 - Stock Expenses",
+    "account_code": "5110",
+    "account_name": "Stock Expenses",
+    "root_type": "Expense",
+    "parent_account": "5100 - Direct Expenses",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "5111 - Cost of Goods Sold",
+    "account_code": "5111",
+    "account_name": "Cost of Goods Sold",
+    "root_type": "Expense",
+    "account_type": "Cost of Goods Sold",
+    "parent_account": "5110 - Stock Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5112 - Expenses Included In Asset Valuation",
+    "account_code": "5112",
+    "account_name": "Expenses Included In Asset Valuation",
+    "root_type": "Expense",
+    "account_type": "Expenses Included In Asset Valuation",
+    "parent_account": "5110 - Stock Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5119 - Stock Adjustment",
+    "account_code": "5119",
+    "account_name": "Stock Adjustment",
+    "root_type": "Expense",
+    "account_type": "Stock Adjustment",
+    "parent_account": "5110 - Stock Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5200 - Indirect Expenses",
+    "account_code": "5200",
+    "account_name": "Indirect Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5000 - Expenses",
+    "is_group": 1,
+    "balance": 0
+  },
+  {
+    "id": "5201 - Administrative Expenses",
+    "account_code": "5201",
+    "account_name": "Administrative Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5202 - Commission on Sales",
+    "account_code": "5202",
+    "account_name": "Commission on Sales",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5203 - Depreciation",
+    "account_code": "5203",
+    "account_name": "Depreciation",
+    "root_type": "Expense",
+    "account_type": "Depreciation",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5204 - Entertainment Expenses",
+    "account_code": "5204",
+    "account_name": "Entertainment Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5205 - Freight and Forwarding Charges",
+    "account_code": "5205",
+    "account_name": "Freight and Forwarding Charges",
+    "root_type": "Expense",
+    "account_type": "Chargeable",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5206 - Legal Expenses",
+    "account_code": "5206",
+    "account_name": "Legal Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5207 - Marketing Expenses",
+    "account_code": "5207",
+    "account_name": "Marketing Expenses",
+    "root_type": "Expense",
+    "account_type": "Chargeable",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5208 - Office Maintenance Expenses",
+    "account_code": "5208",
+    "account_name": "Office Maintenance Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5209 - Office Rent",
+    "account_code": "5209",
+    "account_name": "Office Rent",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5210 - Postal Expenses",
+    "account_code": "5210",
+    "account_name": "Postal Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5211 - Print and Stationery",
+    "account_code": "5211",
+    "account_name": "Print and Stationery",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5212 - Round Off",
+    "account_code": "5212",
+    "account_name": "Round Off",
+    "root_type": "Expense",
+    "account_type": "Round Off",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5213 - Salary",
+    "account_code": "5213",
+    "account_name": "Salary",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5214 - Sales Expenses",
+    "account_code": "5214",
+    "account_name": "Sales Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5215 - Telephone Expenses",
+    "account_code": "5215",
+    "account_name": "Telephone Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5216 - Travel Expenses",
+    "account_code": "5216",
+    "account_name": "Travel Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5217 - Utility Expenses",
+    "account_code": "5217",
+    "account_name": "Utility Expenses",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5218 - Write Off",
+    "account_code": "5218",
+    "account_name": "Write Off",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5219 - Exchange Loss",
+    "account_code": "5219",
+    "account_name": "Exchange Loss",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5220 - Loss on Asset Disposal",
+    "account_code": "5220",
+    "account_name": "Loss on Asset Disposal",
+    "root_type": "Expense",
+    "account_type": "Indirect Expense",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  },
+  {
+    "id": "5221 - Miscellaneous Expenses",
+    "account_code": "5221",
+    "account_name": "Miscellaneous Expenses",
+    "root_type": "Expense",
+    "account_type": "Chargeable",
+    "parent_account": "5200 - Indirect Expenses",
+    "is_group": 0,
+    "balance": 0
+  }
+]

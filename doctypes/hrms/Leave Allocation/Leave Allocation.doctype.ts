@@ -14,6 +14,7 @@ export default $doctype({
         required: 1,
         in_list_view: 1,
         unique: 1,
+        fetch_from: "employee.full_name",
         group: "group1"
     },
     employee_name: {

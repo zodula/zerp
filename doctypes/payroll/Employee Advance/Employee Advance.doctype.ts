@@ -7,6 +7,13 @@ export default $doctype({
         filters: JSON.stringify([["status", "=", "Active"]]),
         in_list_view: 1,
     },
+    employee_name: {
+        type: "Text",
+        label: "Employee Name",
+        readonly: 1,
+        in_list_view: 1,
+        fetch_from: "employee.full_name",
+    },
     posting_date: {
         type: "Date",
         label: "Posting Date",
@@ -44,6 +51,7 @@ export default $doctype({
     label: "Employee Advance",
     naming_series: "EA-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
+    display_field: "employee_name",
     track_changes: 1,
     search_fields: "employee\npayroll_date",
     additional_connections: JSON.stringify([{

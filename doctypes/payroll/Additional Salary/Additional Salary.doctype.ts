@@ -10,6 +10,13 @@ export default $doctype<"Additional Salary">({
         reference: "Employee",
         required: 1,
     },
+    employee_name: {
+        type: "Text",
+        label: "Employee Name",
+        readonly: 1,
+        in_list_view: 1,
+        fetch_from: "employee.full_name",
+    },
     component_type: {
         type: "Select",
         label: "Component Type",
@@ -36,6 +43,7 @@ export default $doctype<"Additional Salary">({
 }, {
     label: "Additional Salary",
     is_submittable: 1,
+    display_field: "employee_name",
     tabs: JSON.stringify([
         {
             type: "Tab",

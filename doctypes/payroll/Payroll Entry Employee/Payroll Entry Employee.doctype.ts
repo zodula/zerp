@@ -14,12 +14,12 @@ export default $doctype({
         in_list_view: 1,
         fetch_from: "employee.full_name",
     },
-    salary_slip: {
-        type: "Reference",
-        label: "Salary Slip",
-        reference: "Salary Slip",
+    salary_slip_submitted: {
+        type: "Check",
+        label: "Salary Slip Submitted",
         readonly: 1,
         in_list_view: 1,
+        default: "0",
     },
     net_pay: {
         type: "Currency",

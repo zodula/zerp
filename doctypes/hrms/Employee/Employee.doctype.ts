@@ -131,6 +131,11 @@ export default $doctype<"Employee">({
     display_field: "full_name",
     search_fields: "full_name\nemployee_number\nemail\nphone\ndesignation\ndepartment",
     track_changes: 1,
+    additional_connections: JSON.stringify([{
+        doctype: "Payment Entry",
+        filters: [["party_type", "=", "Employee"], ["party", "=", "{{id}}"]],
+        field: "party",
+    }]),
     tabs: JSON.stringify([
         {
             type: "Tab",

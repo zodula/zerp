@@ -2,6 +2,10 @@ import {
   deleteGlForReference,
   postPurchaseInvoiceGl,
 } from "@/zerp/src/shared/gl_posting";
+import {
+  createStockEntryForPurchaseInvoice,
+  deleteStockEntryByReference,
+} from "@/zerp/src/shared/stock_entry";
 
 export default $doctype<"Purchase Invoice">(
   {
@@ -58,6 +62,13 @@ export default $doctype<"Purchase Invoice">(
       required: 1,
       in_list_view: 1,
       default: "TODAY()",
+    },
+    source_warehouse: {
+      type: "Reference",
+      label: "Source Warehouse",
+      reference: "Warehouse",
+      required: 1,
+      in_list_view: 1,
     },
     due_date: {
       type: "Date",
@@ -147,6 +158,13 @@ export default $doctype<"Purchase Invoice">(
       readonly: 1,
       fetch_from: "billing_address.inline_address",
     },
+    billing_inline_contact: {
+      type: "Text",
+      label: "Billing Inline Contact",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.inline_contact",
+    },
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
@@ -169,49 +187,12 @@ export default $doctype<"Purchase Invoice">(
       readonly: 1,
       fetch_from: "shipping_address.inline_address",
     },
-    billing_contact: {
-      type: "Reference",
-      label: "Billing Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 1,
-      filters: JSON.stringify([["link_type", "=", "Supplier"], ["link_id", "=", "{{supplier}}"]]),
-    },
-    billing_contact_name: {
+    shipping_inline_contact: {
       type: "Text",
-      label: "Billing Contact Name",
+      label: "Shipping Inline Contact",
       required: 0,
       readonly: 1,
-      fetch_from: "billing_contact.name",
-    },
-    billing_contact_inline: {
-      type: "Text",
-      label: "Billing Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "billing_contact.inline_contact",
-    },
-    shipping_contact: {
-      type: "Reference",
-      label: "Shipping Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 1,
-      filters: JSON.stringify([["link_type", "=", "Supplier"], ["link_id", "=", "{{supplier}}"]]),
-    },
-    shipping_contact_name: {
-      type: "Text",
-      label: "Shipping Contact Name",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.name",
-    },
-    shipping_contact_inline: {
-      type: "Text",
-      label: "Shipping Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.inline_contact",
+      fetch_from: "shipping_address.inline_contact",
     },
   },
   {
@@ -246,6 +227,9 @@ export default $doctype<"Purchase Invoice">(
             { type: "field", value: "supplier_address", align: "left" },
           ],
           { type: "section", value: "Items", align: "left" },
+          [
+            { type: "field", value: "source_warehouse", align: "left" },
+          ],
           [
             { type: "field", value: "purchase_invoice_items", align: "left" },
           ],
@@ -288,24 +272,24 @@ export default $doctype<"Purchase Invoice">(
           { type: "section", value: "Billing Address", align: "left" },
           [
             { type: "field", value: "billing_address", align: "left" },
-            { type: "field", value: "billing_address_name", align: "left" },
-            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "billing_contact", align: "left" },
-            { type: "field", value: "billing_contact_name", align: "left" },
-            { type: "field", value: "billing_contact_inline", align: "left" },
+            { type: "field", value: "billing_address_name", align: "left" },
+            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "field", value: "billing_inline_contact", align: "left" },
           ],
           { type: "section", value: "Shipping Address", align: "left" },
           [
             { type: "field", value: "shipping_address", align: "left" },
-            { type: "field", value: "shipping_address_name", align: "left" },
-            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "shipping_contact", align: "left" },
-            { type: "field", value: "shipping_contact_name", align: "left" },
-            { type: "field", value: "shipping_contact_inline", align: "left" },
+            { type: "field", value: "shipping_address_name", align: "left" },
+            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "field", value: "shipping_inline_contact", align: "left" },
           ],
         ],
       },
@@ -354,6 +338,7 @@ export default $doctype<"Purchase Invoice">(
   })
   .on("after_submit", async ({ doc }) => {
     if (!doc.id) return;
+    await createStockEntryForPurchaseInvoice(doc as any);
     await postPurchaseInvoiceGl(doc as unknown as Record<string, unknown>);
     if (Number((doc as any).ignore_price_project) === 1) return;
     const erp = await $zodula.doctype("ERP Setting").select().limit(1).then(r => r.docs[0]);
@@ -398,5 +383,6 @@ export default $doctype<"Purchase Invoice">(
     }
   })
   .on("after_cancel", async ({ doc }) => {
+    await deleteStockEntryByReference("Purchase Invoice", String(doc.id));
     await deleteGlForReference("Purchase Invoice", doc.id);
   });

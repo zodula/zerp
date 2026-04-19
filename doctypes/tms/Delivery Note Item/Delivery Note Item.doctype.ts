@@ -61,23 +61,25 @@ export default $doctype<"Delivery Note Item">({
         type: "Float",
         label: "Volume (cm³)",
         readonly: 1,
-        in_list_view: 1,
         no_print: 1,
     },
     length: {
         type: "Float",
         label: "Length (cm)",
         readonly: 1,
+        in_list_view: 1,
     },
     width: {
         type: "Float",
         label: "Width (cm)",
         readonly: 1,
+        in_list_view: 1,
     },
     height: {
         type: "Float",
         label: "Height (cm)",
         readonly: 1,
+        in_list_view: 1,
     },
     volume_total: {
         type: "Float",

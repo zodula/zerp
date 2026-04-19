@@ -74,7 +74,7 @@ export default function OrgTrackIdPage() {
       <div className="auth-page-bg zd:min-h-screen zd:flex zd:items-center zd:justify-center zd:p-4 zd:relative">
         <div className="zd:relative zd:z-10 zd:text-center">
           <p className="zd:text-muted-foreground">{error ?? "Delivery Note not found."}</p>
-          <Link to={`/org/track`} className="zd:mt-4 zd:inline-block zd:text-sm zd:text-primary hover:zd:underline">
+          <Link to={`/track`} className="zd:mt-4 zd:inline-block zd:text-sm zd:text-primary hover:zd:underline">
             ← Try another ID
           </Link>
         </div>
@@ -235,7 +235,7 @@ export default function OrgTrackIdPage() {
         )}
 
         <p className="zd:mt-4 zd:text-sm zd:text-center">
-          <Link to={`/org/track`} className="zd:text-muted-foreground hover:zd:text-foreground">
+          <Link to={`/track`} className="zd:text-muted-foreground hover:zd:text-foreground">
             Track another order
           </Link>
           {" · "}

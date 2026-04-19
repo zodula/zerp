@@ -1,11 +1,18 @@
+import { ensurePayrollEntryAccrualJournal } from "@/zerp/src/shared/payroll_entry_journal";
+
 const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
 
 type EmployeeRow = {
     employee?: string;
     employee_name?: string;
-    salary_slip?: string;
+    salary_slip_submitted?: number;
     net_pay?: number;
 };
+
+const payrollAccrualJeDescription = (payrollEntryId: string) => `Payroll Entry ${payrollEntryId}`;
+const isPayrollPaymentJe = (description: string) => description.startsWith("Payroll bank payment ");
+const isPayrollManagedJe = (description: string, payrollEntryId: string) =>
+    description === payrollAccrualJeDescription(payrollEntryId) || isPayrollPaymentJe(description);
 
 export default $doctype<"Payroll Entry">({
     posting_date: {
@@ -44,30 +51,51 @@ export default $doctype<"Payroll Entry">({
         type: "Reference",
         label: "Payroll Payable Account",
         reference: "Account",
-        required: 0,
+        required: 1,
         in_list_view: 0,
-        description: "Accrual credit and Payment Entry offset for net salaries. Falls back to ERP Setting → Payroll Payable if empty.",
+        filters: JSON.stringify([["account_type", "IN", ["Payable"]], ["is_group", "=", "0"]]),
+        description: "Accrual credit and payment journal debit for net salaries. Falls back to ERP Setting → Payroll Payable if empty.",
     },
     bank_account: {
         type: "Reference",
         label: "Payment Account (Bank, Cash)",
         reference: "Account",
-        required: 0,
+        required: 1,
+        filters: JSON.stringify([["account_type", "IN", ["Bank", "Cash"]], ["is_group", "=", "0"]]),
         description: "Bank or cash account used when creating payment drafts from this payroll run.",
     },
-    journal_entry: {
-        type: "Reference",
-        label: "Journal Entry",
-        reference: "Journal Entry",
+    total_net_pay: {
+        type: "Currency",
+        label: "Total Net Pay",
+        required: 0,
         readonly: 1,
-        allow_on_submit: 1,
+        description: "Sum of net pay on employee rows (from Salary Slips). Compared to payment Journal Entries for status.",
+    },
+    payment_status: {
+        type: "Select",
+        label: "Payment Status",
+        options: "Unpaid\nPartially Paid\nPaid",
+        default: "Unpaid",
+        required: 1,
+        readonly: 1,
+        in_list_view: 1,
     },
 }, {
     label: "Payroll Entry",
     naming_series: "PR-{YYYY}-{MM}-{DD}-{#####}",
     is_submittable: 1,
     track_changes: 1,
-    search_fields: "start_date\nend_date",
+    search_fields: "start_date\nend_date\npayment_status",
+    additional_connections: JSON.stringify([
+        {
+            doctype: "Journal Entry",
+            filters: [
+                ["reference_doctype", "=", "Payroll Entry"],
+                ["reference_id", "=", "{{id}}"],
+            ],
+            field: "reference_id",
+        },
+    ]),
     tabs: JSON.stringify([
         {
             type: "Tab",
@@ -86,9 +114,8 @@ export default $doctype<"Payroll Entry">({
                 [
                     { type: "field", value: "payroll_payable_account", align: "left" },
                     { type: "field", value: "bank_account", align: "left" },
-                ],
-                [
-                    { type: "field", value: "journal_entry", align: "left" },
+                    { type: "field", value: "total_net_pay", align: "left" },
+                    { type: "field", value: "payment_status", align: "left" },
                 ],
             ],
         },
@@ -101,12 +128,32 @@ export default $doctype<"Payroll Entry">({
             throw new Error("Start Date must be on or before End Date.");
         }
         const rows = (doc.employee_table ?? []) as EmployeeRow[];
+        let sumNet = 0;
+        const peId = String(doc.id ?? "").trim();
         for (const row of rows) {
             const emp = String(row.employee ?? "").trim();
-            if (!emp) continue;
+            if (!emp) {
+                (row as any).salary_slip_submitted = 0;
+                continue;
+            }
             const e = await $zodula.doctype("Employee").get(emp);
             if (e) (row as any).employee_name = (e as any).full_name;
+            if (peId && !peId.startsWith("temp-")) {
+                const res = await $zodula
+                    .doctype("Salary Slip")
+                    .select()
+                    .where("payroll_entry", "=", peId)
+                    .where("employee", "=", emp)
+                    .limit(20);
+                const slip = (res.docs ?? []).find((s: any) => String(s.doc_status ?? "") !== "Cancelled");
+                (row as any).salary_slip_submitted = slip && String((slip as any).doc_status ?? "") === "Submitted" ? 1 : 0;
+                if (slip) (row as any).net_pay = num((slip as any).net_pay);
+            } else {
+                (row as any).salary_slip_submitted = 0;
+            }
+            sumNet += num((row as any).net_pay);
         }
+        (doc as any).total_net_pay = sumNet;
     })
     .on("before_submit", async ({ doc }) => {
         const rows = (doc.employee_table ?? []) as EmployeeRow[];
@@ -124,84 +171,37 @@ export default $doctype<"Payroll Entry">({
             throw new Error("Set Payroll Payable Account on this document or Default Payroll Payable in ERP Setting.");
         }
 
-        let totalEarnings = 0;
-        let totalNet = 0;
-        let totalDeductions = 0;
-
-        for (const [index, row] of rows.entries()) {
-            const slipId = String(row.salary_slip ?? "").trim();
-            if (!slipId) {
-                throw new Error(`Row ${index + 1}: Create and link Salary Slips before submitting.`);
-            }
-            const slip = await $zodula.doctype("Salary Slip").get(slipId);
-            if (!slip) throw new Error(`Salary Slip ${slipId} not found.`);
-            if (String((slip as any).doc_status ?? "") !== "Submitted") {
-                throw new Error(`Salary Slip ${slipId} must be submitted before Payroll Entry can be submitted.`);
-            }
-            totalEarnings += num((slip as any).total_earnings);
-            totalNet += num((slip as any).net_pay);
-            totalDeductions += num((slip as any).total_deductions);
-        }
-
-        const expectedCredits = totalNet + totalDeductions;
-        if (Math.abs(totalEarnings - expectedCredits) > 0.02) {
-            throw new Error(
-                `Salary Slip totals do not balance: sum of earnings (${totalEarnings}) must equal net pay + deductions (${expectedCredits}).`
-            );
-        }
-
-        if ((doc as any).journal_entry) {
-            throw new Error("Journal Entry is already linked; cancel and amend if you need to re-post.");
+        const existingJe = await $zodula
+            .doctype("Journal Entry" as any)
+            .select()
+            .where("reference_doctype", "=", "Payroll Entry")
+            .where("reference_id", "=", doc.id)
+            .limit(50);
+        const hasAccrualJe = (existingJe.docs ?? []).some(
+            (row: any) => String(row?.description ?? "").trim() === payrollAccrualJeDescription(String(doc.id ?? ""))
+        );
+        if (hasAccrualJe) {
+            throw new Error("Payroll accrual Journal Entry already exists; cancel and amend if you need to re-post.");
         }
     })
     .on("after_submit", async ({ doc }) => {
-        const rows = (doc.employee_table ?? []) as EmployeeRow[];
-        let totalEarnings = 0;
-        for (const row of rows) {
-            const slip = await $zodula.doctype("Salary Slip").get(String(row.salary_slip));
-            if (!slip) continue;
-            totalEarnings += num((slip as any).total_earnings);
-        }
-
-        const payrollSetting = await $zodula.doctype("Payroll Setting").select().limit(1).then((r) => r.docs[0] as any);
-        const erp = await $zodula.doctype("ERP Setting").select().limit(1).then((r) => r.docs[0] as any);
-        const expense = String(payrollSetting?.default_salary_expense_account ?? "").trim();
-        const payable =
-            String((doc as any).payroll_payable_account ?? "").trim() || String(erp?.default_payroll_payable_account ?? "").trim();
-
-        const items: any[] = [
-            {
-                account: expense,
-                debit_amount: totalEarnings,
-                credit_amount: 0,
-                memo: `Payroll accrual ${doc.id}`,
-            },
-            {
-                account: payable,
-                debit_amount: 0,
-                credit_amount: totalEarnings,
-                memo: `Payroll payable ${doc.id}`,
-            },
-        ];
-
-        const je = await $zodula.doctype("Journal Entry").insert({
-            journal_date: doc.posting_date,
-            description: `Payroll Entry ${doc.id}`,
-            reference_doctype: "Payroll Entry",
-            reference_id: doc.id,
-            journal_entry_items: items,
-        } as any);
-
-        await $zodula.doctype("Journal Entry").submit(je.id);
-        await $zodula.doctype("Payroll Entry").update(doc.id, {
-            journal_entry: je.id,
-        } as any);
+        await ensurePayrollEntryAccrualJournal(String(doc.id));
     })
     .on("after_cancel", async ({ doc }) => {
-        const jeId = String((doc as any).journal_entry ?? "").trim();
-        if (!jeId) return;
-        const je = await $zodula.doctype("Journal Entry").get(jeId);
-        if (je && String((je as any).doc_status ?? "") === "Submitted") {
-            await $zodula.doctype("Journal Entry").cancel(jeId);
+        const linked = await $zodula
+            .doctype("Journal Entry" as any)
+            .select()
+            .where("reference_doctype", "=", "Payroll Entry")
+            .where("reference_id", "=", doc.id)
+            .limit(100);
+        for (const row of linked.docs ?? []) {
+            const jeId = String((row as any)?.id ?? "").trim();
+            if (!jeId) continue;
+            const desc = String((row as any)?.description ?? "").trim();
+            if (!isPayrollManagedJe(desc, String(doc.id ?? ""))) continue;
+            const je = await $zodula.doctype("Journal Entry").get(jeId);
+            if (je && String((je as any).doc_status ?? "") === "Submitted") {
+                await $zodula.doctype("Journal Entry").cancel(jeId);
+            }
         }
     });

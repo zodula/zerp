@@ -5,6 +5,13 @@ export default $doctype<"Overtime Application">({
         reference: "Employee",
         required: 1,
     },
+    employee_name: {
+        type: "Text",
+        label: "Employee Name",
+        readonly: 1,
+        in_list_view: 1,
+        fetch_from: "employee.full_name",
+    },
     overtime_date: {
         type: "Date",
         label: "Overtime Date",
@@ -41,6 +48,7 @@ export default $doctype<"Overtime Application">({
     },
 }, {
     is_submittable: 1,
+    display_field: "employee_name",
 })
     .on("before_save", async ({ doc, old, input }) => {
         const employee_doc = await $zodula.doctype("Employee").get(doc.employee);

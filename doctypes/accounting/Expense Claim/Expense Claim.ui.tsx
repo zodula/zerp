@@ -33,7 +33,6 @@ export default function ExpenseClaimScripts() {
                 posting_date: frm.get_value("posting_date") || zodula.date.today(),
                 party_type: "Employee",
                 party: frm.get_value("employee"),
-                paid_amount: totalAmount,
                 "references.0.reference_type": "Expense Claim",
                 "references.0.reference_id": docId,
             };

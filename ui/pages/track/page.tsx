@@ -17,7 +17,7 @@ export default function OrgTrackPage() {
         return;
       }
       setError(null);
-      router.push(`/org/track/${encodeURIComponent(trimmed)}`);
+      router.push(`/track/${encodeURIComponent(trimmed)}`);
     },
     [id]
   );

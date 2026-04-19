@@ -9,8 +9,6 @@ function applyCustomerLinkFilters(frm: any) {
     const f = customer ? JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", customer]]) : JSON.stringify([["link_type", "=", "Customer"]]);
     frm.set_df_property?.("billing_address", "filters", f);
     frm.set_df_property?.("shipping_address", "filters", f);
-    frm.set_df_property?.("billing_contact", "filters", f);
-    frm.set_df_property?.("shipping_contact", "filters", f);
 }
 
 async function applyVatTemplateToForm(frm: any, templateId: string | null | undefined) {
@@ -248,9 +246,7 @@ export default function QuotationScripts() {
                 vat_type: frm.get_value("vat_type") ?? "Excluded",
                 vat_rate: frm.get_value("vat_rate") ?? 0,
                 billing_address: frm.get_value("billing_address"),
-                billing_contact: frm.get_value("billing_contact"),
                 shipping_address: frm.get_value("shipping_address"),
-                shipping_contact: frm.get_value("shipping_contact"),
                 ...mapQuotationLinesToSalesInvoicePrefill(items),
             };
             const c = frm.get_value("customer") ? await zodula.doc.get_doc("Customer", frm.get_value("customer")) as any : null;
@@ -258,7 +254,12 @@ export default function QuotationScripts() {
             const days = c?.credit_days != null ? num(c.credit_days) : 1;
             prefill.due_date = zodula.date.format(zodula.date.add(base, days, "days"), "date");
             zui.router?.push(`/desk/doctypes/Sales Invoice/form`, { state: { prefill } });
-        }, { icon: "FileText", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" });
+        }, {
+            icon: "FileText",
+            condition: (ctx) =>
+                ctx?.doc?.doc_status === "Submitted"
+                && Number((ctx?.doc as any)?.is_delivery_order) !== 1,
+        });
 
         zui.form.set_secondary_button("Quotation", "Create Delivery Note", async (frm) => {
             const quoteId = frm.get_value("id") ?? frm?.doc?.id;
@@ -273,13 +274,16 @@ export default function QuotationScripts() {
                 vat_type: frm.get_value("vat_type") ?? "Excluded",
                 vat_rate: frm.get_value("vat_rate") ?? 0,
                 billing_address: frm.get_value("billing_address"),
-                billing_contact: frm.get_value("billing_contact"),
                 shipping_address: frm.get_value("shipping_address"),
-                shipping_contact: frm.get_value("shipping_contact"),
                 ...mapQuotationLinesToDeliveryNotePrefill(items),
             };
             zui.router?.push(`/desk/doctypes/Delivery Note/form`, { state: { prefill } });
-        }, { icon: "Truck", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" });
+        }, {
+            icon: "Package",
+            condition: (ctx) =>
+                ctx?.doc?.doc_status === "Submitted"
+                && Number((ctx?.doc as any)?.is_delivery_order) === 1,
+        });
     }, []);
     return <></>;
 }

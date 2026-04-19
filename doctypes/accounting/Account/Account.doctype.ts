@@ -3,26 +3,30 @@ export default $doctype({
         type: "Text",
         label: "Account Code",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
     account_name: {
         type: "Text",
         label: "Account Name",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
     root_type: {
         type: "Select",
         label: "Root Type",
         options: "Asset\nLiability\nEquity\nIncome\nExpense",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
     account_type: {
         type: "Select",
         label: "Account Type",
         options: "Accumulated Depreciation\nAsset Received But Not Billed\nBank\nCash\nChargeable\nCapital Work in Progress\nCost of Goods Sold\nCurrent Asset\nCurrent Liability\nDepreciation\nDirect Expense\nDirect Income\nEquity\nExpense Account\nExpenses Included In Asset Valuation\nExpenses Included In Valuation\nFixed Asset\nIncome Account\nIndirect Expense\nIndirect Income\nLiability\nPayable\nReceivable\nRound Off\nRound Off for Opening\nStock\nStock Adjustment\nStock Received But Not Billed\nService Received But Not Billed\nTax\nTax Payable\nVAT Output\nVAT Input\nWHT Payable\nWHT Receivable\nTemporary",
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
     parent_account: {
         type: "Reference",
@@ -30,14 +34,15 @@ export default $doctype({
         reference: "Account",
         filters: JSON.stringify([["root_type", "=", "{{root_type}}"]]),
         in_list_view: 1,
-        in_quick_entry: 1
+        in_quick_entry: 1,
     },
     is_group: {
         type: "Check",
         label: "Is Group",
         default: "0",
         only_once: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
     balance: {
         type: "Currency",
@@ -52,7 +57,7 @@ export default $doctype({
         reference: "Doctype",
         filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]]),
         in_list_view: 1,
-        in_quick_entry: 1
+        in_quick_entry: 1,
     },
     party: {
         type: "Reference",
@@ -66,20 +71,23 @@ export default $doctype({
         label: "Bank",
         reference: "Bank",
         required: 0,
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
     bank_name: {
         type: "Text",
         label: "Bank Name",
         required: 0,
         in_list_view: 1,
+        in_quick_entry: 1,
         fetch_from: "bank.name",
     },
     bank_account_no: {
         type: "Text",
         label: "Bank Account No",
         required: 0,
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
 }, {
     label: "Account",

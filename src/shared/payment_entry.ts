@@ -8,7 +8,7 @@ export const PARTY_BY_PAYMENT: Record<string, string[]> = {
 
 export const REFERENCE_TYPES_BY_PARTY: Record<string, string[]> = {
     Customer: ["Sales Invoice"],
-    Employee: ["Expense Claim", "Employee Advance", "Salary Slip"],
+    Employee: ["Expense Claim", "Employee Advance"],
     Supplier: ["Purchase Invoice"],
 };
 
@@ -17,7 +17,6 @@ export const REFERENCE_TYPE_TOTAL_AMOUNT_FIELD: Record<string, string> = {
     "Purchase Invoice": "grand_total",
     "Expense Claim": "amount",
     "Employee Advance": "amount",
-    "Salary Slip": "net_pay",
 };
 
 export const REFERENCE_TYPE_PARTY_FIELD: Record<string, string> = {
@@ -25,7 +24,6 @@ export const REFERENCE_TYPE_PARTY_FIELD: Record<string, string> = {
     "Purchase Invoice": "supplier",
     "Expense Claim": "employee",
     "Employee Advance": "employee",
-    "Salary Slip": "employee",
 };
 
 export const PAYMENT_ENTRY_ACCOUNT_FILTERS = {

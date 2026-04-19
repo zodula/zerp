@@ -24,11 +24,14 @@ export default $doctype({
     address: {
         type: "Text",
         label: "Address",
+        in_quick_entry: 1
     },
     credit_days: {
         type: "Integer",
         label: "Credit Days",
+        default: "1",
         required: 0,
+        in_quick_entry: 1
     },
 }, {
     label: "Customer",
@@ -36,10 +39,19 @@ export default $doctype({
     search_fields: "name\nemail\nphone",
     display_field: "name",
     is_quick_entry: 1,
+    additional_connections: JSON.stringify([{
+        doctype: "Payment Entry",
+        filters: [["party_type", "=", "Customer"], ["party", "=", "{{id}}"]],
+        field: "party",
+    }, {
+        doctype: "Journal Entry",
+        filters: [["journal_entry_items.party_type", "=", "Customer"], ["journal_entry_items.party", "=", "{{id}}"]],
+        field: "journal_entry_items.party",
+    }]),
     tabs: JSON.stringify([
         {
-            type: "Tab", 
-            label: "Main", 
+            type: "Tab",
+            label: "Main",
             layout: [
                 { type: "section", value: "Basic Information", align: "left" },
                 [

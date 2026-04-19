@@ -4,7 +4,6 @@ import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/zodula/
 import { Button } from "@/zodula/ui/components/ui/button";
 import { FormControl } from "@/zodula/ui/components/ui/form-control";
 import { toast } from "@/zodula/ui/components/ui/toast";
-import { TreeView, type TreeNode } from "@/zodula/ui/components/list/TreeView";
 import { useAuth } from "@/zodula/ui/hooks/use-auth";
 
 export type OrgInfo = {
@@ -15,85 +14,9 @@ export type OrgInfo = {
   is_setup?: number | null;
 };
 
-type StandardAccount = {
-  account_code: string;
-  account_name: string;
-  root_type: string;
-  account_type?: string;
-  parent_code?: string;
-};
-
 type SetupTemplate = {
-  accounts: StandardAccount[];
-  essential_account_codes: string[];
   default_price_lists: { selling: string; buying: string };
 };
-
-function collectSubtreeCodes(
-  node: StandardAccount,
-  childrenMap: Map<string, StandardAccount[]>,
-  out: string[]
-) {
-  out.push(node.account_code);
-  const kids = childrenMap.get(node.account_code) ?? [];
-  for (const k of kids) collectSubtreeCodes(k, childrenMap, out);
-}
-
-function getCheckState(
-  node: StandardAccount,
-  childrenMap: Map<string, StandardAccount[]>,
-  selected: Set<string>
-) {
-  const codes: string[] = [];
-  collectSubtreeCodes(node, childrenMap, codes);
-  let checkedCount = 0;
-  for (const c of codes) if (selected.has(c)) checkedCount++;
-  if (checkedCount === 0) return { checked: false, indeterminate: false };
-  if (checkedCount === codes.length) return { checked: true, indeterminate: false };
-  return { checked: false, indeterminate: true };
-}
-
-function buildChildrenMap(accounts: StandardAccount[]) {
-  const byParent = new Map<string, StandardAccount[]>();
-  for (const a of accounts) {
-    const parent = a.parent_code ?? "";
-    const list = byParent.get(parent) ?? [];
-    list.push(a);
-    byParent.set(parent, list);
-  }
-  for (const [, list] of byParent) {
-    list.sort((x, y) => x.account_code.localeCompare(y.account_code));
-  }
-  return byParent;
-}
-
-function buildTreeNodes(accounts: StandardAccount[]) {
-  const childrenByParent = new Map<string, StandardAccount[]>();
-  for (const a of accounts) {
-    const parent = a.parent_code ?? "";
-    const list = childrenByParent.get(parent) ?? [];
-    list.push(a);
-    childrenByParent.set(parent, list);
-  }
-
-  for (const [, list] of childrenByParent) {
-    list.sort((x, y) => x.account_code.localeCompare(y.account_code));
-  }
-
-  const byCode = new Map(accounts.map((a) => [a.account_code, a]));
-  const toNode = (doc: StandardAccount): TreeNode<any> => ({
-    doc: {
-      ...doc,
-      _title: `${doc.account_code} ${doc.account_name}`,
-      _meta: `${doc.root_type}${doc.account_type ? ` • ${doc.account_type}` : ""}`,
-    },
-    children: (childrenByParent.get(doc.account_code) ?? [])
-      .filter((c) => byCode.has(c.account_code))
-      .map(toNode),
-  });
-
-  return (childrenByParent.get("") ?? []).map(toNode);
-}
 
 export default function SetupWizard({
   shouldOpen,
@@ -107,9 +30,8 @@ export default function SetupWizard({
   const { isAuthenticated } = useAuth();
   const open = shouldOpen && isAuthenticated;
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [submitting, setSubmitting] = useState(false);
-  const [template, setTemplate] = useState<SetupTemplate | null>(null);
 
   const [form, setForm] = useState({
     organization_name: "",
@@ -120,14 +42,10 @@ export default function SetupWizard({
     fiscal_year_end_date: `${new Date().getFullYear()}-12-31`,
   });
 
-  const [selectedAccountCodes, setSelectedAccountCodes] = useState<Set<string>>(new Set());
   const [priceLists, setPriceLists] = useState({
     selling: "Standard Selling",
     buying: "Standard Buying",
   });
-
-  const childrenMap = useMemo(() => buildChildrenMap(template?.accounts ?? []), [template?.accounts]);
-  const treeNodes = useMemo(() => buildTreeNodes(template?.accounts ?? []), [template?.accounts]);
 
   const canNextStep1 = useMemo(() => {
     const name = form.organization_name.trim();
@@ -138,13 +56,6 @@ export default function SetupWizard({
     if (!name || !abbr || !fyName || !fyStart || !fyEnd) return false;
     return fyStart <= fyEnd;
   }, [form.organization_name, form.abbr, form.fiscal_year_name, form.fiscal_year_start_date, form.fiscal_year_end_date]);
-
-  const selectedCount = useMemo(() => selectedAccountCodes.size, [selectedAccountCodes]);
-
-  const canNextAccounts = useMemo(() => {
-    if (!template) return false;
-    return selectedAccountCodes.size > 0;
-  }, [template, selectedAccountCodes]);
 
   const canNextPriceLists = useMemo(() => {
     const s = priceLists.selling.trim();
@@ -161,8 +72,6 @@ export default function SetupWizard({
 
     setStep(1);
     setSubmitting(false);
-    setTemplate(null);
-    setSelectedAccountCodes(new Set());
     setPriceLists({ selling: "Standard Selling", buying: "Standard Buying" });
     setForm({
       organization_name: String(o?.organization_name ?? ""),
@@ -173,26 +82,17 @@ export default function SetupWizard({
       fiscal_year_end_date: `${fyYear}-12-31`,
     });
 
-    let mounted = true;
     zodula
       .get_action("zerp.setup.template" as any, {})
       .then((data: SetupTemplate) => {
-        if (!mounted) return;
-        setTemplate(data);
-        setSelectedAccountCodes(new Set(data?.essential_account_codes ?? []));
         setPriceLists({
           selling: String(data?.default_price_lists?.selling ?? "Standard Selling"),
           buying: String(data?.default_price_lists?.buying ?? "Standard Buying"),
         });
       })
       .catch((e: any) => {
-        if (!mounted) return;
         toast.error("Failed to load setup template", e?.message ?? "");
       });
-
-    return () => {
-      mounted = false;
-    };
   }, [open, org]);
 
   const onStep1FieldChange = useCallback((fieldKey: string, value: unknown) => {
@@ -203,21 +103,6 @@ export default function SetupWizard({
     setPriceLists((p) => ({ ...p, [fieldKey]: value ?? "" }));
   }, []);
 
-  const toggleNode = useCallback(
-    (node: StandardAccount, nextChecked: boolean) => {
-      const next = new Set(selectedAccountCodes);
-      const codes: string[] = [];
-      collectSubtreeCodes(node, childrenMap, codes);
-      if (nextChecked) {
-        for (const c of codes) next.add(c);
-      } else {
-        for (const c of codes) next.delete(c);
-      }
-      setSelectedAccountCodes(next);
-    },
-    [selectedAccountCodes, childrenMap]
-  );
-
   const runWizard = async () => {
     setSubmitting(true);
     try {
@@ -227,8 +112,6 @@ export default function SetupWizard({
           abbr: form.abbr.trim(),
           currency: form.currency.trim(),
         },
-        generate_standard_accounts: true,
-        standard_account_codes: [...selectedAccountCodes],
         create_standard_price_projects: true,
         standard_price_lists: {
           selling: priceLists.selling.trim(),
@@ -250,7 +133,7 @@ export default function SetupWizard({
 
       toast.success(
         "Setup completed",
-        `Accounts: ${res?.accounts_created ?? 0}, Price Projects: ${res?.price_projects_created ?? 0}`
+        `Price Projects: ${res?.price_projects_created ?? 0}`
       );
 
       onSetupComplete();
@@ -272,7 +155,7 @@ export default function SetupWizard({
               <DialogTitle>Setup Wizard</DialogTitle>
               <DialogDescription>Complete initial setup before using ZERP.</DialogDescription>
             </div>
-            <div className="zd:text-xs zd:text-muted-foreground zd:mt-1">Step {step} / 4</div>
+            <div className="zd:text-xs zd:text-muted-foreground zd:mt-1">Step {step} / 3</div>
           </div>
 
           <div className="zd:p-6 zd:flex-1 zd:overflow-y-auto">
@@ -338,72 +221,6 @@ export default function SetupWizard({
 
             {step === 2 && (
               <div className="zd:space-y-4">
-                <div className="zd:text-sm zd:text-muted-foreground">
-                  Select accounts to generate (tree). We will auto-create any required parent accounts.
-                </div>
-                {!template ? (
-                  <div className="zd:text-sm zd:text-muted-foreground">Loading accounts...</div>
-                ) : (
-                  <div className="zd:rounded-lg zd:border">
-                    <div className="zd:flex zd:items-center zd:justify-between zd:gap-3 zd:px-4 zd:py-3 zd:border-b zd:bg-muted/20">
-                      <div className="zd:text-sm">
-                        Selected: <span className="zd:font-medium">{selectedCount}</span>
-                      </div>
-                      <div className="zd:flex zd:items-center zd:gap-2">
-                        <Button
-                          variant="outline"
-                          onClick={() =>
-                            setSelectedAccountCodes(new Set(template.essential_account_codes ?? []))
-                          }
-                          disabled={submitting}
-                        >
-                          Essential
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() =>
-                            setSelectedAccountCodes(new Set(template.accounts.map((a) => a.account_code)))
-                          }
-                          disabled={submitting}
-                        >
-                          Select all
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setSelectedAccountCodes(new Set())}
-                          disabled={submitting}
-                        >
-                          Clear
-                        </Button>
-                      </div>
-                    </div>
-                    <TreeView
-                      nodes={treeNodes}
-                      displayField="_title"
-                      displayLabel="Account"
-                      getDocId={(doc: any) => String(doc.account_code ?? doc.id ?? "")}
-                      columns={[{ key: "_meta", label: "Type" }]}
-                      defaultExpanded="all"
-                      persistExpanded={false}
-                      className="zd:rounded-none zd:border-0 zd:min-h-0"
-                      checkbox={{
-                        ariaLabel: "Select account",
-                        getState: (doc: any) => {
-                          const state = getCheckState(doc as StandardAccount, childrenMap, selectedAccountCodes);
-                          return { checked: state.checked, indeterminate: state.indeterminate };
-                        },
-                        onToggle: (doc: any, nextChecked: boolean) => {
-                          toggleNode(doc as StandardAccount, nextChecked);
-                        },
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            )}
-
-            {step === 3 && (
-              <div className="zd:space-y-4">
                 <div className="zd:text-sm zd:text-muted-foreground">Name the standard price lists.</div>
                 <div className="zd:grid zd:grid-cols-1 md:zd:grid-cols-2 zd:gap-3">
                   <FormControl
@@ -431,7 +248,7 @@ export default function SetupWizard({
               </div>
             )}
 
-            {step === 4 && (
+            {step === 3 && (
               <div className="zd:space-y-4">
                 <div className="zd:text-sm zd:text-muted-foreground">Confirm and run setup.</div>
                 <div className="zd:rounded-lg zd:border zd:p-4">
@@ -444,7 +261,6 @@ export default function SetupWizard({
                     Fiscal Year: {form.fiscal_year_name.trim() || "—"} ({form.fiscal_year_start_date || "—"} to{" "}
                     {form.fiscal_year_end_date || "—"})
                   </div>
-                  <div className="zd:mt-3 zd:text-xs zd:text-muted-foreground">Accounts to create: {selectedCount}</div>
                   <div className="zd:mt-1 zd:text-xs zd:text-muted-foreground">
                     Price Lists: {priceLists.selling.trim() || "—"} / {priceLists.buying.trim() || "—"}
                   </div>
@@ -463,20 +279,19 @@ export default function SetupWizard({
             </Button>
 
             <div className="zd:flex zd:items-center zd:gap-2">
-              {step < 4 && (
+              {step < 3 && (
                 <Button
-                  onClick={() => setStep((s) => (s === 4 ? 4 : ((s + 1) as any)))}
+                  onClick={() => setStep((s) => (s === 3 ? 3 : ((s + 1) as any)))}
                   disabled={
                     submitting ||
                     (step === 1 && !canNextStep1) ||
-                    (step === 2 && !canNextAccounts) ||
-                    (step === 3 && !canNextPriceLists)
+                    (step === 2 && !canNextPriceLists)
                   }
                 >
                   Next
                 </Button>
               )}
-              {step === 4 && (
+              {step === 3 && (
                 <Button onClick={runWizard} disabled={submitting}>
                   {submitting ? "Running..." : "Run Setup"}
                 </Button>

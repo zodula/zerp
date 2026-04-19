@@ -1,4 +1,9 @@
 export default $doctype<"Item">({
+    item_image: {
+        type: "File",
+        label: "Item Image",
+        in_quick_entry: 1
+    },
     item_name: {
         type: "Text",
         label: "Item Name",
@@ -6,29 +11,44 @@ export default $doctype<"Item">({
         in_list_view: 1,
         unique: 1,
         group: "group1",
+        in_quick_entry: 1,
     },
     item_category: {
         type: "Reference",
         label: "Item Category",
         reference: "Item Category",
         required: 1,
-        in_list_view: 1
+        in_list_view: 1,
+        in_quick_entry: 1,
     },
     item_description: {
         type: "Text",
-        label: "Item Description"
+        label: "Item Description",
+    },
+    uom: {
+        type: "Reference",
+        label: "UOM",
+        reference: "UOM",
+        required: 1,
+        in_list_view: 1,
+        in_quick_entry: 1,
+        group: "group1",
+        unique: 1,
     },
     length: {
         type: "Float",
-        label: "Length (cm)"
+        label: "Length (cm)",
+        in_quick_entry: 1,
     },
     width: {
         type: "Float",
-        label: "Width (cm)"
+        label: "Width (cm)",
+        in_quick_entry: 1,
     },
     height: {
         type: "Float",
-        label: "Height (cm)"
+        label: "Height (cm)",
+        in_quick_entry: 1,
     },
     volume: {
         type: "Float",
@@ -38,25 +58,21 @@ export default $doctype<"Item">({
     },
     weight: {
         type: "Float",
-        label: "Weight (kg)"
+        label: "Weight (kg)",
+        in_quick_entry: 1,
     },
     barcode: {
         type: "Text",
-        label: "Barcode"
+        label: "Barcode",
+        in_quick_entry: 1,
     },
-    uom: {
-        type: "Reference",
-        label: "UOM",
-        reference: "UOM",
-        required: 1,
+    maintain_stock: {
+        type: "Check",
+        label: "Maintain Stock",
+        default: "1",
         in_list_view: 1,
-        group: "group1",
-        unique: 1,
+        description: "If enabled, submitted stock documents affect this item's stock report.",
     },
-    item_image: {
-        type: "File",
-        label: "Item Image"
-    }
 }, {
     label: "Item",
     naming_series: "ITM-{YYYY}{MM}{DD}{#####}",
@@ -86,7 +102,8 @@ export default $doctype<"Item">({
                 { type: "section", value: "Barcode & UOM", align: "left" },
                 [
                     { type: "field", value: "barcode", align: "left" },
-                    { type: "field", value: "uom", align: "left" }
+                    { type: "field", value: "uom", align: "left" },
+                    { type: "field", value: "maintain_stock", align: "left" }
                 ],
                 { type: "section", value: "Item Image", align: "left" },
                 [

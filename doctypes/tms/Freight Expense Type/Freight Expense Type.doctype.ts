@@ -4,6 +4,7 @@ export default $doctype({
         label: "Expense Type Name",
         required: 1,
         in_list_view: 1,
+        in_quick_entry: 1,
     },
     item: {
         type: "Reference",
@@ -11,6 +12,7 @@ export default $doctype({
         reference: "Item",
         required: 1,
         in_list_view: 1,
+        in_quick_entry: 1,
     },
     uom: {
         type: "Reference",
@@ -18,12 +20,14 @@ export default $doctype({
         reference: "UOM",
         required: 1,
         in_list_view: 1,
+        in_quick_entry: 1,
     },
 }, {
     label: "Freight Expense Type",
     naming_series: "{{expense_type_name}}",
     display_field: "expense_type_name",
     search_fields: "expense_type_name\nitem",
+    is_quick_entry: 1,
     tabs: JSON.stringify([
         {
             type: "Tab",

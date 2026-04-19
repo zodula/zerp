@@ -17,6 +17,7 @@ export default $doctype<"Employee Face Data">({
         label: "Employee Name",
         readonly: 1,
         in_list_view: 1,
+        fetch_from: "employee.full_name",
     },
     face_descriptor: {
         type: "JSON",

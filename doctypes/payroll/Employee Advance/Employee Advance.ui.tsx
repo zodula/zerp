@@ -33,7 +33,6 @@ export default function EmployeeAdvanceScripts() {
                 posting_date: frm.get_value("posting_date") || zodula.date.today(),
                 party_type: "Employee",
                 party: frm.get_value("employee"),
-                paid_amount: totalAmount,
                 to_paid_amount: totalAmount,
                 "references.0.reference_type": "Employee Advance",
                 "references.0.reference_id": docId,

@@ -46,7 +46,7 @@ export default $doctype<"General Ledger">({
         type: "Reference",
         label: "Party Type",
         reference: "Doctype",
-        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]])
+        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier", "Employee"]]])
     },
     party: {
         type: "Reference",

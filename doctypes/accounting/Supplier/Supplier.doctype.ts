@@ -5,6 +5,11 @@ export default $doctype({
         required: 1,
         in_list_view: 1
     },
+    tax_id: {
+        type: "Text",
+        label: "Tax ID",
+        in_quick_entry: 1
+    },
     email: {
         type: "Email",
         label: "Email",
@@ -22,6 +27,7 @@ export default $doctype({
     credit_days: {
         type: "Integer",
         label: "Credit Days",
+        default: "1",
         required: 0,
     }
 }, {
@@ -29,6 +35,11 @@ export default $doctype({
     naming_series: "{{name}}",
     search_fields: "name\nemail\nphone",
     is_quick_entry: 1,
+    additional_connections: JSON.stringify([{
+        doctype: "Payment Entry",
+        filters: [["party_type", "=", "Supplier"], ["party", "=", "{{id}}"]],
+        field: "party",
+    }]),
     tabs: JSON.stringify([
         {
             type: "Tab", 

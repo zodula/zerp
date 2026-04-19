@@ -480,30 +480,6 @@
     ]
   },
   {
-    "id": "ws_zerp_accounting_setup_contact",
-    "name": "Contact",
-    "idx": 30,
-    "workspace_parent": "ws_zerp_accounting_setup",
-    "icon": "MapPinned",
-    "url": "/desk/doctypes/Contact/list",
-    "app": "zerp",
-    "is_system": 0,
-    "workspace_roles": [
-      {
-        "role": "Accounting Manager"
-      },
-      {
-        "role": "Accounting User"
-      },
-      {
-        "role": "TMS Manager"
-      },
-      {
-        "role": "TMS User"
-      }
-    ]
-  },
-  {
     "id": "ws_zerp_accounting_setup_customer",
     "name": "Customer",
     "idx": 40,
@@ -1411,10 +1387,22 @@
     "is_system": 0,
     "workspace_roles": [
       {
+        "role": "Accounting Manager"
+      },
+      {
+        "role": "Accounting User"
+      },
+      {
         "role": "Stock Manager"
       },
       {
         "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
       }
     ]
   },
@@ -1449,6 +1437,54 @@
     "workspace_parent": "ws_zerp_stock_warehouse",
     "icon": "Package",
     "url": "/desk/doctypes/Warehouse/list",
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_stock_transactions",
+    "name": "Transactions",
+    "idx": 20,
+    "workspace_parent": "ws_zerp_stock",
+    "icon": "Package",
+    "url": null,
+    "app": "zerp",
+    "is_system": 0,
+    "workspace_roles": [
+      {
+        "role": "Stock Manager"
+      },
+      {
+        "role": "Stock User"
+      },
+      {
+        "role": "TMS Manager"
+      },
+      {
+        "role": "TMS User"
+      }
+    ]
+  },
+  {
+    "id": "ws_zerp_stock_transactions_stock_entry",
+    "name": "Stock Entry",
+    "idx": 0,
+    "workspace_parent": "ws_zerp_stock_transactions",
+    "icon": "Package",
+    "url": "/desk/doctypes/Stock Entry/list",
     "app": "zerp",
     "is_system": 0,
     "workspace_roles": [

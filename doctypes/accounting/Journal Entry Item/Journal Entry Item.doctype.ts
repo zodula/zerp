@@ -10,7 +10,7 @@ export default $doctype({
         type: "Reference",
         label: "Party Type",
         reference: "Doctype",
-        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier"]]]),
+        filters: JSON.stringify([["name", "IN", ["Customer", "Supplier", "Employee"]]]),
         in_list_view: 1
     },
     party: {

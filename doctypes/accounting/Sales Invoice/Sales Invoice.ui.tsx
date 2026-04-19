@@ -4,13 +4,85 @@ import { useZui } from "@/zodula/ui";
 const num = (v: any) => parseFloat(String(v ?? 0)) || 0;
 const round2 = (v: number) => Math.round(v * 100) / 100;
 
+/** Credit note lines: same items as source invoice with negative qty and derived totals (form prefill uses dotted paths). */
+function buildCreditNoteItemsPrefill(srcRows: any[] | undefined): Record<string, any> {
+    const out: Record<string, any> = {};
+    if (!Array.isArray(srcRows)) return out;
+    srcRows.forEach((row, i) => {
+        const q = -Math.abs(num(row?.quantity));
+        const up = num(row?.unit_price);
+        const vol = num(row?.volume);
+        const wt = num(row?.weight);
+        const p = `sales_invoice_items.${i}`;
+        out[`${p}.item`] = row?.item ?? "";
+        out[`${p}.item_name`] = row?.item_name ?? "";
+        out[`${p}.item_description`] = row?.item_description ?? "";
+        out[`${p}.item_image`] = row?.item_image ?? "";
+        out[`${p}.uom`] = row?.uom ?? "";
+        out[`${p}.length`] = num(row?.length);
+        out[`${p}.width`] = num(row?.width);
+        out[`${p}.height`] = num(row?.height);
+        out[`${p}.weight`] = wt;
+        out[`${p}.volume`] = vol;
+        out[`${p}.quantity`] = q;
+        out[`${p}.unit_price`] = up;
+        out[`${p}.total_price`] = round2(q * up);
+        out[`${p}.volume_total`] = round2(vol * q);
+        out[`${p}.weight_total`] = round2(wt * q);
+    });
+    return out;
+}
+
+/** Outstanding for a Sales Invoice or Credit Note (matches Payment Entry `references.reference_id` logic). */
+async function getSalesInvoiceOutstandingForPe(refId: string): Promise<number> {
+    const baseDoc = (await zodula.doc.get_doc("Sales Invoice" as any, refId)) as any;
+    if (!baseDoc) return 0;
+    const totalAmount = Math.abs(num(baseDoc.grand_total));
+    const refsRes = await zodula.doc.select_docs("Payment Entry Reference" as any, {
+        filters: [
+            ["reference_id", "=", refId],
+            ["reference_type", "=", "Sales Invoice"],
+        ],
+        limit: 500,
+        sort: "id",
+        order: "asc",
+    });
+    let allocated = 0;
+    for (const r of refsRes?.docs ?? []) {
+        const paymentEntryId = (r as any).parentid;
+        if (!paymentEntryId) continue;
+        const pe = (await zodula.doc.get_doc("Payment Entry" as any, paymentEntryId)) as any;
+        if (pe?.doc_status === "Submitted") allocated += Math.abs(num((r as any).allocate_amount));
+    }
+    return Math.max(0, totalAmount - allocated);
+}
+
+async function fetchSubmittedCreditNotesAgainst(baseInvoiceId: string): Promise<any[]> {
+    const res = await zodula.doc.select_docs("Sales Invoice" as any, {
+        filters: [
+            ["is_credit_note", "=", 1],
+            ["return_against_sales_invoice", "=", baseInvoiceId],
+            ["doc_status", "=", "Submitted"],
+        ],
+        limit: 500,
+        sort: "posting_date",
+        order: "asc",
+    });
+    return res?.docs ?? [];
+}
+
+/** Net cash for Receive: invoice outstanding minus credit note outstandings (Payment Entry signed allocation). */
+function netReceivePaidAmount(baseOutstanding: number, creditNoteOutstandings: number[]): number {
+    let net = baseOutstanding;
+    for (const o of creditNoteOutstandings) net -= o;
+    return Math.max(0, round2(net));
+}
+
 function applyCustomerLinkFilters(frm: any) {
     const customer = frm.get_value("customer");
     const f = customer ? JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", customer]]) : JSON.stringify([["link_type", "=", "Customer"]]);
     frm.set_df_property?.("billing_address", "filters", f);
     frm.set_df_property?.("shipping_address", "filters", f);
-    frm.set_df_property?.("billing_contact", "filters", f);
-    frm.set_df_property?.("shipping_contact", "filters", f);
 }
 
 async function applyVatTemplateToForm(frm: any, templateId: string | null | undefined) {
@@ -226,26 +298,88 @@ export default function SalesInvoiceScripts() {
         }, { icon: "FileText", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) !== 1 && ctx?.doc?.payment_status === "Paid" });
 
         zui.form.set_secondary_button("Sales Invoice", "Create Payment Entry", async (frm) => {
-            const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
-            const totalAmount = num(frm.get_value("grand_total"));
+            const currentId = frm.get_value("id") ?? frm?.doc?.id;
+            if (!currentId || String(currentId).startsWith("temp-")) {
+                zui.toast.error("Save the Sales Invoice first.");
+                return;
+            }
             const isCreditNote = Number((frm?.doc as any)?.is_credit_note ?? 0) === 1;
-            const prefill: Record<string, any> = {
-                payment_type: isCreditNote ? "Receive" : "Receive",
-                posting_date: frm.get_value("posting_date") || zodula.date.today(),
-                party_type: "Customer",
-                party: frm.get_value("customer"),
-                paid_amount: Math.abs(totalAmount),
-                to_paid_amount: Math.abs(totalAmount),
-                "references.0.reference_type": "Sales Invoice",
-                "references.0.reference_id": invoiceId,
-                "references.0.outstanding_amount": Math.abs(totalAmount),
-                "references.0.allocate_amount": Math.abs(totalAmount),
-            };
-            zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill } });
-        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) !== 1 });
+            let baseInvoiceId = String(currentId);
+            if (isCreditNote) {
+                const against = String(frm.get_value("return_against_sales_invoice") ?? "").trim();
+                if (!against) {
+                    zui.toast.error("Return Against Sales Invoice is required for a Credit Note.");
+                    return;
+                }
+                baseInvoiceId = against;
+            }
+            try {
+                if (isCreditNote) {
+                    const parent = (await zodula.doc.get_doc("Sales Invoice" as any, baseInvoiceId)) as any;
+                    if (parent?.payment_status === "Paid") {
+                        const o = await getSalesInvoiceOutstandingForPe(String(currentId));
+                        const amt = Math.abs(num(o));
+                        if (amt <= 0.0001) {
+                            zui.toast.error("No outstanding amount on this credit note to pay out.");
+                            return;
+                        }
+                        const prefillPay: Record<string, any> = {
+                            payment_type: "Pay",
+                            posting_date: frm.get_value("posting_date") || zodula.date.today(),
+                            party_type: "Customer",
+                            party: frm.get_value("customer"),
+                            to_paid_amount: amt,
+                            "references.0.reference_type": "Sales Invoice",
+                            "references.0.reference_id": currentId,
+                            "references.0.outstanding_amount": amt,
+                            "references.0.allocate_amount": amt,
+                        };
+                        zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill: prefillPay } });
+                        return;
+                    }
+                }
+
+                const creditNoteDocs = await fetchSubmittedCreditNotesAgainst(baseInvoiceId);
+                const baseOutstanding = await getSalesInvoiceOutstandingForPe(baseInvoiceId);
+                const cnOutstandings: number[] = [];
+                for (const cn of creditNoteDocs) {
+                    const cid = (cn as any)?.id;
+                    cnOutstandings.push(cid ? await getSalesInvoiceOutstandingForPe(String(cid)) : 0);
+                }
+                const netPaid = netReceivePaidAmount(baseOutstanding, cnOutstandings);
+                const prefill: Record<string, any> = {
+                    payment_type: "Receive",
+                    posting_date: frm.get_value("posting_date") || zodula.date.today(),
+                    party_type: "Customer",
+                    party: frm.get_value("customer"),
+                    to_paid_amount: netPaid,
+                    "references.0.reference_type": "Sales Invoice",
+                    "references.0.reference_id": baseInvoiceId,
+                    "references.0.outstanding_amount": baseOutstanding,
+                    "references.0.allocate_amount": baseOutstanding,
+                };
+                let refIdx = 1;
+                for (let j = 0; j < creditNoteDocs.length; j++) {
+                    const cn = creditNoteDocs[j] as any;
+                    const cid = cn?.id;
+                    if (!cid) continue;
+                    const o = cnOutstandings[j] ?? 0;
+                    const cnDisplay = -Math.abs(o);
+                    prefill[`references.${refIdx}.reference_type`] = "Sales Invoice";
+                    prefill[`references.${refIdx}.reference_id`] = cid;
+                    prefill[`references.${refIdx}.outstanding_amount`] = cnDisplay;
+                    prefill[`references.${refIdx}.allocate_amount`] = cnDisplay;
+                    refIdx++;
+                }
+                zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill } });
+            } catch (e: any) {
+                zui.toast.error(e?.message ?? "Failed to build Payment Entry prefill.");
+            }
+        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" });
 
         zui.form.set_secondary_button("Sales Invoice", "Create Credit Note", async (frm) => {
             const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
+            const srcItems = (frm.get_value("sales_invoice_items") ?? frm?.doc?.sales_invoice_items ?? []) as any[];
             const prefill: Record<string, any> = {
                 customer: frm.get_value("customer"),
                 posting_date: zodula.date.today(),
@@ -257,45 +391,10 @@ export default function SalesInvoiceScripts() {
                 apply_vat_template: frm.get_value("apply_vat_template") ?? "",
                 vat_type: frm.get_value("vat_type") ?? "Excluded",
                 vat_rate: frm.get_value("vat_rate") ?? 0,
+                ...buildCreditNoteItemsPrefill(srcItems),
             };
             zui.router?.push(`/desk/doctypes/Sales Invoice/form`, { state: { prefill } });
         }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) !== 1 });
-
-        zui.form.set_secondary_button("Sales Invoice", "Apply Credit Note", async (frm) => {
-            const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
-            const totalAmount = Math.abs(num(frm.get_value("grand_total")));
-            const prefill: Record<string, any> = {
-                payment_type: "Receive",
-                posting_date: frm.get_value("posting_date") || zodula.date.today(),
-                party_type: "Customer",
-                party: frm.get_value("customer"),
-                paid_amount: totalAmount,
-                to_paid_amount: totalAmount,
-                "references.0.reference_type": "Sales Invoice",
-                "references.0.reference_id": invoiceId,
-                "references.0.outstanding_amount": totalAmount,
-                "references.0.allocate_amount": totalAmount,
-            };
-            zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill } });
-        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) === 1 });
-
-        zui.form.set_secondary_button("Sales Invoice", "Refund Credit Note", async (frm) => {
-            const invoiceId = frm.get_value("id") ?? frm?.doc?.id;
-            const totalAmount = Math.abs(num(frm.get_value("grand_total")));
-            const prefill: Record<string, any> = {
-                payment_type: "Pay",
-                posting_date: frm.get_value("posting_date") || zodula.date.today(),
-                party_type: "Customer",
-                party: frm.get_value("customer"),
-                paid_amount: totalAmount,
-                to_paid_amount: totalAmount,
-                "references.0.reference_type": "Sales Invoice",
-                "references.0.reference_id": invoiceId,
-                "references.0.outstanding_amount": totalAmount,
-                "references.0.allocate_amount": totalAmount,
-            };
-            zui.router?.push(`/desk/doctypes/Payment Entry/form`, { state: { prefill } });
-        }, { icon: "DollarSign", condition: (ctx) => ctx?.doc?.doc_status === "Submitted" && Number((ctx?.doc as any)?.is_credit_note ?? 0) === 1 });
     }, []);
     return <></>;
 }

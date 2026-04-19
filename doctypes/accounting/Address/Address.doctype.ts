@@ -23,6 +23,11 @@ export default $doctype<"Address">({
         label: "Address Line 2",
         in_quick_entry: 1,
     },
+    county: {
+        type: "Text",
+        label: "County",
+        in_quick_entry: 1,
+    },
     city: {
         type: "Text",
         label: "City",
@@ -43,9 +48,25 @@ export default $doctype<"Address">({
         type: "Text",
         label: "Country"
     },
+    email: {
+        type: "Email",
+        label: "Contact Email",
+        in_quick_entry: 1,
+    },
+    phone: {
+        type: "Text",
+        label: "Contact Phone",
+        in_quick_entry: 1,
+    },
     inline_address: {
         type: "Long Text",
         label: "Inline Address",
+        readonly: 1,
+        in_list_view: 1
+    },
+    inline_contact: {
+        type: "Long Text",
+        label: "Inline Contact",
         readonly: 1,
         in_list_view: 1
     },
@@ -70,7 +91,7 @@ export default $doctype<"Address">({
 }, {
     label: "Address",
     naming_series: "ADDR-{YYYY}-{MM}-{DD}-{#####}",
-    search_fields: "address_type\ncity\nprovince\ninline_address",
+    search_fields: "address_type\ncity\nprovince\ninline_address\ninline_contact\ncontact_person",
     is_quick_entry: 1,
     tabs: JSON.stringify([
         {
@@ -95,8 +116,15 @@ export default $doctype<"Address">({
                 [
                     { type: "field", value: "country", align: "left" }
                 ],
+                { type: "section", value: "Contact", align: "left" },
                 [
-                    { type: "field", value: "inline_address", align: "left" }
+                    { type: "field", value: "contact_person", align: "left" },
+                    { type: "field", value: "contact_email", align: "left" },
+                    { type: "field", value: "contact_phone", align: "left" }
+                ],
+                [
+                    { type: "field", value: "inline_address", align: "left" },
+                    { type: "field", value: "inline_contact", align: "left" }
                 ],
                 { type: "section", value: "Link", align: "left" },
                 [
@@ -108,5 +136,7 @@ export default $doctype<"Address">({
     ])
 })
     .on("before_save", async ({ doc }) => {
-        doc.inline_address = [doc.address_line1, doc.address_line2, doc.city, doc.province, doc.postal_code, doc.country].filter(Boolean).join(" ");
+        const d = doc as any;
+        d.inline_address = [d.address_line1, d.address_line2, d.city, d.province, d.postal_code, d.country].filter(Boolean).join(" ");
+        d.inline_contact = [d.email, d.phone].filter(Boolean).join(" ");
     })

@@ -2,6 +2,10 @@ import {
   deleteGlForReference,
   postSalesInvoiceGl,
 } from "@/zerp/src/shared/gl_posting";
+import {
+  createStockEntryForSalesInvoice,
+  deleteStockEntryByReference,
+} from "@/zerp/src/shared/stock_entry";
 
 export default $doctype<"Sales Invoice">(
   {
@@ -65,6 +69,13 @@ export default $doctype<"Sales Invoice">(
       required: 1,
       in_list_view: 1,
       default: "TODAY()",
+    },
+    source_warehouse: {
+      type: "Reference",
+      label: "Source Warehouse",
+      reference: "Warehouse",
+      required: 1,
+      in_list_view: 1,
     },
     due_date: {
       type: "Date",
@@ -175,6 +186,13 @@ export default $doctype<"Sales Invoice">(
       readonly: 1,
       fetch_from: "billing_address.inline_address",
     },
+    billing_inline_contact: {
+      type: "Text",
+      label: "Billing Inline Contact",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.inline_contact",
+    },
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
@@ -197,49 +215,12 @@ export default $doctype<"Sales Invoice">(
       readonly: 1,
       fetch_from: "shipping_address.inline_address",
     },
-    billing_contact: {
-      type: "Reference",
-      label: "Billing Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 1,
-      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
-    },
-    billing_contact_name: {
+    shipping_inline_contact: {
       type: "Text",
-      label: "Billing Contact Name",
+      label: "Shipping Inline Contact",
       required: 0,
       readonly: 1,
-      fetch_from: "billing_contact.name",
-    },
-    billing_contact_inline: {
-      type: "Text",
-      label: "Billing Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "billing_contact.inline_contact",
-    },
-    shipping_contact: {
-      type: "Reference",
-      label: "Shipping Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 1,
-      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
-    },
-    shipping_contact_name: {
-      type: "Text",
-      label: "Shipping Contact Name",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.name",
-    },
-    shipping_contact_inline: {
-      type: "Text",
-      label: "Shipping Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.inline_contact",
+      fetch_from: "shipping_address.inline_contact",
     },
   },
   {
@@ -282,6 +263,9 @@ export default $doctype<"Sales Invoice">(
           ],
           { type: "section", value: "Items", align: "left" },
           [
+            { type: "field", value: "source_warehouse", align: "left" },
+          ],
+          [
             { type: "field", value: "sales_invoice_items", align: "left" },
           ],
           { type: "section", value: "VAT Configuration", align: "left" },
@@ -323,24 +307,24 @@ export default $doctype<"Sales Invoice">(
           { type: "section", value: "Billing Address", align: "left" },
           [
             { type: "field", value: "billing_address", align: "left" },
-            { type: "field", value: "billing_address_name", align: "left" },
-            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "billing_contact", align: "left" },
-            { type: "field", value: "billing_contact_name", align: "left" },
-            { type: "field", value: "billing_contact_inline", align: "left" },
+            { type: "field", value: "billing_address_name", align: "left" },
+            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "field", value: "billing_inline_contact", align: "left" },
           ],
           { type: "section", value: "Shipping Address", align: "left" },
           [
             { type: "field", value: "shipping_address", align: "left" },
-            { type: "field", value: "shipping_address_name", align: "left" },
-            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "shipping_contact", align: "left" },
-            { type: "field", value: "shipping_contact_name", align: "left" },
-            { type: "field", value: "shipping_contact_inline", align: "left" },
+            { type: "field", value: "shipping_address_name", align: "left" },
+            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "field", value: "shipping_inline_contact", align: "left" },
           ],
         ],
       },
@@ -375,6 +359,23 @@ export default $doctype<"Sales Invoice">(
     }
     if (String((against as any).customer ?? "") !== String(doc.customer ?? "")) {
       throw new Error("Credit Note customer must match Return Against Sales Invoice customer.");
+    }
+  })
+  .on("before_submit", async ({ doc }) => {
+    const qid = String((doc as any).quotation ?? "").trim();
+    if (!qid) return;
+    const q = await $zodula.doctype("Quotation").get(qid);
+    if (!q) {
+      throw new Error(`Quotation ${qid} not found.`);
+    }
+    const qAny = q as any;
+    if (String(qAny.doc_status ?? "") !== "Submitted") {
+      throw new Error("Linked Quotation must be Submitted.");
+    }
+    if (Number(qAny.is_delivery_order) === 1) {
+      throw new Error(
+        "Sales Invoice cannot use a Delivery Order quotation. Create a Delivery Note from that quotation instead."
+      );
     }
   })
   .on("before_change", async ({ doc }) => {
@@ -412,6 +413,7 @@ export default $doctype<"Sales Invoice">(
   })
   .on("after_submit", async ({ doc }) => {
     if (!doc.id) return;
+    await createStockEntryForSalesInvoice(doc as any);
     await postSalesInvoiceGl(doc as unknown as Record<string, unknown>);
     if (Number((doc as any).is_credit_note) === 1) return;
     if (Number((doc as any).ignore_price_project) === 1) return;
@@ -457,5 +459,6 @@ export default $doctype<"Sales Invoice">(
     }
   })
   .on("after_cancel", async ({ doc }) => {
+    await deleteStockEntryByReference("Sales Invoice", String(doc.id));
     await deleteGlForReference("Sales Invoice", doc.id);
   });

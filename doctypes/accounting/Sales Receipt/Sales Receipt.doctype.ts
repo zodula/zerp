@@ -55,6 +55,14 @@ export default $doctype<"Sales Receipt">(
       default: "TODAY()",
       readonly: 1,
     },
+    source_warehouse: {
+      type: "Reference",
+      label: "Source Warehouse",
+      reference: "Warehouse",
+      required: 0,
+      readonly: 1,
+      fetch_from: "from_sales_invoice.source_warehouse",
+    },
     net_total: {
       type: "Currency",
       label: "Net Total",
@@ -118,6 +126,13 @@ export default $doctype<"Sales Receipt">(
       readonly: 1,
       fetch_from: "billing_address.inline_address",
     },
+    billing_inline_contact: {
+      type: "Text",
+      label: "Billing Inline Contact",
+      required: 0,
+      readonly: 1,
+      fetch_from: "billing_address.inline_contact",
+    },
     shipping_address: {
       type: "Reference",
       label: "Shipping Address",
@@ -141,51 +156,12 @@ export default $doctype<"Sales Receipt">(
       readonly: 1,
       fetch_from: "shipping_address.inline_address",
     },
-    billing_contact: {
-      type: "Reference",
-      label: "Billing Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 1,
-      readonly: 1,
-      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
-    },
-    billing_contact_name: {
+    shipping_inline_contact: {
       type: "Text",
-      label: "Billing Contact Name",
+      label: "Shipping Inline Contact",
       required: 0,
       readonly: 1,
-      fetch_from: "billing_contact.name",
-    },
-    billing_contact_inline: {
-      type: "Text",
-      label: "Billing Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "billing_contact.inline_contact",
-    },
-    shipping_contact: {
-      type: "Reference",
-      label: "Shipping Contact",
-      reference: "Contact",
-      required: 0,
-      no_print: 1,
-      readonly: 1,
-      filters: JSON.stringify([["link_type", "=", "Customer"], ["link_id", "=", "{{customer}}"]]),
-    },
-    shipping_contact_name: {
-      type: "Text",
-      label: "Shipping Contact Name",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.name",
-    },
-    shipping_contact_inline: {
-      type: "Text",
-      label: "Shipping Contact Inline",
-      required: 0,
-      readonly: 1,
-      fetch_from: "shipping_contact.inline_contact",
+      fetch_from: "shipping_address.inline_contact",
     },
     remarks: {
       type: "Text",
@@ -219,6 +195,9 @@ export default $doctype<"Sales Receipt">(
             { type: "field", value: "customer_address", align: "left" },
           ],
           { type: "section", value: "Items", align: "left" },
+          [
+            { type: "field", value: "source_warehouse", align: "left" },
+          ],
           [
             { type: "field", value: "sales_receipt_items", align: "left" },
           ],
@@ -260,24 +239,24 @@ export default $doctype<"Sales Receipt">(
           { type: "section", value: "Billing Address", align: "left" },
           [
             { type: "field", value: "billing_address", align: "left" },
-            { type: "field", value: "billing_address_name", align: "left" },
-            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "billing_contact", align: "left" },
-            { type: "field", value: "billing_contact_name", align: "left" },
-            { type: "field", value: "billing_contact_inline", align: "left" },
+            { type: "field", value: "billing_address_name", align: "left" },
+            { type: "field", value: "billing_inline_address", align: "left" },
+            { type: "field", value: "billing_inline_contact", align: "left" },
           ],
           { type: "section", value: "Shipping Address", align: "left" },
           [
             { type: "field", value: "shipping_address", align: "left" },
-            { type: "field", value: "shipping_address_name", align: "left" },
-            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "empty" },
+            { type: "empty" },
           ],
           [
-            { type: "field", value: "shipping_contact", align: "left" },
-            { type: "field", value: "shipping_contact_name", align: "left" },
-            { type: "field", value: "shipping_contact_inline", align: "left" },
+            { type: "field", value: "shipping_address_name", align: "left" },
+            { type: "field", value: "shipping_inline_address", align: "left" },
+            { type: "field", value: "shipping_inline_contact", align: "left" },
           ],
         ],
       },
@@ -314,8 +293,6 @@ export default $doctype<"Sales Receipt">(
     d.delivery_note = inv.delivery_note ?? "";
     d.billing_address = inv.billing_address ?? "";
     d.shipping_address = inv.shipping_address ?? "";
-    d.billing_contact = inv.billing_contact ?? "";
-    d.shipping_contact = inv.shipping_contact ?? "";
     d.net_total = inv.net_total;
     d.vat_type = inv.vat_type;
     d.vat_rate = inv.vat_rate;

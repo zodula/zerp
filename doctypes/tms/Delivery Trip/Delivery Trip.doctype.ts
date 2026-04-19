@@ -1,3 +1,8 @@
+import {
+    createStockEntryForDeliveryTrip,
+    deleteStockEntryByReference,
+} from "@/zerp/src/shared/stock_entry";
+
 export default $doctype<"Delivery Trip">({
     posting_date: {
         type: "Date",
@@ -167,4 +172,8 @@ export default $doctype<"Delivery Trip">({
                 .update(deliveryNoteId, tripInfo as any)
                 .bypass(true);
         }
+        await createStockEntryForDeliveryTrip(doc as any);
+    })
+    .on("after_cancel", async ({ doc }) => {
+        await deleteStockEntryByReference("Delivery Trip", String(doc.id));
     });
